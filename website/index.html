@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nova — a file manager for nova.storage</title>
+  <meta name="description" content="Nova is a fast, native-feeling file manager for your nova.storage account on Linux and Android. Browse, upload, preview and share your files like they're on your own disk.">
+  <meta name="theme-color" content="#1a0d22">
+  <link rel="icon" type="image/png" href="assets/icon.png">
+  <link rel="apple-touch-icon" href="assets/icon.png">
+  <meta property="og:title" content="Nova — a file manager for nova.storage">
+  <meta property="og:description" content="Your nova.storage files, on your desktop and phone. Free and open source.">
+  <meta property="og:image" content="https://nova.jevido.app/assets/icon.png">
+  <meta property="og:url" content="https://nova.jevido.app/">
+  <meta name="twitter:card" content="summary">
+  <link rel="stylesheet" href="style.css">
+  <script src="main.js" defer></script>
+</head>
+<body>
+  <div class="glow" aria-hidden="true"></div>
+
+  <header class="nav">
+    <a class="brand" href="#top"><img src="assets/icon.png" alt="" width="32" height="32"> Nova</a>
+    <nav>
+      <a href="#features">Features</a>
+      <a href="#download">Download</a>
+      <a href="https://github.com/jevido/nova" class="gh" aria-label="Nova on GitHub">
+        <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        <span>GitHub</span>
+      </a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="dot"></span> <span data-version>Free &amp; open source</span></p>
+        <h1>Your cloud files,<br><span class="grad">right where they belong.</span></h1>
+        <p class="lede">Nova is a file manager for your <a href="https://nova.storage">nova.storage</a> account. It looks and feels like the file manager you already know, so your cloud behaves like just another folder, on your desktop and on your phone.</p>
+
+        <div class="cta" data-primary>
+          <a class="btn primary" data-dl="linux" href="#download">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 19h16" /></svg>
+            <span><strong data-label>Download Nova</strong><small data-sub>Linux &amp; Android</small></span>
+          </a>
+          <a class="btn ghost" href="#download">All downloads</a>
+        </div>
+        <p class="fine">Linux (x86_64) and Android (arm64). No account with us, no tracking. Just you and your storage.</p>
+      </div>
+
+      <div class="hero-art" aria-hidden="true">
+        <!-- Desktop window mock -->
+        <div class="window">
+          <div class="hb">
+            <div class="hb-btns"><i></i><i></i></div>
+            <div class="pathbar"><span>🏠 me</span><span>Photos</span><span class="on">2026</span></div>
+            <div class="hb-btns r"><i></i><i></i><i class="x"></i></div>
+          </div>
+          <div class="win-body">
+            <aside>
+              <p class="on">⌂ Home</p><p>★ Starred</p><p>🗑 Trash</p>
+              <hr><p>▣ Documents</p><p>▣ Photos</p><p>▣ Music</p><p>▣ Projects</p>
+            </aside>
+            <div class="grid">
+              <figure><b class="f"></b><figcaption>Summer</figcaption></figure>
+              <figure><b class="f"></b><figcaption>Berlin</figcaption></figure>
+              <figure class="sel"><b class="img i1"></b><figcaption>beach.jpg</figcaption></figure>
+              <figure><b class="img i2"></b><figcaption>sunset.jpg</figcaption></figure>
+              <figure><b class="img i3"></b><figcaption>dunes.png</figcaption></figure>
+              <figure><b class="doc"></b><figcaption>notes.md</figcaption></figure>
+              <figure><b class="vid"></b><figcaption>trip.mp4</figcaption></figure>
+              <figure><b class="f"></b><figcaption>Friends</figcaption></figure>
+            </div>
+          </div>
+          <div class="toast">“beach.jpg” moved to Trash <u>Undo</u></div>
+        </div>
+
+        <!-- Phone mock -->
+        <div class="phone">
+          <div class="p-top"><span>‹</span> Photos <span>⋮</span></div>
+          <div class="p-list">
+            <p><b class="f"></b>2026<small>24 items</small></p>
+            <p><b class="f"></b>Summer<small>112 items</small></p>
+            <p><b class="img i1"></b>beach.jpg<small>3.2 MB</small></p>
+            <p><b class="img i2"></b>sunset.jpg<small>2.8 MB</small></p>
+            <p><b class="doc"></b>notes.md<small>4 KB</small></p>
+            <p><b class="vid"></b>trip.mp4<small>184 MB</small></p>
+          </div>
+          <div class="p-fab">+</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="features">
+      <h2>Feels like home.<br><span class="muted">Because it's modelled on it.</span></h2>
+      <p class="section-lede">Nova takes its cues from GNOME Files: headerbar and path bar, places sidebar, icon and list views, right-click menus and the shortcuts your fingers already know. On the desktop it even uses your system icon theme, so it fits right in.</p>
+
+      <div class="cards">
+        <article>
+          <div class="ic">⇅</div>
+          <h3>Drag, drop, done</h3>
+          <p>Drop files or whole folders from your desktop onto the window to upload them. Transfers run in the background with progress, speed and cancel.</p>
+        </article>
+        <article>
+          <div class="ic">↶</div>
+          <h3>Undo everything</h3>
+          <p>Renamed the wrong file? Moved it somewhere silly? <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes rename, move and trash.</p>
+        </article>
+        <article>
+          <div class="ic">◉</div>
+          <h3>Quick preview</h3>
+          <p>Hit <kbd>Space</kbd> to peek at images, video, audio and text without downloading a thing.</p>
+        </article>
+        <article>
+          <div class="ic">🗑</div>
+          <h3>Trash that syncs</h3>
+          <p>Deleted files go to a trash on the server, so you can restore them from any device.</p>
+        </article>
+        <article>
+          <div class="ic">⌕</div>
+          <h3>Find it fast</h3>
+          <p>Search the current folder and everything below it with <kbd>Ctrl</kbd>+<kbd>F</kbd>. Star files and bookmark folders for the sidebar.</p>
+        </article>
+        <article>
+          <div class="ic">🔗</div>
+          <h3>Share in a click</h3>
+          <p>Flip on a public link from the Properties dialog. You also get folder sizes and checksums there.</p>
+        </article>
+        <article>
+          <div class="ic">◐</div>
+          <h3>Light &amp; dark</h3>
+          <p>Follows your system theme, or pick one yourself. Grid or list, zoom with <kbd>Ctrl</kbd>+scroll, multiple windows.</p>
+        </article>
+        <article>
+          <div class="ic">↻</div>
+          <h3>Keeps itself fresh</h3>
+          <p>Nova checks for new versions, downloads and verifies them in the background, then asks you to restart.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Download -->
+    <section id="download" class="download">
+      <h2>Get Nova</h2>
+      <p class="section-lede" data-release-note>Pick your platform. Every download comes from <a href="https://github.com/jevido/nova/releases/latest">GitHub Releases</a> and is listed in its <code>checksums.txt</code>.</p>
+
+      <div class="platforms">
+        <article class="platform" data-platform="linux">
+          <header>
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="logo"><path fill="currentColor" d="M12.5 2c-2.2 0-3.4 1.9-3.4 4.3 0 1.3.2 2.1-.6 3.4-.9 1.4-2.6 3.3-2.9 5.7-.2 1.4.3 2.3.6 2.7-.6.4-1.6.6-1.9 1.3-.3.8.5 1.5 1.9 1.8 1.5.3 2.8.9 3.8.9.9 0 1.5-.5 1.8-1 .8.1 1.9.1 2.9 0 .3.6.9 1.1 1.9 1.1 1.2 0 2.3-.7 3.6-1.3 1.2-.5 1.8-1 1.7-1.7-.1-.6-1-.8-1.5-1.3.4-.6.7-1.6.4-3-.4-2-2-4-2.9-5.2-.9-1.1-.9-2.2-.9-3.8C17 3.6 15.3 2 12.5 2zm-1.2 3.6c.5 0 .8.6.8 1.2 0 .3-.1.6-.2.8l-.5-.2c.1-.2.1-.3.1-.5 0-.4-.2-.6-.3-.6-.2 0-.3.3-.3.6v.2l-.5-.1V6.8c0-.6.4-1.2.9-1.2zm2.6 0c.6 0 1 .6 1 1.3 0 .3-.1.6-.2.8l-.4-.2c.1-.2.1-.4.1-.6 0-.4-.2-.7-.5-.7s-.4.3-.4.7v.2l-.5-.2v-.1c0-.7.4-1.2.9-1.2zM12.4 8c.6 0 1.4.4 2 .8.4.2.6.4.6.7 0 .4-.9 1.1-2.3 1.2-.9 0-1.6-.6-2-1-.2-.2-.3-.4-.2-.6.1-.3.7-.7 1.9-1.1z"/></svg>
+            <div><h3>Linux</h3><small>x86_64 · GTK 4 + WebKitGTK 6.0</small></div>
+          </header>
+
+          <p class="label">Quick install <span class="tag">updates itself</span></p>
+          <div class="code">
+            <code id="install-cmd">curl -fsSL https://raw.githubusercontent.com/jevido/nova/main/install.sh | sh</code>
+            <button class="copy" data-copy="#install-cmd" aria-label="Copy install command">Copy</button>
+          </div>
+          <p class="hint">Installs into your home directory. No sudo, and Nova shows up in your app launcher.</p>
+
+          <p class="label">Or grab a package</p>
+          <ul class="pkgs">
+            <li><a href="https://github.com/jevido/nova/releases/latest/download/nova-linux-amd64.tar.gz"><b>Portable</b><span>.tar.gz</span></a></li>
+            <li><a href="https://github.com/jevido/nova/releases/latest/download/nova-linux-x86_64.pkg.tar.zst"><b>Arch / Omarchy</b><span>.pkg.tar.zst</span></a></li>
+            <li><a href="https://github.com/jevido/nova/releases/latest/download/nova-linux-amd64.deb"><b>Debian / Ubuntu</b><span>.deb</span></a></li>
+            <li><a href="https://github.com/jevido/nova/releases/latest/download/nova-linux-x86_64.rpm"><b>Fedora / RHEL</b><span>.rpm</span></a></li>
+            <li><a href="https://github.com/jevido/nova/releases/latest/download/nova-linux-x86_64.AppImage"><b>AppImage</b><span>any distro</span></a></li>
+          </ul>
+          <details>
+            <summary>Missing GTK 4 / WebKitGTK?</summary>
+            <dl>
+              <dt>Debian / Ubuntu 24.04+</dt><dd><code>sudo apt install libgtk-4-1 libwebkitgtk-6.0-4</code></dd>
+              <dt>Arch</dt><dd><code>sudo pacman -S gtk4 webkitgtk-6.0</code></dd>
+              <dt>Fedora</dt><dd><code>sudo dnf install gtk4 webkitgtk6.0</code></dd>
+            </dl>
+          </details>
+        </article>
+
+        <article class="platform" data-platform="android">
+          <header>
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="logo"><path fill="currentColor" d="M17.6 9.48l1.84-3.18a.38.38 0 00-.66-.38l-1.87 3.23a11.5 11.5 0 00-9.82 0L5.22 5.92a.38.38 0 00-.66.38L6.4 9.48A10.8 10.8 0 001 18h22a10.8 10.8 0 00-5.4-8.52zM7 15.25a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5zm10 0a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5z"/></svg>
+            <div><h3>Android</h3><small>Android 5.0+ · 64-bit ARM</small></div>
+          </header>
+
+          <a class="btn primary wide" href="https://github.com/jevido/nova/releases/latest/download/nova-android-arm64.apk">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 19h16" /></svg>
+            <span><strong>Download APK</strong><small>nova-android-arm64.apk</small></span>
+          </a>
+
+          <ol class="steps">
+            <li>Open this page on your phone and tap <b>Download APK</b>.</li>
+            <li>Tap the file when the download finishes.</li>
+            <li>The first time, Android asks you to allow installs from your browser. Allow it, then tap <b>Install</b>.</li>
+          </ol>
+          <p class="hint">From then on Nova updates itself: when a new version is ready, tap <b>Install</b> on the notification.</p>
+
+          <div class="qr" data-qr hidden>
+            <img src="assets/android-qr.svg" alt="QR code linking to the Android download" width="132" height="132">
+            <p>On your computer? Scan this with your phone to download.</p>
+          </div>
+        </article>
+      </div>
+
+      <p class="soon">Windows and macOS aren't available yet. Want to help? <a href="https://github.com/jevido/nova">Nova is open source</a>.</p>
+    </section>
+
+    <!-- Closing -->
+    <section class="closing">
+      <img src="assets/icon.png" alt="" width="96" height="96">
+      <h2>Sign in and go.</h2>
+      <p>Use your nova.storage username and password, or paste an API key. That's the whole setup.</p>
+      <a class="btn primary" href="#download">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 19h16" /></svg>
+        <span><strong>Download Nova</strong></span>
+      </a>
+    </section>
+  </main>
+
+  <footer>
+    <p><img src="assets/icon.png" alt="" width="20" height="20"> Nova <span data-version-footer></span></p>
+    <p>
+      <a href="https://github.com/jevido/nova">Source</a>
+      <a href="https://github.com/jevido/nova/releases">Releases</a>
+      <a href="https://github.com/jevido/nova/issues">Report a bug</a>
+      <a href="https://nova.storage">nova.storage</a>
+    </p>
+  </footer>
+</body>
+</html>
