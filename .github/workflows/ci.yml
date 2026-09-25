@@ -16,7 +16,7 @@ concurrency:
 
 env:
   WAILS_VERSION: v3.0.0-beta.18
-  BUN_VERSION: "1.3"
+  BUN_VERSION: "1.4.0"
 
 jobs:
   test:
