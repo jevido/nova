@@ -1,4 +1,4 @@
-//go:build !android
+//go:build !android && !ios
 
 // Package platform resolves per-OS locations for settings, caches and downloads.
 package platform

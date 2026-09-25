@@ -463,7 +463,7 @@ func safeLocalName(name string) string {
 	if name == "" || name == "." || name == ".." {
 		name = "_"
 	}
-	return name
+	return osSafeName(name)
 }
 
 // uniqueLocal returns p, or "name (N).ext", skipping existing and reserved paths.
