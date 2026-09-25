@@ -8,7 +8,6 @@ import (
 	"embed"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -37,22 +36,9 @@ type Resolver struct {
 
 func NewResolver() *Resolver { return &Resolver{} }
 
-func iconDirs() []string {
-	var dirs []string
-	if home, err := os.UserHomeDir(); err == nil {
-		dirs = append(dirs, filepath.Join(home, ".icons"), filepath.Join(home, ".local/share/icons"))
-	}
-	data := os.Getenv("XDG_DATA_DIRS")
-	if data == "" {
-		data = "/usr/local/share:/usr/share"
-	}
-	for _, d := range strings.Split(data, ":") {
-		if d != "" {
-			dirs = append(dirs, filepath.Join(d, "icons"))
-		}
-	}
-	return dirs
-}
+// iconDirs and currentTheme are per OS: freedesktop icon themes exist on
+// Linux and the BSDs (themes_freedesktop.go); everywhere else (Windows,
+// macOS, phones) Nova uses the bundled fallback set only.
 
 func findTheme(name string) string {
 	for _, d := range iconDirs() {
@@ -84,17 +70,6 @@ func inherits(themeDir string) []string {
 		}
 	}
 	return nil
-}
-
-func currentTheme() string {
-	if t := os.Getenv("NOVA_ICON_THEME"); t != "" {
-		return t
-	}
-	out, err := exec.Command("gsettings", "get", "org.gnome.desktop.interface", "icon-theme").Output()
-	if err != nil {
-		return ""
-	}
-	return strings.Trim(strings.TrimSpace(string(out)), "'")
 }
 
 func (r *Resolver) init() {

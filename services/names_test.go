@@ -41,3 +41,23 @@ func TestSafeLocalName(t *testing.T) {
 		}
 	}
 }
+
+func TestWindowsSafeName(t *testing.T) {
+	for in, want := range map[string]string{
+		"ok.txt":        "ok.txt",
+		"a:b?.txt":      "a_b_.txt",
+		`say "hi".md`:   "say _hi_.md",
+		"trailing. . ":  "trailing",
+		"...":           "_",
+		"con":           "_con",
+		"NUL.txt":       "_NUL.txt",
+		"lpt1 .tar.gz":  "_lpt1 .tar.gz",
+		"console.log":   "console.log",
+		"tab\there":     "tab_here",
+		"über café.jpg": "über café.jpg",
+	} {
+		if got := windowsSafeName(in); got != want {
+			t.Errorf("windowsSafeName(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

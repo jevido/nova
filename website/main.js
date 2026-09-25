@@ -5,25 +5,43 @@ const DL = `https://github.com/${REPO}/releases/latest/download/`;
 // Recommend the download for the visitor's device.
 const ua = navigator.userAgent;
 const isAndroid = /Android/i.test(ua);
+// iPadOS reports itself as a Mac; touch support gives it away.
+const isIOS = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+const isWindows = /Windows/i.test(ua);
 const isLinux = !isAndroid && /Linux|X11/i.test(ua);
-const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+const isMobile = isIOS || /Android|Mobile/i.test(ua);
 
 const primary = document.querySelector("[data-dl]");
 const label = primary.querySelector("[data-label]");
 const sub = primary.querySelector("[data-sub]");
 
+// Mark the visitor's platform and show its card first.
+const recommend = (name) => {
+  const card = document.querySelector(`[data-platform="${name}"]`);
+  card.classList.add("recommended");
+  document.querySelector(".platforms").prepend(card);
+};
+
 if (isAndroid) {
   primary.href = DL + "nova-android-arm64.apk";
   label.textContent = "Download for Android";
   sub.textContent = "APK · Android 5.0+";
-  document.querySelector('[data-platform="android"]').classList.add("recommended");
-  // Show Android first on phones.
-  const platforms = document.querySelector(".platforms");
-  platforms.prepend(document.querySelector('[data-platform="android"]'));
+  recommend("android");
+} else if (isIOS) {
+  // An IPA can't be installed by tapping it, so point at the instructions.
+  primary.href = "#ios";
+  label.textContent = "Get Nova for iPhone & iPad";
+  sub.textContent = "Sideload with AltStore or Sideloadly";
+  recommend("ios");
+} else if (isWindows) {
+  primary.href = DL + "nova-windows-amd64-setup.exe";
+  label.textContent = "Download for Windows";
+  sub.textContent = "Installer · Windows 10 & 11";
+  recommend("windows");
 } else if (isLinux) {
   label.textContent = "Download for Linux";
   sub.textContent = "Quick install or package";
-  document.querySelector('[data-platform="linux"]').classList.add("recommended");
+  recommend("linux");
 }
 
 // On a computer, offer a QR code to get the APK onto a phone.

@@ -31,6 +31,16 @@ Unicode true
 ## !define REQUEST_EXECUTION_LEVEL "admin"            # Default "admin"  see also https://nsis.sourceforge.io/Docs/Chapter4.html
 ## !define WAILS_INSTALL_SCOPE     "user"             # Default "machine" - set to "user" for per-user install ($LOCALAPPDATA) without UAC prompt
 ####
+## Nova's values. CI passes INFO_PRODUCTVERSION and installs per user
+## (WAILS_INSTALL_SCOPE=user, see build/windows/Taskfile.yml) into
+## %LOCALAPPDATA%\Programs\Nova, where Nova can update itself.
+####
+!define INFO_PROJECTNAME "nova"
+!define INFO_COMPANYNAME "Nova"
+!define INFO_PRODUCTNAME "Nova"
+!define INFO_COPYRIGHT   "(c) 2026, Nova"
+!define UNINST_KEY_NAME  "Nova"
+####
 ## Include the wails tools
 ####
 !include "wails_tools.nsh"
@@ -76,7 +86,7 @@ OutFile "..\..\..\bin\${INFO_PROJECTNAME}-${ARCH}-installer.exe" # Name of the i
 !if "${WAILS_INSTALL_SCOPE}" == "user"
     InstallDir "$LOCALAPPDATA\Programs\${INFO_PRODUCTNAME}"
 !else
-    InstallDir "$PROGRAMFILES64\${INFO_COMPANYNAME}\${INFO_PRODUCTNAME}"
+    InstallDir "$PROGRAMFILES64\${INFO_PRODUCTNAME}"
 !endif
 ShowInstDetails show # This will always show the installation details.
 
@@ -105,7 +115,9 @@ SectionEnd
 Section "uninstall" 
     !insertmacro wails.setShellContext
 
-    RMDir /r "$AppData\${PRODUCT_EXECUTABLE}" # Remove the WebView2 DataPath
+    # The WebView2 profile (see WebviewUserDataPath in main.go). Settings in
+    # %APPDATA%\nova-desktop stay, like on the other platforms.
+    RMDir /r "$LOCALAPPDATA\nova-desktop\webview"
 
     RMDir /r $INSTDIR
 

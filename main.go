@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"path/filepath"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
@@ -12,6 +13,7 @@ import (
 	"nova/internal/config"
 	"nova/internal/icons"
 	"nova/internal/nova"
+	"nova/internal/platform"
 	"nova/services"
 )
 
@@ -72,6 +74,12 @@ func main() {
 		},
 		Linux: application.LinuxOptions{
 			ProgramName: "nova",
+		},
+		Windows: application.WindowsOptions{
+			// WebView2 would otherwise keep its profile in %APPDATA%\<exe
+			// name>, a different folder for nova.exe (installer) and
+			// nova-windows-amd64.exe (portable).
+			WebviewUserDataPath: filepath.Join(platform.CacheDir(), "webview"),
 		},
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: true,

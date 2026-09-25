@@ -1,4 +1,4 @@
-//go:build !android
+//go:build !android && !ios
 
 package services
 
@@ -7,7 +7,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
@@ -17,6 +16,11 @@ import (
 
 	"nova/internal/version"
 )
+
+// The desktop updater uses Wails' updater: it downloads the release asset,
+// verifies it against the release's checksums.txt and, on Restart, has a
+// helper process swap the binary and relaunch it. The OS-specific parts live
+// in updates_linux.go and updates_windows.go.
 
 func openURL(url string) error { return application.Get().Browser.OpenURL(url) }
 
@@ -67,31 +71,48 @@ func (s *UpdateService) ServiceStartup(ctx context.Context, _ application.Servic
 	return nil
 }
 
-// matchAsset picks the portable archive the release workflow builds for the
-// in-app updater: nova-linux-amd64.tar.gz.
+// matchAsset picks the file the release workflow builds for the in-app
+// updater: nova-linux-amd64.tar.gz on Linux and the portable
+// nova-windows-amd64.exe on Windows (never the -setup.exe installer).
 func matchAsset(req updater.CheckRequest, assets []github.ReleaseAsset) int {
 	prefix := "nova-" + req.Platform + "-" + req.Arch + "."
 	for i, a := range assets {
 		name := strings.ToLower(a.Name)
-		if strings.HasPrefix(name, prefix) && (strings.HasSuffix(name, ".tar.gz") || strings.HasSuffix(name, ".zip")) {
+		if !strings.HasPrefix(name, prefix) {
+			continue
+		}
+		if strings.HasSuffix(name, ".tar.gz") || strings.HasSuffix(name, ".zip") ||
+			(req.Platform == "windows" && strings.HasSuffix(name, ".exe")) {
 			return i
 		}
 	}
 	return -1
 }
 
+// selfPath is the running binary with symlinks resolved.
+func selfPath() (string, error) {
+	exe, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	if p, err := filepath.EvalSymlinks(exe); err == nil {
+		exe = p
+	}
+	return exe, nil
+}
+
 // canSelfUpdate reports whether the running binary sits in a directory we can
-// write to. AppImages and system package installs can't be swapped in place;
-// those users get a link to the release instead.
+// write to. AppImages, system packages and machine-wide Windows installs
+// (Program Files) can't be swapped in place; those users get a link to the
+// release instead.
 func canSelfUpdate() bool {
 	if os.Getenv("APPIMAGE") != "" {
 		return false
 	}
-	exe, err := os.Executable()
+	exe, err := selfPath()
 	if err != nil {
 		return false
 	}
-	exe, _ = filepath.EvalSymlinks(exe)
 	f, err := os.CreateTemp(filepath.Dir(exe), ".nova-update-check-*")
 	if err != nil {
 		return false
@@ -100,17 +121,6 @@ func canSelfUpdate() bool {
 	f.Close()
 	os.Remove(name)
 	return true
-}
-
-// packageManaged reports whether the binary lives where only a package
-// manager writes (Linux /usr, /opt).
-func packageManaged() bool {
-	exe, err := os.Executable()
-	if err != nil || runtime.GOOS != "linux" {
-		return false
-	}
-	exe, _ = filepath.EvalSymlinks(exe)
-	return strings.HasPrefix(exe, "/usr/") || strings.HasPrefix(exe, "/opt/")
 }
 
 // run performs one check and, when a newer release exists, downloads it.
@@ -166,11 +176,11 @@ func (s *UpdateService) Restart(ctx context.Context) error {
 	return application.Get().Updater.Restart(ctx)
 }
 
-// Workarounds for the Wails updater (wailsapp/wails#6134). Its helper
-// downloads the new version to the system temp directory and renames it over
-// the app. When the temp directory is on another filesystem (tmpfs /tmp on
-// Arch and Fedora, or a separate /home partition) the rename fails; the helper
-// then restores the old binary but relaunches it with its helper environment
+// Workarounds for the Wails updater (wailsapp/wails#6134). Its helper is the
+// app itself, started again with WAILS_UPDATER_HELPER set: it waits for the
+// app to quit, moves the downloaded version into place and relaunches it.
+// When that move fails (see stageNextToApp in updates_linux.go) the helper
+// restores the old binary but relaunches it with its helper environment
 // still set, so that binary becomes a helper again: a loop that deletes the
 // app every few seconds.
 
@@ -178,7 +188,6 @@ const (
 	helperEnv     = "WAILS_UPDATER_HELPER"
 	helperRanEnv  = "NOVA_UPDATER_HELPER_RAN"
 	origTmpDirEnv = "NOVA_ORIG_TMPDIR"
-	stagingDir    = ".nova-update"
 )
 
 // GuardUpdaterHelper must run before application.New, which enters Wails'
@@ -194,47 +203,20 @@ func GuardUpdaterHelper() {
 		os.Unsetenv(k)
 	}
 	restoreTempDir()
-}
-
-// stageNextToApp makes the updater download into a directory next to the app,
-// on the same filesystem, so moving the new version into place is a rename
-// that works. The helper and the relaunched app inherit the setting;
-// restoreTempDir undoes it.
-func stageNextToApp() {
-	if runtime.GOOS != "linux" {
-		return
-	}
-	exe, err := os.Executable()
-	if err != nil {
-		return
-	}
-	exe, _ = filepath.EvalSymlinks(exe)
-	dir := filepath.Join(filepath.Dir(exe), stagingDir)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return
-	}
-	if _, set := os.LookupEnv(origTmpDirEnv); !set {
-		os.Setenv(origTmpDirEnv, os.Getenv("TMPDIR"))
-	}
-	os.Setenv("TMPDIR", dir)
+	cleanupAfterUpdate()
 }
 
 // restoreTempDir puts back the temp directory a relaunched app inherited from
-// stageNextToApp, and removes what an earlier update left in the staging dir.
+// stageNextToApp.
 func restoreTempDir() {
-	if orig, set := os.LookupEnv(origTmpDirEnv); set {
-		if orig == "" {
-			os.Unsetenv("TMPDIR")
-		} else {
-			os.Setenv("TMPDIR", orig)
-		}
-		os.Unsetenv(origTmpDirEnv)
-	}
-	if runtime.GOOS != "linux" {
+	orig, set := os.LookupEnv(origTmpDirEnv)
+	if !set {
 		return
 	}
-	if exe, err := os.Executable(); err == nil {
-		exe, _ = filepath.EvalSymlinks(exe)
-		os.RemoveAll(filepath.Join(filepath.Dir(exe), stagingDir))
+	if orig == "" {
+		os.Unsetenv("TMPDIR")
+	} else {
+		os.Setenv("TMPDIR", orig)
 	}
+	os.Unsetenv(origTmpDirEnv)
 }
