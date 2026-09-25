@@ -4,6 +4,7 @@
   import { app, displayName, HOME, STARRED, TRASH, ZOOM_SIZES, LIST_ZOOM_SIZES, parentOf, type MenuItem } from "../lib/store.svelte";
   import { formatDate, formatSize, pluralize, stemLength } from "../lib/format";
   import { pressItems } from "../lib/dnd";
+  import { itemMenu } from "../lib/menus";
   import FileIcon from "./FileIcon.svelte";
   import Icon from "./Icon.svelte";
 
@@ -209,64 +210,37 @@
 
   // ---------- context menus ----------
 
-  function itemMenu(e: MouseEvent, entry: Entry) {
+  function openItemMenu(e: MouseEvent, entry: Entry) {
     e.preventDefault();
     e.stopPropagation();
-    if (app.mobile && app.selected.size && !app.selected.has(entry.path)) app.selected.add(entry.path);
-    else if (!app.selected.has(entry.path)) app.selectPaths([entry.path]);
-    const sel = app.selection;
-    const one = sel.length === 1 ? sel[0] : null;
-    let items: MenuItem[];
-    if (app.inTrash) {
-      items = [
-        { label: "Restore From Trash", run: () => app.restore(sel) },
-        { sep: true },
-        { label: "Delete Permanently", accel: "Delete", run: () => app.deleteForever(sel) },
-        { sep: true },
-        { label: "Properties", accel: "Ctrl+I", disabled: !one, run: () => one && (app.modal = { kind: "properties", entry: one }) },
-      ];
-    } else {
-      items = [
-        ...(one?.isDir
-          ? [
-              { label: "Open", accel: "Return", run: () => app.open(one) },
-              ...(app.mobile ? [] : [{ label: "Open in New Window", run: () => app.newWindow(one.path) }]),
-            ]
-          : app.mobile
-            ? []
-            : [{ label: "Open With Default Application", accel: "Return", run: () => app.openSelection() }]),
-        ...(one && !one.isDir ? [{ label: "Preview", accel: "Space", run: () => app.preview(one) }] : []),
-        ...(isSearch && one ? [{ label: "Open Item Location", run: () => app.navigate(parentOf(one.path), true, [one.path]) }] : []),
-        { sep: true },
-        { label: "Cut", accel: "Ctrl+X", run: () => app.copy(true) },
-        { label: "Copy", accel: "Ctrl+C", run: () => app.copy(false) },
-        ...(one?.isDir ? [{ label: "Paste Into Folder", disabled: !app.clipboard, run: () => app.paste(one.path) }] : []),
-        { sep: true },
-        { label: app.mobile ? "Download" : "Download…", run: () => app.download(sel) },
-        ...(one
-          ? [
-              one.shared
-                ? { label: "Stop Sharing", run: () => app.share(one, false) }
-                : { label: "Copy Public Link", run: () => app.share(one, true) },
-            ]
-          : []),
-        { sep: true },
-        { label: sel.every((x) => app.isStarred(x.path)) ? "Unstar" : "Star", run: () => app.toggleStar(sel) },
-        { label: "Rename…", accel: "F2", disabled: !one, run: () => app.startRename(one!) },
-        { label: "Move to Trash", accel: "Delete", run: () => app.trash(sel) },
-        { sep: true },
-        ...(one?.isDir
-          ? [{ label: app.isBookmarked(one.path) ? "Remove from Bookmarks" : "Add to Bookmarks", run: () => app.toggleBookmark(one.path) }]
-          : []),
-        { label: "Copy Location", disabled: !one, run: () => one && app.copyPath(one) },
-        { label: "Properties", accel: "Ctrl+I", disabled: !one, run: () => one && (app.modal = { kind: "properties", entry: one }) },
-      ];
+    if (app.mobile) {
+      // Long-press selects, like Android's Files; the bottom bar has the actions.
+      if (!app.selected.has(entry.path)) {
+        app.selected.add(entry.path);
+        navigator.vibrate?.(12);
+      }
+      return;
     }
-    app.openMenu(e.clientX, e.clientY, items);
+    if (!app.selected.has(entry.path)) app.selectPaths([entry.path]);
+    app.openMenu(e.clientX, e.clientY, itemMenu(app.selection, isSearch));
+  }
+
+  /** ⋮ on a phone row: the menu for just that item. */
+  function rowMenu(e: MouseEvent, entry: Entry) {
+    e.stopPropagation();
+    app.selectPaths([entry.path]);
+    app.openMenu(e.clientX, e.clientY, itemMenu([entry], isSearch));
+  }
+
+  function subtitle(e: Entry): string {
+    const when = formatDate(app.inTrash && e.deletedAt ? e.deletedAt : e.modified);
+    const where = isSearch ? (parentOf(e.path).replace(/^\/me/, "") || "/") + " · " : "";
+    return where + (e.isDir ? when : `${formatSize(e.size)} · ${when}`);
   }
 
   function bgMenu(e: MouseEvent) {
     e.preventDefault();
+    if (app.mobile) return;
     if ((e.target as HTMLElement).closest("[data-path].sel")) return;
     app.clearSelection();
     if (app.inTrash) {
@@ -394,7 +368,7 @@
     }}
     data-drop-path={app.canWrite && !isSearch ? app.path : undefined}
   >
-    {#if !grid && entries.length}
+    {#if !grid && entries.length && !app.mobile}
       <div class="colhead" role="row">
         {#each [["name", "Name"], ["size", "Size"], ...(isSearch ? [["location", "Location"]] : [["type", "Type"]]), ["modified", app.inTrash ? "Trashed On" : "Modified"]] as [key, label] (key)}
           <button
@@ -445,11 +419,11 @@
         {:else}
           <Icon name="folder" size={96} />
           <h2>Folder is Empty</h2>
-          {#if app.canWrite}<p class="dim">Drop files here to upload them.</p>{/if}
+          {#if app.canWrite}<p class="dim">{app.mobile ? "Tap + to add files or folders." : "Drop files here to upload them."}</p>{/if}
         {/if}
       </div>
     {:else if grid}
-      <div class="items" style:--cell="{Math.max(iconSize + 40, 96)}px">
+      <div class="items" style:--cell="{app.mobile ? 100 : Math.max(iconSize + 40, 96)}px">
         {#each entries as e (e.path)}
           <!-- svelte-ignore a11y_click_events_have_key_events (keyboard is handled by the listbox) -->
           <div
@@ -470,10 +444,44 @@
             onauxclick={(ev) => itemAux(ev, e)}
             onclick={(ev) => itemClick(ev, e)}
             ondblclick={() => !app.mobile && app.open(e)}
-            oncontextmenu={(ev) => itemMenu(ev, e)}
+            oncontextmenu={(ev) => openItemMenu(ev, e)}
           >
-            <div class="icon-box" style:height="{iconSize}px"><FileIcon entry={e} size={iconSize} /></div>
+            <div class="icon-box" style:height="{app.mobile ? 80 : iconSize}px">
+              <FileIcon entry={e} size={app.mobile ? 80 : iconSize} />
+              {#if app.mobile && app.selected.has(e.path)}<span class="check"><Icon name="object-select" size={14} /></span>{/if}
+            </div>
             <div class="label">{e.name}</div>
+          </div>
+        {/each}
+      </div>
+    {:else if app.mobile}
+      <div class="mrows">
+        {#each entries as e (e.path)}
+          {@const on = app.selected.has(e.path)}
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <div
+            class="mrow sel"
+            class:selected={on}
+            class:cut={app.clipboard?.mode === "cut" && app.clipboard.paths.includes(e.path)}
+            class:hidden-file={e.name.startsWith(".")}
+            role="option"
+            aria-selected={on}
+            tabindex="-1"
+            data-path={e.path}
+            onclick={(ev) => itemClick(ev, e)}
+            oncontextmenu={(ev) => openItemMenu(ev, e)}
+          >
+            <span class="micon">
+              <FileIcon entry={e} size={40} />
+              {#if on}<span class="check"><Icon name="object-select" size={14} /></span>{/if}
+            </span>
+            <span class="mtext">
+              <span class="name">{e.name}</span>
+              <span class="sub">{subtitle(e)}</span>
+            </span>
+            {#if !app.selected.size}
+              <button class="btn image flat more" title="More" onclick={(ev) => rowMenu(ev, e)}><Icon name="view-more" /></button>
+            {/if}
           </div>
         {/each}
       </div>
@@ -499,7 +507,7 @@
             onauxclick={(ev) => itemAux(ev, e)}
             onclick={(ev) => itemClick(ev, e)}
             ondblclick={() => !app.mobile && app.open(e)}
-            oncontextmenu={(ev) => itemMenu(ev, e)}
+            oncontextmenu={(ev) => openItemMenu(ev, e)}
           >
             <div class="col col-name"><FileIcon entry={e} size={rowIcon} /><span class="name">{e.name}</span></div>
             <div class="col col-size">{e.isDir ? "" : formatSize(e.size)}</div>
@@ -522,7 +530,7 @@
   {#if showSpinner || app.searching}
     <div class="floating left"><span class="spinner"></span>{app.searching ? "Searching…" : "Loading…"}</div>
   {/if}
-  {#if status}
+  {#if status && !app.mobile}
     <div class="floating">{status}</div>
   {/if}
 
@@ -741,6 +749,92 @@
   .row.drop,
   .row:global(.file-drop-target-active) {
     box-shadow: inset 0 0 0 2px var(--accent);
+  }
+
+  /* ---------- phone list: two-line rows ---------- */
+  .mrows {
+    padding: 4px 0 96px;
+  }
+  .mrow {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 64px;
+    padding: 6px 4px 6px 16px;
+    outline: none;
+  }
+  .mrow:active {
+    background: var(--hover);
+  }
+  .mrow.selected {
+    background: var(--selected);
+  }
+  .mrow.cut {
+    opacity: 0.5;
+  }
+  .micon {
+    position: relative;
+    display: flex;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .micon :global(.thumb) {
+    border-radius: 6px;
+  }
+  .check {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--accent-fg);
+    box-shadow: 0 0 0 2px var(--view-bg);
+  }
+  .icon-box {
+    position: relative;
+  }
+  .mrow .more {
+    color: var(--fg-dim);
+  }
+  .mtext {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .mtext .name {
+    font-size: 16px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .mtext .sub {
+    font-size: 13px;
+    color: var(--fg-dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  :global(:root[data-mobile="true"]) .items {
+    gap: 4px;
+    padding: 8px 8px 96px;
+  }
+  :global(:root[data-mobile="true"]) .item:hover {
+    background: none;
+  }
+  :global(:root[data-mobile="true"]) .item.selected {
+    background: var(--selected);
   }
 
   /* ---------- misc ---------- */

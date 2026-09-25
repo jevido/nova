@@ -61,6 +61,9 @@
     onToggleSidebar,
   }: { compact?: boolean; sidebarShown?: boolean; onToggleSidebar: () => void } = $props();
 
+  // Phones show the folder's name with an up arrow instead of a path bar.
+  const canUp = $derived(app.path !== HOME && app.path !== STARRED && app.path !== TRASH);
+
   const windowsHost = /Windows/i.test(navigator.userAgent);
   const active = $derived(app.activeTransfers);
   const opsProgress = $derived.by(() => {
@@ -92,10 +95,32 @@
 
 </script>
 
+{#if app.mobile && app.selected.size}
+  <!-- Selection mode on a phone; the actions are in the bottom bar. -->
+  <header class="headerbar selecting" role="toolbar" tabindex="-1">
+    <button class="btn image flat" title="Cancel" onclick={() => app.clearSelection()}><Icon name="window-close" /></button>
+    <span class="title">{app.selected.size} selected</span>
+    <button class="btn image flat" title="Select All" onclick={() => app.selectAll()}><Icon name="edit-select-all" /></button>
+  </header>
+{:else if app.mobile && !app.searchOpen}
+  <header class="headerbar" role="toolbar" tabindex="-1">
+    {#if canUp}
+      <button class="btn image flat" title="Up" onclick={() => app.up()}><Icon name="go-previous" /></button>
+    {/if}
+    <span class="title" class:indent={!canUp}>{app.path === HOME ? "Home" : displayName(app.path)}</span>
+    {@render opsButton()}
+    <button class="btn image flat" title="Search" onclick={() => app.openSearch()}><Icon name="edit-find" /></button>
+    {#if !app.path.startsWith(TRASH) && app.path !== STARRED}
+      <button class="btn image flat" title="Folder menu" onclick={folderMenu}><Icon name="view-more" /></button>
+    {/if}
+  </header>
+{:else}
 <!-- Double-click to maximise is handled by the Wails runtime for drag regions. -->
 <header class="headerbar" class:compact role="toolbar" tabindex="-1">
   <div class="start">
-    {#if !sidebarShown}
+    {#if app.mobile}
+      <button class="btn image flat" title="Close Search" onclick={() => app.closeSearch()}><Icon name="go-previous" /></button>
+    {:else if !sidebarShown}
       <button class="btn image flat" title="Show Sidebar" onclick={onToggleSidebar}>
         <Icon name="sidebar-show" />
       </button>
@@ -187,28 +212,8 @@
   </div>
 
   <div class="end">
-    {#if app.transfers.length}
-      <button class="btn image flat ops" bind:this={opsBtn} class:checked={opsOpen} title="Show operations" onclick={() => (opsOpen = !opsOpen)}>
-        {#if active.length}
-          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-            <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-opacity="0.25" stroke-width="3" />
-            <circle
-              cx="8"
-              cy="8"
-              r="6.5"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="3"
-              stroke-dasharray={2 * Math.PI * 6.5}
-              stroke-dashoffset={2 * Math.PI * 6.5 * (1 - opsProgress)}
-              transform="rotate(-90 8 8)"
-            />
-          </svg>
-        {:else}
-          <Icon name="object-select" />
-        {/if}
-      </button>
-    {/if}
+    {@render opsButton()}
+    {#if !app.mobile}
     <button
       class="btn image flat"
       class:checked={app.searchOpen}
@@ -217,6 +222,7 @@
     >
       <Icon name="edit-find" />
     </button>
+    {/if}
     {#if !compact}<ViewControls />{/if}
     {#if !sidebarShown && !compact}<MainMenu />{/if}
     {#if !app.mobile}
@@ -231,6 +237,33 @@
     {/if}
   </div>
 </header>
+
+{/if}
+
+{#snippet opsButton()}
+  {#if app.transfers.length}
+    <button class="btn image flat ops" bind:this={opsBtn} class:checked={opsOpen} title="Show operations" onclick={() => (opsOpen = !opsOpen)}>
+      {#if active.length}
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+          <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-opacity="0.25" stroke-width="3" />
+          <circle
+            cx="8"
+            cy="8"
+            r="6.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="3"
+            stroke-dasharray={2 * Math.PI * 6.5}
+            stroke-dashoffset={2 * Math.PI * 6.5 * (1 - opsProgress)}
+            transform="rotate(-90 8 8)"
+          />
+        </svg>
+      {:else}
+        <Icon name="object-select" />
+      {/if}
+    </button>
+  {/if}
+{/snippet}
 
 <Popover anchor={opsBtn} bind:open={opsOpen} align="end">
   <div class="ops-list">
@@ -372,6 +405,23 @@
   }
   :global(:root[data-mobile="true"]) .headerbar {
     gap: 4px;
+    min-height: 56px;
+    padding: 8px;
+  }
+  .title {
+    flex: 1;
+    min-width: 0;
+    font-size: 19px;
+    font-weight: bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .title.indent {
+    padding-left: 10px;
+  }
+  .selecting {
+    background: color-mix(in srgb, var(--accent) 18%, var(--header-bg));
   }
   .location,
   .search {

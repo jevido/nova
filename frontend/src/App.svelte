@@ -13,6 +13,7 @@
   import SearchEverywhere from "./components/SearchEverywhere.svelte";
   import Icon from "./components/Icon.svelte";
   import ViewControls from "./components/ViewControls.svelte";
+  import MobileBar from "./components/MobileBar.svelte";
 
   let sidebarWidth = $state(240);
   let width = $state(innerWidth);
@@ -171,7 +172,9 @@
         <FileView />
         <Toasts />
       </div>
-      {#if !docked}
+      {#if app.mobile}
+        <MobileBar />
+      {:else if !docked}
         <footer class="bottombar">
           <button class="btn image flat" title="Back" disabled={!app.history.length} onclick={() => app.back()}><Icon name="go-previous" /></button>
           <button class="btn image flat" title="Forward" disabled={!app.future.length} onclick={() => app.forward()}><Icon name="go-next" /></button>
@@ -250,6 +253,11 @@
     width: min(280px, 82vw);
     box-shadow: 0 0 0 1px var(--shade), 2px 0 16px rgba(0, 0, 0, 0.3);
     animation: slide-in 180ms ease-out;
+  }
+  /* Phones keep the bottom bar visible under the drawer. */
+  :global(:root[data-mobile="true"]) .scrim,
+  :global(:root[data-mobile="true"]) .drawer {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   }
   @keyframes fade {
     from {

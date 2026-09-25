@@ -194,6 +194,13 @@ public class MainActivity extends AppCompatActivity {
                         return serveCaptureFile(path.substring("/__capture__/".length()), request);
                     }
 
+                    // Nova's media routes (thumbnails, file contents) take
+                    // their arguments in the query string, which the asset
+                    // loader would drop.
+                    if (path != null && path.startsWith("/nova/")) {
+                        return serveMedia(request.getUrl());
+                    }
+
                     // For regular assets, use the asset loader
                     return assetLoader.shouldInterceptRequest(request.getUrl());
                 }
@@ -345,6 +352,40 @@ public class MainActivity extends AppCompatActivity {
         String abs = file.getAbsolutePath();
         String rel = abs.startsWith(base) ? abs.substring(base.length()) : file.getName();
         return "/__capture__/" + Uri.encode(rel, "/");
+    }
+
+    /**
+     * Serve one of Nova's /nova/ media URLs (icons, thumbnails, raw files) from
+     * Go with its query string intact. The bridge only returns the body, so
+     * the type is sniffed, or taken from the file name for raw files.
+     */
+    private WebResourceResponse serveMedia(Uri url) {
+        String path = url.getPath();
+        String query = url.getQuery();
+        String full = query == null || query.isEmpty() ? path : path + "?" + query;
+        byte[] data = bridge.serveAsset(full, "GET", "{}");
+        if (data == null || data.length == 0) {
+            return new WebResourceResponse("text/plain", "UTF-8", 404, "Not Found",
+                    new java.util.HashMap<>(), new java.io.ByteArrayInputStream(new byte[0]));
+        }
+        String mime = null;
+        String file = url.getQueryParameter("path");
+        String head = new String(data, 0, Math.min(data.length, 256), java.nio.charset.StandardCharsets.UTF_8);
+        if (path.equals("/nova/raw") && file != null) {
+            mime = bridge.getAssetMimeType(file);
+        } else if (head.contains("<svg")) {
+            mime = "image/svg+xml";
+        } else {
+            try {
+                mime = java.net.URLConnection.guessContentTypeFromStream(new java.io.ByteArrayInputStream(data));
+            } catch (java.io.IOException ignored) {
+                // fall through
+            }
+        }
+        if (mime == null || mime.isEmpty()) mime = "application/octet-stream";
+        java.util.Map<String, String> headers = new java.util.HashMap<>();
+        headers.put("Cache-Control", "max-age=3600");
+        return new WebResourceResponse(mime, null, 200, "OK", headers, new java.io.ByteArrayInputStream(data));
     }
 
     /**
