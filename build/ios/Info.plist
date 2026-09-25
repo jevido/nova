@@ -62,5 +62,7 @@
     <key>CFBundleGetInfoString</key>
     <string>File manager for nova.storage</string>
     
+    <key>NSCameraUsageDescription</key>
+    <string>Nova uses the camera to take photos and upload them to your files.</string>
 </dict>
 </plist>

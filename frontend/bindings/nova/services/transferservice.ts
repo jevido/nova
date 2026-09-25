@@ -19,6 +19,14 @@ export function Cancel(id: number): $CancellablePromise<void> {
 }
 
 /**
+ * CapturePhoto opens the phone's camera. The photo arrives in the page as
+ * the "common:capture" event, which hands its path to UploadCapture.
+ */
+export function CapturePhoto(): $CancellablePromise<void> {
+    return $Call.ByID(1625204876);
+}
+
+/**
  * ClearFinished forgets transfers that are no longer running.
  */
 export function ClearFinished(): $CancellablePromise<void> {
@@ -74,4 +82,13 @@ export function PickAndUpload(dir: string, folders: boolean): $CancellablePromis
  */
 export function Upload(dir: string, localPaths: string[] | null): $CancellablePromise<$models.Transfer> {
     return $Call.ByID(1214201023, dir, localPaths);
+}
+
+/**
+ * UploadCapture uploads a photo or video the camera just took into dir,
+ * named after when it was taken like camera apps do (IMG_20260925_143210.jpg),
+ * and deletes the local copy once it is uploaded.
+ */
+export function UploadCapture(dir: string, localPath: string): $CancellablePromise<$models.Transfer> {
+    return $Call.ByID(561081367, dir, localPath);
 }

@@ -48,4 +48,9 @@ export interface Prefs {
      */
     "starred": string[] | null;
     "foldersFirst": boolean;
+
+    /**
+     * last version whose What's New was shown
+     */
+    "seenVersion": string;
 }

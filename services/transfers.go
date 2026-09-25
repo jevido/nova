@@ -253,18 +253,58 @@ func (s *TransferService) PickAndUpload(dir string, folders bool) (*Transfer, er
 
 // Upload uploads local files and folders into the remote dir.
 func (s *TransferService) Upload(dir string, localPaths []string) (Transfer, error) {
-	dir, err := checkPath(dir)
-	if err != nil {
+	t, _, err := s.upload(dir, localPaths)
+	return t, err
+}
+
+// CapturePhoto opens the phone's camera. The photo arrives in the page as
+// the "common:capture" event, which hands its path to UploadCapture.
+func (s *TransferService) CapturePhoto() error {
+	if !platform.Mobile {
+		return errors.New("taking photos is only available on phones")
+	}
+	application.Mobile.CapturePhoto()
+	return nil
+}
+
+// UploadCapture uploads a photo or video the camera just took into dir,
+// named after when it was taken like camera apps do (IMG_20260925_143210.jpg),
+// and deletes the local copy once it is uploaded.
+func (s *TransferService) UploadCapture(dir, localPath string) (Transfer, error) {
+	ext := strings.ToLower(filepath.Ext(localPath))
+	prefix := "IMG_"
+	if ext == ".mp4" || ext == ".mov" {
+		prefix = "VID_"
+	}
+	named := filepath.Join(filepath.Dir(localPath), prefix+time.Now().Format("20060102_150405")+ext)
+	if err := os.Rename(localPath, named); err != nil {
 		return Transfer{}, err
 	}
+	t, j, err := s.upload(dir, []string{named})
+	if err != nil {
+		os.Remove(named)
+		return t, err
+	}
+	go func() {
+		<-j.done
+		os.Remove(named)
+	}()
+	return t, nil
+}
+
+func (s *TransferService) upload(dir string, localPaths []string) (Transfer, *job, error) {
+	dir, err := checkPath(dir)
+	if err != nil {
+		return Transfer{}, nil, err
+	}
 	if len(localPaths) == 0 {
-		return Transfer{}, errors.New("nothing to upload")
+		return Transfer{}, nil, errors.New("nothing to upload")
 	}
 	title := filepath.Base(localPaths[0])
 	if len(localPaths) > 1 {
 		title = fmt.Sprintf("%d items", len(localPaths))
 	}
-	return s.enqueue(KindUpload, title, dir, func(j *job) error {
+	j := s.enqueueJob(KindUpload, title, dir, func(j *job) error {
 		// Never overwrite: clashing top-level names get "name (copy)" like Copy does.
 		taken := map[string]bool{}
 		if l, err := s.client.Stat(j.ctx, dir); err == nil {
@@ -324,7 +364,8 @@ func (s *TransferService) Upload(dir string, localPaths []string) (Transfer, err
 		}
 		emit(EventChanged, dir)
 		return nil
-	}), nil
+	})
+	return j.snapshot(), j, nil
 }
 
 func (s *TransferService) uploadOne(j *job, f localFile) error {

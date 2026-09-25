@@ -21,3 +21,12 @@ import * as $models from "./models.js";
 export function Current(): $CancellablePromise<$models.SystemTheme> {
     return $Call.ByID(975691061);
 }
+
+/**
+ * WindowColour is what a new window shows before its page has painted:
+ * the page background Nova will use, so opening a window doesn't flash.
+ * pref is the style preference ("system", "light" or "dark").
+ */
+export function WindowColour(pref: string): $CancellablePromise<[number, number, number]> {
+    return $Call.ByID(1913243168, pref);
+}

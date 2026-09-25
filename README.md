@@ -202,7 +202,9 @@ that key is used for the session only and is never written to disk.
 
 ### Releasing
 
-Push a version tag; CI builds everything and publishes a GitHub release:
+Add a section for the version to `CHANGELOG.md` first: the app shows it in
+the What's New dialog after updating, and CI uses it as the release notes.
+Then push a version tag; CI builds everything and publishes a GitHub release:
 
 ```sh
 git tag v0.2.0

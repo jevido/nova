@@ -375,6 +375,11 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: CHANGELOG.md
+          sparse-checkout-cone-mode: false
+
       - uses: actions/download-artifact@v4
         with:
           path: dist
@@ -389,7 +394,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
-          flags=(--title "Nova ${TAG#v}" --generate-notes)
+          flags=(--title "Nova ${TAG#v}")
+          # The release's CHANGELOG.md section (the What's New dialog's text)
+          # becomes the notes, without the icon names; else GitHub's own.
+          awk -v v="${TAG#v}" '
+            /^## / { on = ($2 == v || $2 == "v" v); next }
+            on { sub(/^- \[[a-z0-9-]+\] /, "- "); print }
+          ' CHANGELOG.md > notes.md
+          if [ -s notes.md ]; then flags+=(--notes-file notes.md); else flags+=(--generate-notes); fi
           # v1.2.0-rc.1 style tags become pre-releases, which the updaters skip.
           case "$TAG" in *-*) flags+=(--prerelease) ;; esac
           gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" "${flags[@]}"

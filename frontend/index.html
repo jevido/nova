@@ -5,6 +5,17 @@
     <link rel="icon" type="image/png" href="/nova.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Nova</title>
+    <script>
+      // The desktop theme applied last time (lib/theme.ts), before the app
+      // loads, so windows open in the right colours.
+      try {
+        const t = JSON.parse(localStorage.getItem("nova-theme") || "null");
+        if (t) {
+          document.documentElement.dataset.theme = t.theme;
+          for (const k in t.vars) document.documentElement.style.setProperty(k, t.vars[k]);
+        }
+      } catch {}
+    </script>
   </head>
   <body>
     <div id="app"></div>

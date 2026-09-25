@@ -48,6 +48,7 @@
         <span class="dot"></span>Nova {app.update.latestVersion} Available…
       </button>
     {/if}
+    <button class="modelbutton" onclick={() => (app.modal = { kind: "whatsnew", versions: [] })}>What's New</button>
     <button class="modelbutton" onclick={() => (app.modal = { kind: "about" })}>About Nova</button>
   </div>
 </Popover>

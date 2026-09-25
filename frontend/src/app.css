@@ -6,6 +6,7 @@
   --accent-text: #0461be; /* accent as a text/foreground color */
   --destructive: #e01b24;
   --destructive-text: #c30000;
+  --destructive-fg: #ffffff; /* text on a destructive button */
   --warning: #e5a50a;
   --success: #2ec27e;
 
@@ -204,7 +205,7 @@ textarea {
 }
 .btn.destructive {
   background: var(--destructive);
-  color: #fff;
+  color: var(--destructive-fg);
 }
 .btn.destructive:hover {
   background: color-mix(in srgb, var(--destructive) 90%, #fff);

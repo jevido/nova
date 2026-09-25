@@ -60,7 +60,8 @@ func main() {
 	}
 
 	transfers := services.NewTransferService(client)
-	windows := &WindowService{}
+	theme := services.NewThemeService()
+	windows := &WindowService{theme: theme, store: store}
 	dragTransfers = transfers
 	cleanDragExports()
 
@@ -74,7 +75,7 @@ func main() {
 			application.NewService(transfers),
 			application.NewService(windows),
 			application.NewService(services.NewUpdateService()),
-			application.NewService(services.NewThemeService()),
+			application.NewService(theme),
 			application.NewServiceWithOptions(
 				services.NewMediaService(client, icons.NewResolver()),
 				application.ServiceOptions{Route: services.MediaRoute},
@@ -115,7 +116,15 @@ func main() {
 
 // WindowService opens additional browser windows, like Nautilus' Ctrl+N.
 type WindowService struct {
-	app *application.App
+	app   *application.App
+	theme *services.ThemeService
+	store *config.Store
+}
+
+// background is the colour a new window shows until its page has painted.
+func (s *WindowService) background() application.RGBA {
+	r, g, b := s.theme.WindowColour(s.store.Get().Prefs.Theme)
+	return application.NewRGB(r, g, b)
 }
 
 // NewWindow opens a window showing path (the home folder when empty).
@@ -132,7 +141,7 @@ func (s *WindowService) NewWindow(path string) {
 		MinHeight:        300,
 		Frameless:        true,
 		EnableFileDrop:   true,
-		BackgroundColour: application.NewRGB(36, 36, 36),
+		BackgroundColour: s.background(),
 		URL:              u,
 		Mac: application.MacWindow{
 			InvisibleTitleBarHeight: 46,

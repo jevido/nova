@@ -1,4 +1,5 @@
 <script lang="ts">
+  import WhatsNew from "./WhatsNew.svelte";
   import * as Files from "../../bindings/nova/services/filesservice";
   import * as Updates from "../../bindings/nova/services/updateservice";
   import type { Entry, FolderSize } from "../../bindings/nova/services/models";
@@ -339,6 +340,8 @@
           {/each}
         </div>
       </div>
+    {:else if m.kind === "whatsnew"}
+      <WhatsNew versions={m.versions} onClose={() => close()} />
     {:else if m.kind === "about"}
       <div class="dialog about" bind:this={dialogEl} role="dialog" aria-modal="true" aria-label="About">
         <div class="dlg-head">
@@ -358,7 +361,7 @@
               {app.update?.state === "downloading" ? "Downloading…" : "Check for Updates"}
             </button>
           {/if}
-          <button class="link" onclick={() => Updates.OpenReleasePage()}>Release notes</button>
+          <button class="link" onclick={() => (app.modal = { kind: "whatsnew", versions: [] })}>What's New</button>
         </div>
       </div>
     {/if}
@@ -477,7 +480,7 @@
   }
   .msg-btn.destructive {
     background: var(--destructive);
-    color: #fff;
+    color: var(--destructive-fg);
   }
   .msg-btn.destructive:hover {
     background: color-mix(in srgb, var(--destructive) 90%, #fff);

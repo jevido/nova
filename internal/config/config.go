@@ -31,6 +31,7 @@ type Prefs struct {
 	Bookmarks    []Bookmark `json:"bookmarks"`   //
 	Starred      []string   `json:"starred"`     // starred file and folder paths
 	FoldersFirst bool       `json:"foldersFirst"`
+	SeenVersion  string     `json:"seenVersion"` // last version whose What's New was shown
 }
 
 type Config struct {

@@ -20,8 +20,9 @@
   function addMenu(e: MouseEvent) {
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
     app.openMenu(r.left, r.top, [
-      { label: "New Folder…", run: () => app.newFolder() },
+      { label: "Take Photo", run: () => app.takePhoto() },
       { label: "Upload Files…", run: () => app.pickUpload(false) },
+      { label: "New Folder…", run: () => app.newFolder() },
     ]);
   }
 

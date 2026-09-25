@@ -8,6 +8,7 @@ import * as Updates from "../../bindings/nova/services/updateservice";
 import * as Account from "../../bindings/nova/services/accountservice";
 import * as Theme from "../../bindings/nova/services/themeservice";
 import { applySystemTheme } from "./theme";
+import { unseen } from "./changelog";
 import type {
   Entry,
   Folder,
@@ -34,6 +35,8 @@ export type Modal =
   | { kind: "share"; entry: Entry }
   | { kind: "preview"; entry: Entry }
   | { kind: "shortcuts" }
+  /** What's New; `versions` are the releases to feature (none: the newest). */
+  | { kind: "whatsnew"; versions: string[] }
   | { kind: "about" };
 /** An icon button in a menu row; the label is its tooltip. */
 export type MenuButton = { label: string; icon: string; accel?: string; disabled?: boolean; run: () => void };
@@ -84,6 +87,7 @@ const defaultPrefs: Prefs = {
   bookmarks: [],
   starred: [],
   foldersFirst: true,
+  seenVersion: "",
 };
 
 class AppState {
@@ -216,6 +220,7 @@ class AppState {
     }
 
     Events.On("transfer", (ev) => this.onTransfer(ev.data));
+    Events.On("common:capture", (ev) => this.onCapture(ev.data));
     // Cut/Copy is shared by all Nova windows, so Paste works in any of them.
     Events.On("clipboard", (ev) => (this.clipboard = ev.data as ItemClipboard | null));
     Windows.Clipboard().then((c) => (this.clipboard = c as ItemClipboard | null));
@@ -235,8 +240,26 @@ class AppState {
       this.upload(dir, ev.data.files);
     });
     Transfers.List().then((t) => (this.transfers = t ?? []));
-    Updates.Status().then((u) => (this.update = u));
+    Updates.Status().then((u) => {
+      this.update = u;
+      this.showWhatsNew();
+    });
     Events.On("update", (ev) => this.onUpdate(ev.data));
+  }
+
+  /**
+   * After an update (or a fresh install), show once what's new in this
+   * version. Development builds don't; the menu still has it.
+   */
+  showWhatsNew() {
+    const current = this.update?.currentVersion ?? "";
+    if (!current || current === "dev" || !this.session?.signedIn || this.modal) return;
+    const seen = this.prefs.seenVersion ?? "";
+    if (seen === current) return;
+    const list = unseen(seen, current);
+    this.prefs.seenVersion = current;
+    this.savePrefs();
+    if (list.length) this.modal = { kind: "whatsnew", versions: list.map((r) => r.version) };
   }
 
   /** Forget everything tied to one account; every account's home is /me. */
@@ -256,6 +279,7 @@ class AppState {
     await this.navigate(start && (start === HOME || start.startsWith(HOME + "/")) ? start : HOME, false);
     this.refreshTrashCount();
     this.syncBookmarks();
+    this.showWhatsNew();
   }
 
   private lastBookmarkSync = 0;
@@ -863,6 +887,38 @@ class AppState {
 
   upload(dir: string, files: string[]) {
     return this.guard(() => Transfers.Upload(dir, files));
+  }
+
+  /** The folder a photo being taken goes to, while the camera is open. */
+  private captureDir: string | null = null;
+
+  /** Open the phone's camera; the photo uploads into the current folder. */
+  async takePhoto() {
+    if (!this.canWrite) return;
+    this.captureDir = this.path;
+    const ok = await this.guard(() => Transfers.CapturePhoto().then(() => true));
+    if (!ok) this.captureDir = null;
+  }
+
+  /** The camera's answer (Wails' "common:capture" event). */
+  private onCapture(data: unknown) {
+    const dir = this.captureDir;
+    this.captureDir = null;
+    let d = data as { path?: string; error?: string; cancelled?: boolean } | string | null;
+    if (typeof d === "string") {
+      try {
+        d = JSON.parse(d);
+      } catch {
+        return;
+      }
+    }
+    if (!d || typeof d !== "object" || d.cancelled || !dir) return;
+    if (d.error) {
+      this.toast(`Could not take a photo: ${d.error}`, { error: true });
+      return;
+    }
+    const path = d.path;
+    if (path) this.guard(() => Transfers.UploadCapture(dir, path));
   }
 
   pickUpload(folders = false) {

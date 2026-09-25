@@ -177,8 +177,9 @@ export interface SystemTheme {
     "fontSize": number;
 
     /**
-     * Name and Palette describe a desktop colour theme (Omarchy's
-     * colors.toml): background, foreground, accent, red, ...
+     * Name and Palette describe a desktop colour theme (an Omarchy theme,
+     * a KDE colour scheme). Palette maps the surfaces Nova draws to colours;
+     * see the Pal* keys. Missing keys keep Nova's own colours.
      */
     "name": string;
     "palette": { [_ in string]?: string } | null;

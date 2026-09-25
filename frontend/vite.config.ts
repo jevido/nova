@@ -8,6 +8,8 @@ export default defineConfig({
     host: "127.0.0.1",
     port: Number(process.env.WAILS_VITE_PORT) || 9245,
     strictPort: true,
+    // The What's New dialog reads ../CHANGELOG.md.
+    fs: { allow: [".."] },
   },
   plugins: [svelte(), wails("./bindings")],
 });

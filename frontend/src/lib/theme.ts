@@ -2,8 +2,8 @@ import type { SystemTheme } from "../../bindings/nova/services/models";
 
 // Nova's own look is libadwaita's (app.css). On top of that it takes what
 // the desktop says about itself: light or dark, the accent colour, the
-// interface font and, with an Omarchy theme, the whole colour palette, so it
-// sits next to the other apps like it belongs.
+// interface font and, with an Omarchy theme or a KDE colour scheme, the whole
+// palette, so it sits next to the other apps like it belongs.
 
 let applied: string[] = [];
 
@@ -18,29 +18,40 @@ function luminance(hex: string): number | null {
   return 0.2126 * lin(n >> 16) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
 }
 
-/** Colours for an Omarchy colors.toml, laid out like libadwaita's surfaces. */
-function paletteVars(p: Record<string, string>, dark: boolean): Record<string, string> {
-  const bg = p.background;
-  const fg = p.foreground;
-  const raised = dark ? p.lighter_background || bg : bg;
-  const v: Record<string, string> = {
-    "--bg": bg,
-    "--view-bg": bg,
-    "--header-bg": bg,
-    "--sidebar-bg": (dark ? p.lighter_background : p.darker_background) || bg,
-    "--sidebar-border": (dark ? p.darker_background : p.dark_background) || "transparent",
-    "--popover-bg": raised,
-    "--dialog-bg": raised,
-    "--card-bg": `color-mix(in srgb, ${fg} 8%, transparent)`,
-    "--fg": fg,
-    "--fg-dim": `color-mix(in srgb, ${fg} 62%, ${bg})`,
-    "--border": `color-mix(in srgb, ${fg} 16%, transparent)`,
+/** Text colour that reads on `bg`. */
+function textOn(bg: string): string | null {
+  const l = luminance(bg);
+  return l === null ? null : l > 0.3 ? "rgba(0, 0, 0, 0.8)" : "#ffffff";
+}
+
+/** CSS variables for a desktop palette (see the Pal* keys in services/theme.go). */
+function paletteVars(p: Record<string, string>): Record<string, string> {
+  const v: Record<string, string> = {};
+  const set = (key: string, ...vars: string[]) => {
+    if (p[key]) for (const name of vars) v[name] = p[key];
   };
-  if (p.red) v["--destructive"] = v["--destructive-text"] = p.red;
-  if (p.yellow) v["--warning"] = p.yellow;
-  if (p.green) v["--success"] = p.green;
+  set("window", "--bg");
+  set("view", "--view-bg");
+  set("header", "--header-bg");
+  set("sidebar", "--sidebar-bg");
+  set("popover", "--popover-bg", "--dialog-bg");
+  set("fg", "--fg");
+  set("fgDim", "--fg-dim");
+  set("accentFg", "--accent-fg");
+  set("destructive", "--destructive", "--destructive-text");
+  set("warning", "--warning");
+  set("success", "--success");
+  const bg = p.view || p.window;
+  if (p.fg && bg && !p.fgDim) v["--fg-dim"] = `color-mix(in srgb, ${p.fg} 62%, ${bg})`;
+  if (p.fg) {
+    v["--border"] = `color-mix(in srgb, ${p.fg} 16%, transparent)`;
+    v["--card-bg"] = `color-mix(in srgb, ${p.fg} 7%, transparent)`;
+    v["--sidebar-border"] = `color-mix(in srgb, ${p.fg} 8%, transparent)`;
+  }
   return v;
 }
+
+const CACHE = "nova-theme";
 
 /** Apply the desktop's look; `dark` is the scheme Nova ended up using. */
 export function applySystemTheme(t: SystemTheme | null, dark: boolean) {
@@ -51,12 +62,11 @@ export function applySystemTheme(t: SystemTheme | null, dark: boolean) {
 
   const v: Record<string, string> = {};
   const pal = t.palette && t.mode === (dark ? "dark" : "light") ? t.palette : null;
-  if (pal?.background && pal.foreground) Object.assign(v, paletteVars(pal as Record<string, string>, dark));
+  if (pal) Object.assign(v, paletteVars(pal as Record<string, string>));
 
   if (t.accent) {
     v["--accent"] = t.accent;
-    const l = luminance(t.accent);
-    v["--accent-fg"] = l !== null && l > 0.4 ? "rgba(0, 0, 0, 0.8)" : "#ffffff";
+    v["--accent-fg"] ??= textOn(t.accent) ?? "#ffffff";
     // A desktop palette picks its accent for its own background; a plain
     // accent colour is tuned for text like libadwaita does.
     v["--accent-text"] = pal
@@ -74,8 +84,17 @@ export function applySystemTheme(t: SystemTheme | null, dark: boolean) {
   else if (t.font) v["--font"] = `"${t.font.replace(/"/g, "")}", ${fallback}`;
   if (t.fontSize >= 6 && t.fontSize <= 24) v["--font-size"] = `${(t.fontSize * 4) / 3}px`;
 
+  if (pal?.destructive) v["--destructive-fg"] = textOn(pal.destructive) ?? "#ffffff";
+
   for (const [k, val] of Object.entries(v)) {
     root.style.setProperty(k, val);
     applied.push(k);
+  }
+  // index.html applies this before anything draws, so a new window starts
+  // in the desktop's colours instead of switching after a moment.
+  try {
+    localStorage.setItem(CACHE, JSON.stringify({ theme: root.dataset.theme, vars: v }));
+  } catch {
+    /* storage may be unavailable */
   }
 }
