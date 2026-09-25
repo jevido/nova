@@ -75,7 +75,7 @@ fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { Accep
   .then((rel) => {
     if (rel && rel.tag_name) {
       const date = new Date(rel.published_at).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
-      document.querySelector("[data-version]").textContent = `${rel.tag_name} is out · ${date}`;
+      document.querySelector("[data-version]").textContent = `Version ${rel.tag_name.replace(/^v/, "")} · ${date} · open source`;
       document.querySelector("[data-version-footer]").textContent = rel.tag_name;
     } else {
       document.querySelector("[data-version]").textContent = "First release coming soon";

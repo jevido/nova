@@ -6,21 +6,20 @@
   <title>Nova — a file manager for nova.storage</title>
   <meta name="description" content="Nova is a fast, native-feeling file manager for your nova.storage account on Linux, Windows, Android, iPhone and iPad. Browse, upload, preview and share your files like they're on your own disk.">
   <meta name="theme-color" content="#1a0d22">
-  <link rel="icon" type="image/png" href="assets/icon.png">
-  <link rel="apple-touch-icon" href="assets/icon.png">
+  <link rel="icon" type="image/png" href="assets/nova-logo.png">
+  <link rel="apple-touch-icon" href="assets/nova-logo.png">
   <meta property="og:title" content="Nova — a file manager for nova.storage">
   <meta property="og:description" content="Your nova.storage files, on your desktop and phone. Free and open source.">
-  <meta property="og:image" content="https://nova.jevido.app/assets/icon.png">
+  <meta property="og:image" content="https://nova.jevido.app/assets/nova-logo.png">
   <meta property="og:url" content="https://nova.jevido.app/">
   <meta name="twitter:card" content="summary">
   <link rel="stylesheet" href="style.css">
   <script src="main.js" defer></script>
 </head>
 <body>
-  <div class="glow" aria-hidden="true"></div>
-
   <header class="nav">
-    <a class="brand" href="#top"><img src="assets/icon.png" alt="" width="32" height="32"> Nova</a>
+    <div class="nav-inner">
+    <a class="brand" href="#top"><img src="assets/nova-header.webp" alt="Nova" width="92" height="40"></a>
     <nav>
       <a href="#features">Features</a>
       <a href="#download">Download</a>
@@ -29,15 +28,16 @@
         <span>GitHub</span>
       </a>
     </nav>
+    </div>
   </header>
 
   <main id="top">
     <!-- Hero -->
     <section class="hero">
       <div class="hero-copy">
-        <p class="eyebrow"><span class="dot"></span> <span data-version>Free &amp; open source</span></p>
-        <h1>Your cloud files,<br><span class="grad">right where they belong.</span></h1>
-        <p class="lede">Nova is a file manager for your <a href="https://nova.storage">nova.storage</a> account. It looks and feels like the file manager you already know, so your cloud behaves like just another folder, on your desktop and on your phone.</p>
+        <p class="eyebrow" data-version>Free and open source</p>
+        <h1>A proper file manager for <span class="accent">nova.storage</span></h1>
+        <p class="lede">Nova puts your <a href="https://nova.storage">nova.storage</a> files in a window that works like GNOME Files: a sidebar, a path bar, grid and list views, drag and drop, and the usual shortcuts. On your computer and on your phone.</p>
 
         <div class="cta" data-primary>
           <a class="btn primary" data-dl="linux" href="#download">
@@ -46,7 +46,7 @@
           </a>
           <a class="btn ghost" href="#download">All downloads</a>
         </div>
-        <p class="fine">Linux, Windows, Android, iPhone and iPad. No account with us, no tracking. Just you and your storage.</p>
+        <p class="fine">Linux, Windows, Android, iPhone and iPad. No tracking, no extra account.</p>
       </div>
 
       <div class="hero-art" aria-hidden="true">
@@ -96,51 +96,21 @@
 
     <!-- Features -->
     <section id="features" class="features">
-      <h2>Feels like home.<br><span class="muted">Because it's modelled on it.</span></h2>
-      <p class="section-lede">Nova takes its cues from GNOME Files: headerbar and path bar, places sidebar, icon and list views, right-click menus and the shortcuts your fingers already know. On Linux it even uses your system icon theme, so it fits right in.</p>
+      <h2>What it does</h2>
+      <p class="section-lede">Nova copies GNOME Files where it can, down to the keyboard shortcuts. On Linux it uses your icon theme too, so it looks like the rest of your desktop.</p>
 
-      <div class="cards">
-        <article>
-          <div class="ic">⇅</div>
-          <h3>Drag, drop, done</h3>
-          <p>Drop files or whole folders from your desktop onto the window to upload them. Transfers run in the background with progress, speed and cancel.</p>
-        </article>
-        <article>
-          <div class="ic">↶</div>
-          <h3>Undo everything</h3>
-          <p>Renamed the wrong file? Moved it somewhere silly? <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes rename, move and trash.</p>
-        </article>
-        <article>
-          <div class="ic">◉</div>
-          <h3>Quick preview</h3>
-          <p>Hit <kbd>Space</kbd> to peek at images, video, audio and text without downloading a thing.</p>
-        </article>
-        <article>
-          <div class="ic">🗑</div>
-          <h3>Trash that syncs</h3>
-          <p>Deleted files go to a trash on the server, so you can restore them from any device.</p>
-        </article>
-        <article>
-          <div class="ic">⌕</div>
-          <h3>Find it fast</h3>
-          <p>Search the current folder and everything below it with <kbd>Ctrl</kbd>+<kbd>F</kbd>. Star files and bookmark folders for the sidebar.</p>
-        </article>
-        <article>
-          <div class="ic">🔗</div>
-          <h3>Share in a click</h3>
-          <p>Flip on a public link from the Properties dialog. You also get folder sizes and checksums there.</p>
-        </article>
-        <article>
-          <div class="ic">◐</div>
-          <h3>Light &amp; dark</h3>
-          <p>Follows your system theme, or pick one yourself. Grid or list, zoom with <kbd>Ctrl</kbd>+scroll, multiple windows.</p>
-        </article>
-        <article>
-          <div class="ic">↻</div>
-          <h3>Keeps itself fresh</h3>
-          <p>Nova checks for new versions, downloads and verifies them in the background, then asks you to restart.</p>
-        </article>
-      </div>
+      <dl class="features-list">
+        <div><dt>Upload by dragging <span class="keys">drag &amp; drop</span></dt><dd>Drop files or whole folders onto the window. Transfers run in the background with progress, speed and a cancel button.</dd></div>
+        <div><dt>Undo <span class="keys"><kbd>Ctrl</kbd> <kbd>Z</kbd></span></dt><dd>Renamed or moved the wrong thing? Undo works for rename, move and trash.</dd></div>
+        <div><dt>Preview <span class="keys"><kbd>Space</kbd></span></dt><dd>Look at images, video, audio and text without downloading them first.</dd></div>
+        <div><dt>Search <span class="keys"><kbd>Ctrl</kbd> <kbd>F</kbd></span></dt><dd>Searches the current folder and everything below it.</dd></div>
+        <div><dt>Your own sidebar</dt><dd>Drag folders into the sidebar and reorder them. The bookmarks are the same ones the nova.storage website uses.</dd></div>
+        <div><dt>Trash on the server</dt><dd>Deleted files go to a trash in your storage, so you can restore them from any device.</dd></div>
+        <div><dt>Public links</dt><dd>Turn sharing on from the Properties dialog, which also shows folder sizes and checksums.</dd></div>
+        <div><dt>Usage at a glance</dt><dd>Settings shows your storage, transfer and download graphs, and can set up a sensible folder layout.</dd></div>
+        <div><dt>Light and dark</dt><dd>Follows your system, or pick one. Grid or list, zoom with <kbd>Ctrl</kbd> + scroll, several windows.</dd></div>
+        <div><dt>Updates itself</dt><dd>New versions are downloaded and checked against the release checksums in the background. You restart when it suits you.</dd></div>
+      </dl>
     </section>
 
     <!-- Download -->
@@ -252,9 +222,9 @@
 
     <!-- Closing -->
     <section class="closing">
-      <img src="assets/icon.png" alt="" width="96" height="96">
-      <h2>Sign in and go.</h2>
-      <p>Use your nova.storage username and password, or paste an API key. That's the whole setup.</p>
+      <img src="assets/nova-logo.png" alt="" width="72" height="72">
+      <h2>Signing in</h2>
+      <p>Use your nova.storage username and password, or paste an API key. There's nothing else to set up.</p>
       <a class="btn primary" href="#download">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 19h16" /></svg>
         <span><strong>Download Nova</strong></span>
@@ -263,7 +233,7 @@
   </main>
 
   <footer>
-    <p><img src="assets/icon.png" alt="" width="20" height="20"> Nova <span data-version-footer></span></p>
+    <p><img src="assets/nova-logo.png" alt="" width="20" height="20"> Nova <span data-version-footer></span></p>
     <p>
       <a href="https://github.com/jevido/nova">Source</a>
       <a href="https://github.com/jevido/nova/releases">Releases</a>
