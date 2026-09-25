@@ -1,10 +1,17 @@
 name: CI
 
+# Pushes to main and pull requests only run the tests. The Linux packages
+# and the APK are built for version tags (which publish a release) and for
+# manual runs (Actions > CI > Run workflow), which keep them as artifacts.
 on:
   push:
     branches: [main]
     tags: ["v*"]
+    # The website deploys itself from Coolify. Path filters don't apply to
+    # tag pushes, so releases always build.
+    paths-ignore: ["website/**"]
   pull_request:
+    paths-ignore: ["website/**"]
   workflow_dispatch:
 
 permissions:
@@ -59,6 +66,7 @@ jobs:
 
   version:
     name: Version
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.v.outputs.version }}
@@ -72,7 +80,7 @@ jobs:
             stamp="$version"
           else
             version="0.1.0-dev.${GITHUB_RUN_NUMBER}"
-            # Builds from main are stamped "dev" so they never replace
+            # Manual builds are stamped "dev" so they never replace
             # themselves with an older release.
             stamp="dev"
           fi
@@ -84,6 +92,7 @@ jobs:
   linux:
     name: Linux packages
     needs: [test, version]
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -140,6 +149,7 @@ jobs:
   android:
     name: Android APK
     needs: [test, version]
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4

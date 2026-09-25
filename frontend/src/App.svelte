@@ -9,8 +9,10 @@
   import Modals from "./components/Modals.svelte";
   import Sidebar from "./components/Sidebar.svelte";
   import Toasts from "./components/Toasts.svelte";
+  import Icon from "./components/Icon.svelte";
+  import ViewControls from "./components/ViewControls.svelte";
 
-  let sidebarWidth = $state(200);
+  let sidebarWidth = $state(240);
   let width = $state(innerWidth);
   // Wide windows dock the sidebar; phones and narrow windows use a drawer.
   const docked = $derived(!app.mobile && width >= 560);
@@ -18,7 +20,7 @@
 
   onMount(() => {
     try {
-      sidebarWidth = Number(localStorage.getItem("sidebarWidth")) || 200;
+      sidebarWidth = Number(localStorage.getItem("sidebarWidth")) || 240;
     } catch {
       /* storage may be unavailable */
     }
@@ -33,7 +35,7 @@
     e.preventDefault();
     const x0 = e.clientX;
     const w0 = sidebarWidth;
-    const move = (ev: MouseEvent) => (sidebarWidth = Math.max(140, Math.min(400, w0 + ev.clientX - x0)));
+    const move = (ev: MouseEvent) => (sidebarWidth = Math.max(180, Math.min(400, w0 + ev.clientX - x0)));
     const up = () => {
       removeEventListener("mousemove", move);
       removeEventListener("mouseup", up);
@@ -45,6 +47,15 @@
     };
     addEventListener("mousemove", move);
     addEventListener("mouseup", up);
+  }
+
+  function toggleSidebar() {
+    if (docked) {
+      app.prefs.sidebarOpen = !app.prefs.sidebarOpen;
+      app.savePrefs();
+    } else {
+      app.drawerOpen = !app.drawerOpen;
+    }
   }
 
   function inText(e: KeyboardEvent) {
@@ -83,7 +94,11 @@
     else if (ctrl && k === "-") setZoom(app.prefs.zoom - 1);
     else if (ctrl && k === "0") setZoom(1);
     else if (k === "F9") (app.prefs.sidebarOpen = !app.prefs.sidebarOpen), app.savePrefs();
-    else if (k === "F10") (document.querySelector('.headerbar [title^="Menu"]') as HTMLElement)?.click();
+    else if (k === "F10") {
+      // The main menu lives in the sidebar; open the drawer first when it is hidden.
+      if (!docked && !app.drawerOpen) app.drawerOpen = true;
+      queueMicrotask(() => (document.querySelector("[data-main-menu]") as HTMLElement)?.click());
+    }
     else if (ctrl && (k === "?" || (e.shiftKey && k === "/"))) app.modal = { kind: "shortcuts" };
     else if (e.altKey && k === "ArrowLeft") app.back();
     else if (e.altKey && k === "ArrowRight") app.forward();
@@ -132,24 +147,34 @@
   <Login />
 {:else}
   <div class="window">
-    <HeaderBar showDrawerButton={!docked} />
-    <div class="body">
-      {#if !docked && app.drawerOpen}
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
+    {#if showSidebar}
+      <div class="side" style:width="{sidebarWidth}px">
+        <Sidebar />
         <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div class="scrim" onclick={() => (app.drawerOpen = false)}></div>
-        <div class="drawer"><Sidebar /></div>
+        <div class="grip" onmousedown={startResize}></div>
+      </div>
+    {/if}
+    <div class="content">
+      <HeaderBar compact={!docked} sidebarShown={showSidebar} onToggleSidebar={toggleSidebar} />
+      <div class="body">
+        <FileView />
+        <Toasts />
+      </div>
+      {#if !docked}
+        <footer class="bottombar">
+          <button class="btn image flat" title="Back" disabled={!app.history.length} onclick={() => app.back()}><Icon name="go-previous" /></button>
+          <button class="btn image flat" title="Forward" disabled={!app.future.length} onclick={() => app.forward()}><Icon name="go-next" /></button>
+          <span class="grow"></span>
+          <ViewControls />
+        </footer>
       {/if}
-      {#if showSidebar}
-        <div class="side" style:width="{sidebarWidth}px">
-          <Sidebar />
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div class="grip" onmousedown={startResize}></div>
-        </div>
-      {/if}
-      <FileView />
-      <Toasts />
     </div>
+    {#if !docked && app.drawerOpen}
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="scrim" onclick={() => (app.drawerOpen = false)}></div>
+      <div class="drawer"><Sidebar onHide={() => (app.drawerOpen = false)} /></div>
+    {/if}
   </div>
 {/if}
 
@@ -164,9 +189,28 @@
     justify-content: center;
   }
   .window {
+    position: relative;
     height: 100%;
     display: flex;
+    background: var(--view-bg);
+  }
+  .content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
     flex-direction: column;
+  }
+  .bottombar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 46px;
+    padding: 6px 7px;
+    background: var(--header-bg);
+    box-shadow: 0 -1px var(--shade);
+  }
+  .grow {
+    flex: 1;
   }
   .body {
     position: relative;
@@ -192,7 +236,7 @@
     left: 0;
     z-index: 21;
     width: min(280px, 82vw);
-    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 0 1px var(--shade), 2px 0 16px rgba(0, 0, 0, 0.3);
     animation: slide-in 180ms ease-out;
   }
   @keyframes fade {
@@ -209,6 +253,7 @@
     position: absolute;
     top: 0;
     right: -3px;
+    --wails-draggable: no-drag;
     width: 6px;
     height: 100%;
     cursor: col-resize;

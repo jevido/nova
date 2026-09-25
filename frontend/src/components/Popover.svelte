@@ -10,7 +10,7 @@
   }: { anchor: HTMLElement | undefined; open: boolean; align?: "start" | "center" | "end"; children: Snippet } = $props();
 
   let el = $state<HTMLDivElement>();
-  let pos = $state({ x: 0, y: 0, arrow: 0 });
+  let pos = $state({ x: 0, y: 0, arrow: 0, up: false });
 
   $effect(() => {
     if (!open || !anchor) return;
@@ -21,7 +21,9 @@
       const cx = a.left + a.width / 2;
       let x = align === "start" ? a.left : align === "end" ? a.right - r.width : cx - r.width / 2;
       x = Math.max(6, Math.min(innerWidth - r.width - 6, x));
-      pos = { x, y: a.bottom + 8, arrow: cx - x };
+      // Open upwards from anchors near the bottom, like the bottom toolbar.
+      const up = a.bottom + 8 + r.height > innerHeight - 6 && a.top - 8 - r.height >= 6;
+      pos = { x, y: up ? a.top - 8 - r.height : a.bottom + 8, arrow: cx - x, up };
       el.querySelector<HTMLElement>("[autofocus], input, button")?.focus();
     });
   });
@@ -45,6 +47,7 @@
     style:left="{pos.x}px"
     style:top="{pos.y}px"
     style:--arrow="{pos.arrow}px"
+    class:up={pos.up}
     onkeydown={(e) => {
       if (e.key === "Escape") {
         e.stopPropagation();
@@ -63,11 +66,10 @@
     z-index: 900;
     padding: 6px;
     background: var(--popover-bg);
-    border: 1px solid rgba(0, 0, 0, 0.23);
-    border-radius: var(--radius);
-    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    box-shadow: var(--menu-shadow);
     color: var(--fg);
-    animation: pop 100ms ease-out;
+    animation: pop 120ms ease-out;
     --wails-draggable: no-drag;
   }
   .popover:focus {
@@ -76,30 +78,35 @@
   .popover::before {
     content: "";
     position: absolute;
-    top: -7px;
+    top: -6px;
     left: calc(var(--arrow) - 7px);
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
     background: var(--popover-bg);
-    border-left: 1px solid rgba(0, 0, 0, 0.23);
-    border-top: 1px solid rgba(0, 0, 0, 0.23);
+    border-radius: 3px 0 0 0;
     transform: rotate(45deg);
+  }
+  .popover.up::before {
+    top: auto;
+    bottom: -6px;
+    border-radius: 0 0 3px 0;
   }
   @keyframes pop {
     from {
       opacity: 0;
-      transform: translateY(-4px);
+      transform: scale(0.97);
     }
   }
   :global(.popover .modelbutton) {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 8px;
     width: 100%;
-    min-height: 30px;
-    padding: 4px 10px;
+    min-height: 32px;
+    padding: 0 12px;
     border: 0;
-    border-radius: 4px;
+    border-radius: 6px;
     background: none;
     text-align: left;
     color: var(--fg);
@@ -107,46 +114,46 @@
   }
   :global(.popover .modelbutton:hover),
   :global(.popover .modelbutton:focus-visible) {
-    background: var(--row-hover);
-    background: color-mix(in srgb, var(--fg) 8%, transparent);
+    background: var(--hover);
+  }
+  :global(.popover .modelbutton:active) {
+    background: var(--active);
+  }
+  :global(.popover .modelbutton:disabled) {
+    opacity: 0.5;
+    background: none;
   }
   :global(.popover .modelbutton .accel) {
     margin-left: auto;
-    padding-left: 20px;
+    padding-left: 24px;
     color: var(--fg-dim);
-    font-size: 13px;
   }
-  :global(.popover .modelbutton .radio) {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    border: 1px solid var(--border-dark);
-    background: var(--entry-bg);
-    flex: none;
-  }
-  :global(.popover .modelbutton .radio.on) {
-    border: 4px solid var(--accent);
-  }
+  :global(.popover .modelbutton .radio),
   :global(.popover .modelbutton .checkbox) {
     width: 14px;
     height: 14px;
-    border-radius: 3px;
-    border: 1px solid var(--border-dark);
-    background: var(--entry-bg);
     flex: none;
     position: relative;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--fg) 30%, transparent);
+  }
+  :global(.popover .modelbutton .checkbox) {
+    border-radius: 4px;
+  }
+  :global(.popover .modelbutton .radio.on) {
+    box-shadow: inset 0 0 0 4px var(--accent);
   }
   :global(.popover .modelbutton .checkbox.on) {
     background: var(--accent);
-    border-color: var(--accent-dim);
+    box-shadow: none;
   }
   :global(.popover .modelbutton .checkbox.on::after) {
     content: "";
     position: absolute;
-    left: 4px;
-    top: 1px;
-    width: 4px;
-    height: 8px;
+    left: 4.5px;
+    top: 1.5px;
+    width: 3.5px;
+    height: 7.5px;
     border: solid #fff;
     border-width: 0 2px 2px 0;
     transform: rotate(45deg);

@@ -29,7 +29,7 @@
   <header class="bar">
     <span class="title">Nova</span>
     {#if !app.mobile}
-      <button class="btn image flat round" title="Close" onclick={() => Window.Close()}><Icon name="window-close" /></button>
+      <button class="btn image round" title="Close" onclick={() => Window.Close()}><Icon name="window-close" /></button>
     {/if}
   </header>
   <form class="card" onsubmit={submit}>
@@ -37,7 +37,7 @@
     <h1>Sign in to Nova</h1>
     <p class="dim">Your nova.storage files, right on your desktop.</p>
 
-    <div class="linked modes">
+    <div class="modes">
       <button type="button" class="btn" class:checked={mode === "password"} onclick={() => (mode = "password")}>Password</button>
       <button type="button" class="btn" class:checked={mode === "key"} onclick={() => (mode = "key")}>API Key</button>
     </div>
@@ -67,10 +67,8 @@
   .bar {
     display: flex;
     align-items: center;
-    min-height: 46px;
-    padding: 6px;
-    background: linear-gradient(to top, var(--header-bottom), var(--header-top));
-    border-bottom: 1px solid var(--header-border);
+    min-height: 47px;
+    padding: 6px 7px;
     --wails-draggable: drag;
   }
   .title {
@@ -78,14 +76,6 @@
     text-align: center;
     font-weight: bold;
     padding-left: 30px;
-  }
-  .round {
-    width: 24px;
-    height: 24px;
-    min-width: 24px;
-    min-height: 24px;
-    padding: 0;
-    border-radius: 50%;
   }
   .card {
     margin: auto;
@@ -101,23 +91,46 @@
   }
   h1 {
     margin: 6px 0 0;
-    font-size: 22px;
+    font-size: 2em;
+    font-weight: 800;
   }
   p {
     margin: 0 0 8px;
   }
+  /* AdwToggleGroup */
   .modes {
     display: flex;
-    margin-bottom: 4px;
+    gap: 3px;
+    padding: 3px;
+    margin-bottom: 6px;
+    border-radius: 9px;
+    background: var(--btn-bg);
   }
   .modes .btn {
     flex: 1;
+    min-height: 30px;
+    background: none;
+    box-shadow: none;
+  }
+  .modes .btn:hover {
+    background: var(--hover);
+  }
+  .modes .btn.checked {
+    background: var(--view-bg);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+  :global(:root[data-theme="dark"]) .modes .btn.checked {
+    background: color-mix(in srgb, #fff 15%, var(--bg));
   }
   .mono {
-    font-family: monospace;
+    font-family: var(--mono);
   }
   .submit {
-    margin-top: 6px;
+    margin-top: 12px;
+    align-self: center;
+    border-radius: 9999px;
+    padding: 10px 32px;
+    min-width: 200px;
   }
   .error {
     color: var(--destructive);

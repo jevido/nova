@@ -22,58 +22,62 @@
 </div>
 
 <style>
+  /* AdwToastOverlay: toasts stack at the bottom centre */
   .toasts {
     position: absolute;
-    top: 0;
+    bottom: 12px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 700;
     display: flex;
-    flex-direction: column;
+    flex-direction: column-reverse;
     align-items: center;
+    gap: 6px;
     pointer-events: none;
     max-width: calc(100% - 24px);
   }
-  /* GtkRevealer'd in-app notification, as Nautilus uses for undo. */
   .app-notification {
     pointer-events: auto;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 8px 8px 16px;
-    min-width: 300px;
+    gap: 6px;
+    min-height: 42px;
+    padding: 5px 5px 5px 18px;
     max-width: 640px;
-    background: var(--notification-bg);
+    background: var(--toast-bg);
     color: #fff;
-    border-radius: 0 0 6px 6px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-    animation: slide 180ms ease-out;
+    border-radius: 9999px;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 2px 8px 2px rgba(0, 0, 0, 0.25);
+    animation: rise 200ms ease-out;
   }
   .app-notification.error {
-    background: color-mix(in srgb, #a51d2d 90%, transparent);
+    background: color-mix(in srgb, #c01c28 94%, transparent);
   }
   .text {
     flex: 1;
     min-width: 0;
+    margin-right: 6px;
     overflow-wrap: anywhere;
   }
   .app-notification .btn {
     color: #fff;
     background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(0, 0, 0, 0.4);
-    box-shadow: none;
-    min-height: 30px;
+    min-height: 32px;
+    border-radius: 9999px;
+    padding: 4px 14px;
   }
   .app-notification .btn:hover {
     background: rgba(255, 255, 255, 0.2);
   }
   .app-notification .close {
     background: none;
-    border-color: transparent;
+    min-width: 32px;
+    padding: 0;
   }
-  @keyframes slide {
+  @keyframes rise {
     from {
-      transform: translateY(-100%);
+      opacity: 0;
+      transform: translateY(12px) scale(0.96);
     }
   }
 </style>

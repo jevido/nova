@@ -62,7 +62,21 @@ fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { Accep
     } else {
       document.querySelector("[data-version]").textContent = "First release coming soon";
       document.querySelector("[data-release-note]").innerHTML =
-        `No release is published yet, so these links won't work just yet. In the meantime you can grab a build from the latest <a href="https://github.com/${REPO}/actions/workflows/ci.yml">CI run</a>.`;
+        `No release is published yet, so these links won't work just yet. Check back soon, or watch the project on <a href="https://github.com/${REPO}">GitHub</a>.`;
     }
   })
   .catch(() => {});
+
+// Small screens: the sidebar is a drawer behind the menu button.
+const wrap = document.querySelector(".wrap");
+const menuBtn = document.querySelector("[data-menu]");
+const setMenu = (open) => {
+  wrap.classList.toggle("nav_open", open);
+  menuBtn.setAttribute("aria-expanded", String(open));
+};
+menuBtn.addEventListener("click", () => setMenu(!wrap.classList.contains("nav_open")));
+document.querySelector("[data-menu-close]").addEventListener("click", () => setMenu(false));
+document.querySelectorAll("#nav a").forEach((a) => a.addEventListener("click", () => setMenu(false)));
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") setMenu(false);
+});

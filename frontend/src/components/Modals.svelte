@@ -380,11 +380,18 @@
       opacity: 0;
     }
   }
+  @keyframes dlg-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+  }
+  /* AdwDialog */
   .dialog {
-    background: var(--bg);
-    border: 1px solid rgba(0, 0, 0, 0.3);
-    border-radius: 8px;
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
+    background: var(--dialog-bg);
+    border-radius: 15px;
+    box-shadow: var(--dialog-shadow);
+    animation: dlg-in 180ms ease-out;
     overflow: hidden;
     max-width: calc(100vw - 32px);
     max-height: calc(100vh - 32px);
@@ -395,10 +402,8 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    min-height: 46px;
-    padding: 6px;
-    background: linear-gradient(to top, var(--header-bottom), var(--header-top));
-    border-bottom: 1px solid var(--header-border);
+    min-height: 47px;
+    padding: 6px 7px;
   }
   .dlg-title {
     flex: 1;
@@ -410,61 +415,68 @@
     padding: 0 8px;
   }
   .dlg-head .round {
-    width: 24px;
-    height: 24px;
-    min-width: 24px;
-    min-height: 24px;
-    padding: 0;
-    border-radius: 50%;
+    background: var(--btn-bg);
+  }
+  .dlg-head .round:hover {
+    background: var(--btn-hover);
   }
   .small {
     font-size: 12px;
   }
 
-  /* GtkMessageDialog */
+  /* AdwAlertDialog */
   .message {
-    width: 420px;
+    width: 372px;
   }
   .msg-body {
-    padding: 24px 30px 20px;
+    padding: 32px 30px 24px;
     text-align: center;
   }
   .msg-title {
-    font-weight: bold;
-    font-size: 15px;
-    margin-bottom: 10px;
+    font-weight: 800;
+    font-size: 1.36em;
+    margin-bottom: 12px;
   }
   .msg-text {
     color: var(--fg);
-    opacity: 0.9;
   }
   .msg-buttons {
     display: flex;
-    border-top: 1px solid var(--border);
+    gap: 12px;
+    padding: 0 24px 24px;
   }
   .msg-btn {
     flex: 1;
-    min-height: 44px;
+    min-height: 42px;
     border: 0;
-    background: var(--bg);
+    border-radius: 12px;
+    background: var(--btn-bg);
+    font-weight: bold;
     outline: none;
   }
-  .msg-btn + .msg-btn {
-    border-left: 1px solid var(--border);
-  }
   .msg-btn:hover {
-    background: color-mix(in srgb, var(--fg) 6%, var(--bg));
+    background: var(--btn-hover);
+  }
+  .msg-btn:active {
+    background: var(--btn-active);
   }
   .msg-btn:focus-visible {
-    box-shadow: inset 0 0 0 2px var(--focus);
+    outline: 2px solid var(--focus);
+    outline-offset: -2px;
   }
   .msg-btn.suggested {
-    color: var(--accent);
-    font-weight: bold;
+    background: var(--accent);
+    color: var(--accent-fg);
+  }
+  .msg-btn.suggested:hover {
+    background: color-mix(in srgb, var(--accent) 90%, #fff);
   }
   .msg-btn.destructive {
-    color: var(--destructive);
-    font-weight: bold;
+    background: var(--destructive);
+    color: #fff;
+  }
+  .msg-btn.destructive:hover {
+    background: color-mix(in srgb, var(--destructive) 90%, #fff);
   }
 
   .prompt {
@@ -506,7 +518,6 @@
   dt {
     text-align: right;
     color: var(--fg-dim);
-    font-weight: bold;
   }
   dd {
     margin: 0;
@@ -519,35 +530,40 @@
     cursor: text;
   }
   .mono {
-    font-family: monospace;
+    font-family: var(--mono);
   }
+  /* GtkSwitch, libadwaita style */
   .switch {
     position: relative;
     width: 48px;
     height: 26px;
     border-radius: 14px;
-    border: 1px solid var(--border-dark);
-    background: color-mix(in srgb, var(--fg) 12%, var(--bg));
+    border: 0;
+    background: color-mix(in srgb, var(--fg) 20%, transparent);
     padding: 0;
     outline: none;
+    transition: background 150ms;
+  }
+  .switch:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
   }
   .switch span {
     position: absolute;
-    top: 1px;
-    left: 1px;
-    width: 22px;
-    height: 22px;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
-    background: linear-gradient(to top, var(--btn-bottom), var(--btn-top));
-    border: 1px solid var(--border-dark);
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     transition: left 150ms;
   }
   .switch.on {
     background: var(--accent);
-    border-color: var(--accent-dim);
   }
   .switch.on span {
-    left: 23px;
+    left: 25px;
   }
 
   /* Preview (sushi-like) */
@@ -613,7 +629,7 @@
     margin: 0;
     padding: 16px;
     overflow: auto;
-    font: 13px/1.45 monospace;
+    font: 13px/1.45 var(--mono);
     background: #1e1e1e;
     color: #ddd;
     white-space: pre-wrap;
@@ -640,24 +656,22 @@
   }
   .sc-body h3 {
     margin: 6px 0 10px;
-    font-size: 14px;
+    font-size: 1em;
   }
   .sc-row {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
     margin-bottom: 10px;
-    font-size: 13px;
   }
   kbd {
     display: inline-block;
-    min-width: 20px;
-    padding: 1px 6px;
-    border: 1px solid var(--border);
-    border-bottom-width: 2px;
-    border-radius: 4px;
-    background: var(--view-bg);
-    font: 12px var(--font);
+    min-width: 22px;
+    padding: 1px 7px;
+    border-radius: 6px;
+    background: var(--btn-bg);
+    box-shadow: inset 0 -2px color-mix(in srgb, var(--fg) 12%, transparent);
+    font: bold 0.87em var(--font);
     text-align: center;
   }
   .about {
@@ -683,7 +697,7 @@
     margin-top: 10px;
     border: 0;
     background: none;
-    color: var(--accent);
+    color: var(--accent-text);
     text-decoration: underline;
     cursor: pointer;
   }

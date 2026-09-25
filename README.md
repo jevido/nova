@@ -7,9 +7,11 @@
 
 A file manager for [nova.storage](https://nova.storage) for your desktop and
 your Android phone, built with [Wails v3](https://v3.wails.io) (Go) and
-Svelte 5. It is modelled on GNOME Files (Nautilus) from the GTK 3 era: Adwaita
-headerbar with a path bar, places sidebar, icon and list views, GtkMenu-style
-context menus, in-app "Undo" notifications and the familiar keyboard shortcuts.
+Svelte 5. It looks and works like today's GNOME Files (Nautilus) with
+libadwaita: a sidebar with the main menu, a path bar with a folder menu, icon
+and list views, popover menus, "Undo" toasts and the familiar keyboard
+shortcuts. In narrow windows and on phones the navigation and view buttons move
+to a bottom bar.
 On the desktop, folder and file-type icons come from your system icon theme, so
 it matches the rest of your desktop.
 
@@ -62,10 +64,11 @@ Linux needs GTK 4 and WebKitGTK 6.0 (`libgtk-4-1 libwebkitgtk-6.0-4` on
 Debian/Ubuntu 24.04+, `gtk4 webkitgtk-6.0` on Arch, `gtk4 webkitgtk6.0` on
 Fedora).
 
-Every push to `main` also builds everything in
+Pushes to `main` only run the tests. To build packages without releasing,
+start the CI workflow by hand in
 [GitHub Actions](https://github.com/jevido/nova/actions/workflows/ci.yml)
-(open a run and download the `linux` or `android` artifact). Those builds don't
-update themselves.
+(**Run workflow**) and download the `linux` or `android` artifact from the run.
+Those builds don't update themselves.
 
 ### Updates
 

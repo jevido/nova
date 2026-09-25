@@ -3,6 +3,9 @@
   import { formatSize } from "../lib/format";
   import { dragLeave, dragOver, dropOn } from "../lib/dnd";
   import Icon from "./Icon.svelte";
+  import MainMenu from "./MainMenu.svelte";
+
+  let { onHide }: { onHide?: () => void } = $props();
 
   const user = $derived(app.session?.user);
   const used = $derived(user?.filesystem_storage_used ?? 0);
@@ -37,6 +40,13 @@
 </script>
 
 <aside class="sidebar">
+  <header class="side-header">
+    {#if onHide}
+      <button class="btn image flat" title="Hide Sidebar" onclick={onHide}><Icon name="sidebar-show" /></button>
+    {/if}
+    <span class="side-title">Nova</span>
+    <MainMenu />
+  </header>
   <div class="rows">
     <button
       class="row"
@@ -97,7 +107,7 @@
 
   <div class="account">
     <div class="acct-row">
-      <Icon name="network-server" />
+      <Icon name="network-server" size={16} />
       <div class="acct-text">
         <div class="acct-name">{user?.username ?? "Nova"}</div>
         <div class="dim acct-host">{host}</div>
@@ -121,21 +131,41 @@
     width: 100%;
     height: 100%;
     background: var(--sidebar-bg);
-    border-right: 1px solid var(--border);
+    box-shadow: inset -1px 0 var(--sidebar-border);
+  }
+  .side-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 47px;
+    padding: 6px 7px;
+    --wails-draggable: drag;
+  }
+  .side-title {
+    flex: 1;
+    min-width: 0;
+    padding-left: 6px;
+    font-weight: bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .rows {
     flex: 1;
     overflow-y: auto;
-    padding: 6px 0;
+    padding: 0 6px 6px;
   }
+  /* .navigation-sidebar rows */
   .row {
     display: flex;
     align-items: center;
     gap: 12px;
     width: 100%;
-    min-height: 36px;
-    padding: 0 14px;
+    min-height: 38px;
+    margin: 2px 0;
+    padding: 0 10px;
     border: 0;
+    border-radius: 6px;
     background: none;
     color: var(--fg);
     text-align: left;
@@ -146,39 +176,36 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .row :global(.icon) {
-    opacity: 0.8;
-  }
   .row:hover {
-    background: var(--row-hover);
+    background: var(--hover);
+  }
+  .row:active {
+    background: var(--active);
   }
   .row.selected {
-    background: var(--accent-dim);
-    color: #fff;
+    background: var(--btn-bg);
   }
-  :global(:root[data-theme="light"]) .row.selected {
-    background: var(--accent);
-  }
-  .row.selected :global(.icon) {
-    opacity: 1;
+  .row.selected:hover {
+    background: var(--btn-hover);
   }
   .row.drop,
   .row:global(.file-drop-target-active) {
+    background: var(--selected);
     box-shadow: inset 0 0 0 2px var(--accent);
   }
   .row:focus-visible {
-    box-shadow: inset 0 0 0 1px var(--focus);
+    outline: 2px solid var(--focus);
+    outline-offset: -2px;
   }
   .sep {
     height: 1px;
-    margin: 6px 0;
+    margin: 6px 4px;
     background: var(--border);
     opacity: 0.6;
   }
   .account {
-    padding: 10px 14px 12px;
-    border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-    font-size: 13px;
+    padding: 12px 16px 14px;
+    font-size: 0.87em;
   }
   .acct-row {
     display: flex;
@@ -194,18 +221,16 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .acct-host {
-    font-size: 12px;
-  }
   .bar {
-    height: 4px;
+    height: 6px;
     border-radius: 3px;
-    background: color-mix(in srgb, var(--fg) 15%, transparent);
+    background: var(--btn-bg);
     overflow: hidden;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
   }
   .bar > div {
     height: 100%;
+    border-radius: 3px;
     background: var(--accent);
   }
 </style>

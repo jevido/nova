@@ -1,73 +1,81 @@
-/* Adwaita (GTK 3.24) look-alike. Colors follow the upstream _colors.scss. */
+/* libadwaita 1.9 look-alike, matching GNOME Files (Nautilus) 50.
+   Colors follow libadwaita's default stylesheet. */
 :root {
-  --accent: #3584e4;
+  --accent: #3584e4; /* accent background */
   --accent-fg: #ffffff;
-  --accent-dim: #1c71d8;
+  --accent-text: #0461be; /* accent as a text/foreground color */
   --destructive: #e01b24;
-  --warning: #f57900;
-  --success: #33d17a;
+  --destructive-text: #c30000;
+  --warning: #e5a50a;
+  --success: #2ec27e;
 
-  --fg: #2e3436;
-  --fg-dim: #929595;
-  --bg: #f6f5f4;
+  --fg: rgba(0, 0, 6, 0.8);
+  --fg-dim: rgba(0, 0, 6, 0.55);
+  --bg: #fafafb; /* window */
   --view-bg: #ffffff;
-  --sidebar-bg: #fbfafa;
-  --border: #cdc7c2;
-  --border-dark: #bfb8b1;
-  --header-top: #e1dedb;
-  --header-bottom: #dad6d2;
-  --header-border: #bfb8b1;
-  --header-backdrop: #f6f5f4;
-  --btn-top: #f6f5f4;
-  --btn-bottom: #edebe9;
-  --btn-hover-top: #f8f8f7;
-  --btn-hover-bottom: #f6f5f4;
-  --btn-active: #d6d1cd;
-  --btn-shadow: inset 0 1px rgba(255, 255, 255, 0.8), 0 1px 2px rgba(0, 0, 0, 0.07);
-  --entry-bg: #ffffff;
+  --header-bg: #ffffff;
+  --sidebar-bg: #ebebed;
+  --sidebar-border: rgba(0, 0, 6, 0.07);
   --popover-bg: #ffffff;
-  --menu-hover: #3584e4;
-  --row-hover: rgba(0, 0, 0, 0.04);
-  --scroll-thumb: rgba(46, 52, 54, 0.45);
-  --tooltip-bg: rgba(0, 0, 0, 0.8);
-  --shade: rgba(0, 0, 0, 0.07);
-  --dim-overlay: rgba(0, 0, 0, 0.35);
-  --focus: rgba(53, 132, 228, 0.5);
-  --list-alt: #fbfbfb;
-  --notification-bg: rgba(38, 38, 38, 0.92);
+  --dialog-bg: #fafafb;
+  --card-bg: #ffffff;
+  --border: rgba(0, 0, 6, 0.15);
+  --shade: rgba(0, 0, 6, 0.07);
 
-  --radius: 5px;
-  --font: "Cantarell", "Adwaita Sans", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --hover: color-mix(in srgb, var(--fg) 7%, transparent);
+  --active: color-mix(in srgb, var(--fg) 16%, transparent);
+  --btn-bg: color-mix(in srgb, var(--fg) 10%, transparent);
+  --btn-hover: color-mix(in srgb, var(--fg) 15%, transparent);
+  --btn-active: color-mix(in srgb, var(--fg) 30%, transparent);
+  --selected: color-mix(in srgb, var(--accent) 25%, transparent);
+  --selected-hover: color-mix(in srgb, var(--accent) 32%, transparent);
+  --focus: color-mix(in srgb, var(--accent) 50%, transparent);
+  --scroll-thumb: color-mix(in srgb, var(--fg) 40%, transparent);
+  --toast-bg: rgba(40, 40, 44, 0.96);
+  --menu-shadow: 0 0 0 1px rgba(0, 0, 6, 0.07), 0 1px 5px 1px rgba(0, 0, 6, 0.09), 0 2px 14px 3px rgba(0, 0, 6, 0.05);
+  --dialog-shadow: 0 0 0 1px rgba(0, 0, 6, 0.05), 0 4px 16px 4px rgba(0, 0, 6, 0.12);
+
+  /* Older names still used by a few components. */
+  --accent-dim: var(--accent);
+  --border-dark: var(--border);
+  --entry-bg: var(--btn-bg);
+  --row-hover: var(--hover);
+  --list-alt: transparent;
+  --notification-bg: var(--toast-bg);
+  --header-top: var(--header-bg);
+  --header-bottom: var(--header-bg);
+  --header-border: var(--shade);
+  --btn-top: var(--btn-bg);
+  --btn-bottom: var(--btn-bg);
+  --btn-hover-top: var(--btn-hover);
+  --btn-hover-bottom: var(--btn-hover);
+  --btn-shadow: none;
+  --menu-hover: var(--hover);
+
+  --radius: 6px;
+  --font: "Adwaita Sans", "Cantarell", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Adwaita Mono", "Source Code Pro", ui-monospace, monospace;
   color-scheme: light;
 }
 
 :root[data-theme="dark"] {
-  --accent: #3584e4;
-  --accent-dim: #15539e;
-  --fg: #eeeeec;
-  --fg-dim: #919190;
-  --bg: #353535;
-  --view-bg: #2d2d2d;
-  --sidebar-bg: #303030;
-  --border: #1b1b1b;
-  --border-dark: #070707;
-  --header-top: #2b2b2b;
-  --header-bottom: #262626;
-  --header-border: #070707;
-  --header-backdrop: #353535;
-  --btn-top: #3a3a3a;
-  --btn-bottom: #373737;
-  --btn-hover-top: #444444;
-  --btn-hover-bottom: #3e3e3e;
-  --btn-active: #1e1e1e;
-  --btn-shadow: inset 0 1px rgba(255, 255, 255, 0.02), 0 1px 2px rgba(0, 0, 0, 0.07);
-  --entry-bg: #2d2d2d;
-  --popover-bg: #353535;
-  --menu-hover: #15539e;
-  --row-hover: rgba(255, 255, 255, 0.04);
-  --scroll-thumb: rgba(238, 238, 236, 0.4);
-  --shade: rgba(0, 0, 0, 0.3);
-  --list-alt: #313131;
+  --accent-text: #78aeed;
+  --destructive-text: #ff938c;
+  --fg: #ffffff;
+  --fg-dim: rgba(255, 255, 255, 0.55);
+  --bg: #222226;
+  --view-bg: #1d1d20;
+  --header-bg: #1d1d20;
+  --sidebar-bg: #2e2e32;
+  --sidebar-border: rgba(0, 0, 6, 0.36);
+  --popover-bg: #36363a;
+  --dialog-bg: #36363a;
+  --card-bg: rgba(255, 255, 255, 0.08);
+  --border: rgba(255, 255, 255, 0.15);
+  --shade: rgba(0, 0, 6, 0.36);
+  --toast-bg: rgba(64, 64, 68, 0.97);
+  --menu-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 1px 5px 1px rgba(0, 0, 0, 0.25), 0 2px 14px 3px rgba(0, 0, 0, 0.2);
+  --dialog-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 4px 16px 4px rgba(0, 0, 0, 0.35);
   color-scheme: dark;
 }
 
@@ -85,7 +93,8 @@ body,
 
 body {
   font-family: var(--font);
-  font-size: 14px;
+  font-size: 14.667px; /* 11pt, the GNOME default */
+  line-height: 1.35;
   color: var(--fg);
   background: var(--bg);
   user-select: none;
@@ -103,14 +112,13 @@ textarea {
 }
 
 ::selection {
-  background: var(--accent);
-  color: var(--accent-fg);
+  background: color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
-/* GTK3 overlay-ish scrollbars */
+/* Thin overlay-style scrollbars */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -118,11 +126,11 @@ textarea {
 ::-webkit-scrollbar-thumb {
   background: var(--scroll-thumb);
   border-radius: 8px;
-  border: 3px solid transparent;
+  border: 4px solid transparent;
   background-clip: content-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  border-width: 2px;
+  border-width: 3px;
 }
 
 /* ---------- Buttons ---------- */
@@ -133,64 +141,84 @@ textarea {
   gap: 6px;
   min-height: 34px;
   min-width: 34px;
-  padding: 4px 9px;
-  border: 1px solid var(--border);
-  border-bottom-color: var(--border-dark);
+  padding: 5px 10px;
+  border: 0;
   border-radius: var(--radius);
-  background: linear-gradient(to top, var(--btn-bottom) 2px, var(--btn-top));
-  box-shadow: var(--btn-shadow);
+  background: var(--btn-bg);
   color: var(--fg);
+  font-weight: bold;
   outline: none;
   white-space: nowrap;
-  transition: background 120ms ease-out;
+  transition: background 150ms ease-out, box-shadow 150ms ease-out;
   --wails-draggable: no-drag;
 }
 .btn:hover {
-  background: linear-gradient(to top, var(--btn-hover-bottom), var(--btn-hover-top) 1px);
+  background: var(--btn-hover);
 }
 .btn:active,
 .btn.checked {
   background: var(--btn-active);
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0);
+}
+.btn.checked:hover {
+  background: color-mix(in srgb, var(--fg) 35%, transparent);
 }
 .btn:focus-visible {
   outline: 2px solid var(--focus);
-  outline-offset: -3px;
+  outline-offset: -2px;
 }
 .btn:disabled {
   opacity: 0.5;
   pointer-events: none;
 }
 .btn.image {
-  padding: 4px;
+  padding: 5px;
 }
 .btn.flat {
   background: transparent;
-  border-color: transparent;
-  box-shadow: none;
 }
 .btn.flat:hover {
-  background: linear-gradient(to top, var(--btn-hover-bottom), var(--btn-hover-top) 1px);
-  border-color: var(--border);
+  background: var(--hover);
+}
+.btn.flat:active,
+.btn.flat.checked {
+  background: var(--active);
 }
 .btn.suggested {
-  background: linear-gradient(to top, #2a7ae2 2px, #3584e4);
-  border-color: #1b6acb;
-  border-bottom-color: #15539e;
-  color: #fff;
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.1);
+  background: var(--accent);
+  color: var(--accent-fg);
 }
 .btn.suggested:hover {
-  background: linear-gradient(to top, #3584e4, #3987e5 1px);
+  background: color-mix(in srgb, var(--accent) 90%, #fff);
+}
+.btn.suggested:active {
+  background: color-mix(in srgb, var(--accent) 80%, #000);
 }
 .btn.destructive {
-  background: linear-gradient(to top, #d41a23 2px, #e01b24);
-  border-color: #b2161d;
-  border-bottom-color: #851015;
+  background: var(--destructive);
   color: #fff;
 }
 .btn.destructive:hover {
-  background: linear-gradient(to top, #e01b24, #e41c26 1px);
+  background: color-mix(in srgb, var(--destructive) 90%, #fff);
+}
+.btn.pill {
+  border-radius: 9999px;
+  padding: 10px 32px;
+}
+/* The round window buttons in a libadwaita headerbar */
+.btn.round {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--btn-bg);
+}
+.btn.round:hover {
+  background: var(--btn-hover);
+}
+.btn.round:active {
+  background: var(--btn-active);
 }
 .linked {
   display: inline-flex;
@@ -198,34 +226,40 @@ textarea {
 .linked > .btn:not(:first-child) {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
-  border-left-width: 0;
 }
 .linked > .btn:not(:last-child) {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
+  box-shadow: 1px 0 0 0 var(--shade);
+}
+.linked > .btn.flat:not(:last-child) {
+  box-shadow: none;
 }
 
 /* ---------- Entries ---------- */
 .entry {
   min-height: 34px;
-  padding: 4px 8px;
-  border: 1px solid var(--border);
+  padding: 4px 9px;
+  border: 0;
   border-radius: var(--radius);
-  background: var(--entry-bg);
+  background: var(--btn-bg);
   color: var(--fg);
-  box-shadow: inset 0 0 0 1px transparent;
-  outline: none;
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  transition: outline-color 150ms ease-out;
   user-select: text;
   -webkit-user-select: text;
   --wails-draggable: no-drag;
 }
+.entry::placeholder {
+  color: var(--fg-dim);
+}
 .entry:focus {
-  border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent);
+  outline-color: var(--focus);
 }
 .entry.error {
-  border-color: var(--destructive);
-  box-shadow: inset 0 0 0 1px var(--destructive);
+  outline-color: color-mix(in srgb, var(--destructive) 60%, transparent);
+  color: var(--destructive-text);
 }
 
 .dim {
@@ -247,49 +281,53 @@ textarea {
   }
 }
 
-/* GtkMenu style (used for context and dropdown menus) */
+/* GTK 4 popover menu (context and dropdown menus) */
 .menu {
   position: fixed;
   z-index: 1000;
   min-width: 180px;
-  padding: 4px 0;
+  padding: 6px;
   background: var(--popover-bg);
-  border: 1px solid rgba(0, 0, 0, 0.23);
-  border-radius: var(--radius);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  font-size: 14px;
+  border-radius: 12px;
+  box-shadow: var(--menu-shadow);
+  color: var(--fg);
+  animation: menu-pop 120ms ease-out;
+}
+@keyframes menu-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
 }
 .menu .item {
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
-  min-height: 30px;
-  padding: 4px 10px 4px 12px;
+  min-height: 32px;
+  padding: 0 12px;
   background: none;
   border: 0;
+  border-radius: var(--radius);
   text-align: left;
   color: var(--fg);
+  white-space: nowrap;
   outline: none;
 }
 .menu .item .accel {
   margin-left: auto;
   padding-left: 24px;
   color: var(--fg-dim);
-  font-size: 13px;
 }
 .menu .item:hover:not(:disabled),
 .menu .item.focused:not(:disabled) {
-  background: var(--menu-hover);
-  color: #fff;
+  background: var(--hover);
 }
-.menu .item:hover:not(:disabled) .accel,
-.menu .item.focused:not(:disabled) .accel {
-  color: rgba(255, 255, 255, 0.75);
+.menu .item:active:not(:disabled) {
+  background: var(--active);
 }
 .menu .item:disabled {
-  color: var(--fg-dim);
-  opacity: 0.6;
+  opacity: 0.5;
 }
 .menu .item .check {
   width: 16px;
@@ -297,7 +335,7 @@ textarea {
 }
 .menu .sep {
   height: 1px;
-  margin: 4px 0;
+  margin: 6px 0;
   background: var(--border);
   opacity: 0.6;
 }

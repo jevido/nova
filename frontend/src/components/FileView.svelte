@@ -479,7 +479,6 @@
           <!-- svelte-ignore a11y_click_events_have_key_events (keyboard is handled by the listbox) -->
           <div
             class="row sel"
-            class:odd={i % 2 === 1}
             class:selected={app.selected.has(e.path)}
             class:cursor={app.cursor === e.path}
             class:cut={app.clipboard?.mode === "cut" && app.clipboard.paths.includes(e.path)}
@@ -587,31 +586,34 @@
   .items {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(var(--cell), 1fr));
-    gap: 6px 4px;
-    padding: 12px 12px 48px;
+    gap: 6px;
+    padding: 12px 18px 48px;
     align-items: start;
   }
+  /* Nautilus grid tiles: the whole tile is rounded and tinted */
   .item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 6px 4px;
-    border-radius: 6px;
+    padding: 8px 6px 10px;
+    border-radius: 12px;
     min-width: 0;
     outline: none;
+    transition: background 100ms ease-out;
+  }
+  .item:hover {
+    background: var(--hover);
   }
   .icon-box {
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    padding: 4px;
-    border-radius: 6px;
+    padding: 2px;
     box-sizing: content-box;
   }
   .label {
-    margin-top: 4px;
-    padding: 1px 5px;
-    border-radius: 4px;
+    margin-top: 6px;
+    padding: 0 2px;
     max-width: 100%;
     text-align: center;
     overflow-wrap: anywhere;
@@ -622,21 +624,24 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  .item.selected .icon-box {
-    background: color-mix(in srgb, var(--accent) 22%, transparent);
+  .item.selected {
+    background: var(--selected);
+  }
+  .item.selected:hover {
+    background: var(--selected-hover);
   }
   .item.selected .label {
-    background: var(--accent);
-    color: #fff;
     -webkit-line-clamp: unset;
     line-clamp: unset;
   }
-  .item.cursor:not(.selected) .label {
-    box-shadow: inset 0 0 0 1px var(--focus);
+  .view:focus-visible .item.cursor,
+  .view:focus-visible .row.cursor {
+    outline: 2px solid var(--focus);
+    outline-offset: -2px;
   }
-  .item.drop .icon-box,
-  .item:global(.file-drop-target-active) .icon-box {
-    background: color-mix(in srgb, var(--accent) 35%, transparent);
+  .item.drop,
+  .item:global(.file-drop-target-active) {
+    background: var(--selected);
     box-shadow: inset 0 0 0 2px var(--accent);
   }
   .item.cut,
@@ -654,8 +659,8 @@
     z-index: 2;
     display: grid;
     grid-template-columns: var(--list-cols);
+    padding: 0 12px;
     background: var(--view-bg);
-    border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   }
   .list {
     --list-cols: minmax(200px, 1fr) 110px 170px 130px;
@@ -664,14 +669,14 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    height: 30px;
+    height: 34px;
     padding: 0 10px;
     border: 0;
-    border-right: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+    border-radius: 6px;
     background: none;
     color: var(--fg-dim);
     font-weight: bold;
-    font-size: 13px;
+    font-size: 0.87em;
     text-align: left;
   }
   .colhead .col:hover:not(:disabled) {
@@ -682,16 +687,19 @@
     color: var(--fg);
   }
   .rows {
-    padding-bottom: 48px;
+    padding: 0 12px 48px;
   }
   .row {
     display: grid;
     grid-template-columns: var(--list-cols);
     align-items: center;
+    min-height: 40px;
+    margin-bottom: 2px;
+    border-radius: 6px;
     outline: none;
   }
-  .row.odd {
-    background: var(--list-alt);
+  .row:hover {
+    background: var(--hover);
   }
   .row .col {
     padding: 2px 10px;
@@ -711,7 +719,6 @@
   }
   .row .col:not(.col-name) {
     color: var(--fg-dim);
-    font-size: 13px;
   }
   .row .col-size {
     text-align: right;
@@ -720,17 +727,10 @@
     justify-content: flex-end;
   }
   .row.selected {
-    background: var(--accent);
-    color: #fff;
+    background: var(--selected);
   }
-  :global(:root[data-theme="dark"]) .row.selected {
-    background: var(--accent-dim);
-  }
-  .row.selected .col {
-    color: #fff;
-  }
-  .row.cursor:not(.selected) {
-    box-shadow: inset 0 0 0 1px var(--focus);
+  .row.selected:hover {
+    background: var(--selected-hover);
   }
   .row.drop,
   .row:global(.file-drop-target-active) {
@@ -767,21 +767,19 @@
     z-index: 5;
     pointer-events: none;
     border: 1px solid var(--accent);
+    border-radius: 4px;
     background: color-mix(in srgb, var(--accent) 20%, transparent);
   }
   .floating {
     position: absolute;
-    right: 0;
-    bottom: 0;
+    right: 6px;
+    bottom: 6px;
     z-index: 3;
     max-width: 60%;
-    padding: 4px 10px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-right: 0;
-    border-bottom: 0;
-    border-top-left-radius: var(--radius);
-    font-size: 13px;
+    padding: 6px 12px;
+    background: var(--popover-bg);
+    border-radius: 8px;
+    box-shadow: var(--menu-shadow);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -789,23 +787,19 @@
   }
   .floating.left {
     right: auto;
-    left: 0;
+    left: 6px;
     display: flex;
     align-items: center;
     gap: 8px;
-    border-left: 0;
-    border-right: 1px solid var(--border);
-    border-top-left-radius: 0;
-    border-top-right-radius: var(--radius);
   }
+  /* AdwBanner */
   .trashbar {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 10px;
-    background: var(--bg);
-    border-top: 1px solid var(--border);
-    font-size: 13px;
+    min-height: 46px;
+    padding: 6px 8px 6px 16px;
+    background: color-mix(in srgb, var(--accent) 15%, var(--view-bg));
   }
   .trashbar span {
     flex: 1;
@@ -819,11 +813,10 @@
   .rename {
     position: fixed;
     z-index: 801;
-    padding: 10px;
+    padding: 12px;
     background: var(--popover-bg);
-    border: 1px solid rgba(0, 0, 0, 0.23);
-    border-radius: var(--radius);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    border-radius: 12px;
+    box-shadow: var(--menu-shadow);
   }
   .rename-title {
     font-weight: bold;
@@ -839,7 +832,7 @@
   }
   .rename-error {
     margin-top: 6px;
-    font-size: 12px;
+    font-size: 0.87em;
     color: var(--fg-dim);
   }
 </style>
