@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { app, HOME, STARRED, TRASH } from "../lib/store.svelte";
+  import { app, baseName, HOME, STARRED, TRASH } from "../lib/store.svelte";
+  import type { Entry } from "../../bindings/nova/services/models";
   import { formatSize } from "../lib/format";
   import { dropZone, pressBookmark, type DropZone } from "../lib/dnd";
   import Icon from "./Icon.svelte";
@@ -20,19 +21,60 @@
 
   const bookmarks = $derived(app.prefs.bookmarks ?? []);
 
+  /** A folder in the sidebar, as the menus and dialogs expect it. */
+  function folderEntry(path: string): Entry {
+    return { id: "", name: path === HOME ? "Home" : baseName(path), path, isDir: true, size: 0, mime: "", modified: "", created: "", mode: "", owner: "", shared: false } as Entry;
+  }
+
+  /** The same menu a folder gets in the file view, plus the bookmark's own items. */
   function bookmarkMenu(e: MouseEvent, path: string) {
     e.preventDefault();
     const i = bookmarks.findIndex((b) => b.path === path);
+    const entry = folderEntry(path);
     app.openMenu(e.clientX, e.clientY, [
       { label: "Open", run: () => app.navigate(path) },
       ...(app.mobile ? [] : [{ label: "Open in New Window", run: () => app.newWindow(path) }]),
       { sep: true },
-      { label: "Rename…", run: () => renameBookmark(path) },
+      { label: "Cut", run: () => app.copy(true, [path]) },
+      { label: "Copy", run: () => app.copy(false, [path]) },
+      { label: "Paste Into Folder", disabled: !app.clipboard, run: () => app.paste(path) },
+      { sep: true },
+      { label: app.mobile ? "Download" : "Download…", run: () => app.download([entry]) },
+      { label: "Copy Public Link", run: () => app.share(entry, true) },
+      { sep: true },
+      { label: app.isStarred(path) ? "Unstar" : "Star", run: () => app.toggleStar([entry]) },
+      { label: "Rename Folder…", run: () => renameFolder(path) },
+      { label: "Move to Trash", run: () => app.trash([entry]).then(() => app.removeBookmark(path)) },
+      { sep: true },
+      { label: "Rename Bookmark…", run: () => renameBookmark(path) },
       { label: "Move Up", disabled: i <= 0, run: () => app.moveBookmark(path, i - 1) },
       { label: "Move Down", disabled: i >= bookmarks.length - 1, run: () => app.moveBookmark(path, i + 2) },
+      { label: "Remove from Sidebar", run: () => app.removeBookmark(path) },
       { sep: true },
-      { label: "Remove", run: () => app.removeBookmark(path) },
+      { label: "Copy Location", run: () => app.copyPath(entry) },
+      { label: "Properties", run: () => (app.modal = { kind: "properties", entry }) },
     ]);
+  }
+
+  function homeMenu(e: MouseEvent) {
+    e.preventDefault();
+    const entry = folderEntry(HOME);
+    app.openMenu(e.clientX, e.clientY, [
+      { label: "Open", run: () => app.navigate(HOME) },
+      ...(app.mobile ? [] : [{ label: "Open in New Window", run: () => app.newWindow(HOME) }]),
+      { sep: true },
+      { label: "Paste Into Folder", disabled: !app.clipboard, run: () => app.paste(HOME) },
+      { sep: true },
+      { label: "Copy Location", run: () => app.copyPath(entry) },
+      { label: "Properties", run: () => (app.modal = { kind: "properties", entry }) },
+    ]);
+  }
+
+  async function renameFolder(path: string) {
+    const name = baseName(path);
+    const v = await app.prompt({ title: "Rename Folder", label: "Name", value: name, confirm: "Rename" });
+    // app.rename also updates the bookmark (and its label if it was the folder's name).
+    if (v?.trim() && v.trim() !== name) await app.rename(path, v.trim());
   }
 
   async function renameBookmark(path: string) {
@@ -49,29 +91,35 @@
   const addingFolders = $derived(!!app.dragging?.allDirs);
   const editing = $derived(addingFolders || app.draggingBookmark !== null);
 
-  // Over a bookmark's middle, dragged items move into that folder; between
-  // rows (or anywhere for a dragged bookmark) folders are inserted as bookmarks.
-  const bookmarkZone: DropZone = {
+  // The whole sidebar is one drop zone. Over the middle of a folder row
+  // (Home, Trash, a bookmark), dragged items move into that folder; anywhere
+  // else a dragged folder becomes a bookmark at that spot, like Nautilus.
+  let rowsEl = $state<HTMLElement>();
+
+  function bookmarkIndexAt(y: number): number {
+    const rows = [...(rowsEl?.querySelectorAll<HTMLElement>(".bookmarks .row[data-path]") ?? [])];
+    return rows.filter((r) => {
+      const b = r.getBoundingClientRect();
+      return b.top + b.height / 2 < y;
+    }).length;
+  }
+
+  const sidebarZone: DropZone = {
     over(x, y, target, payload) {
-      const list = target.closest(".bookmarks");
-      const row = target.closest<HTMLElement>(".row[data-path]");
+      const row = target.closest<HTMLElement>(".row[data-drop-path]");
       if (payload.kind === "items" && row) {
         const r = row.getBoundingClientRect();
         const t = (y - r.top) / r.height;
         if (!payload.allDirs || (t >= 0.25 && t <= 0.75)) {
           insertAt = null;
-          return { kind: "into", path: row.dataset.path! };
+          return { kind: "into", path: row.dataset.dropPath! };
         }
       }
       if (payload.kind === "items" && !payload.allDirs) {
         insertAt = null;
         return null;
       }
-      const rows = [...(list?.querySelectorAll<HTMLElement>(".row[data-path]") ?? [])];
-      insertAt = rows.filter((r) => {
-        const b = r.getBoundingClientRect();
-        return b.top + b.height / 2 < y;
-      }).length;
+      insertAt = bookmarkIndexAt(y);
       return { kind: "insert", index: insertAt };
     },
     drop(intent, payload) {
@@ -99,7 +147,7 @@
     <span class="side-title">Nova</span>
     <MainMenu />
   </header>
-  <div class="rows">
+  <div class="rows" bind:this={rowsEl} use:dropZone={sidebarZone}>
     <button
       class="row"
       class:selected={app.path === HOME && !app.results}
@@ -110,6 +158,7 @@
       onclick={() => app.navigate(HOME)}
       onmousedown={(e) => e.button === 1 && e.preventDefault()}
       onauxclick={(e) => middleClick(e, HOME)}
+      oncontextmenu={homeMenu}
     >
       <Icon name="user-home" /><span>Home</span>
     </button>
@@ -136,7 +185,7 @@
     {#if bookmarks.length || editing}
       <div class="sep"></div>
       <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="bookmarks" use:dropZone={bookmarkZone}>
+      <div class="bookmarks">
         {#each bookmarks as b, i (b.path)}
           {#if insertAt === i}<div class="insert"></div>{/if}
           <button
@@ -146,6 +195,7 @@
             class:moving={app.draggingBookmark === b.path}
             title={b.path.replace(/^\/me/, "")}
             data-path={b.path}
+            data-drop-path={b.path}
             data-file-drop-target
             onclick={() => app.navigate(b.path)}
             oncontextmenu={(e) => bookmarkMenu(e, b.path)}

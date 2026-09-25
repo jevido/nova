@@ -740,8 +740,7 @@ class AppState {
     if (this.inTrash) this.reload(true);
   }
 
-  copy(cut = false) {
-    const paths = this.selection.map((e) => e.path);
+  copy(cut = false, paths = this.selection.map((e) => e.path)) {
     if (!paths.length) return;
     this.clipboard = { mode: cut ? "cut" : "copy", paths };
     this.toast(

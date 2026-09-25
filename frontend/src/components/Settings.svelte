@@ -21,8 +21,9 @@
 
   $effect(() => {
     if (app.settingsOpen) {
-      app.refreshUser();
       queueMicrotask(() => dialogEl?.focus());
+      // Show the dialog first; fresh numbers can follow.
+      setTimeout(() => app.refreshUser(), 150);
     }
   });
 
@@ -312,7 +313,6 @@
     align-items: center;
     justify-content: center;
     background: rgba(0, 0, 0, 0.25);
-    animation: fade 120ms ease-out;
   }
   @keyframes fade {
     from {
@@ -330,12 +330,11 @@
     box-shadow: var(--dialog-shadow);
     outline: none;
     overflow: hidden;
-    animation: dlg-in 180ms ease-out;
+    animation: dlg-in 100ms ease-out;
   }
   @keyframes dlg-in {
     from {
       opacity: 0;
-      transform: scale(0.96);
     }
   }
   :global(:root[data-mobile="true"]) .dialog {
