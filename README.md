@@ -1,4 +1,9 @@
+<p align="center"><img src="build/appicon.png" width="128" alt="Nova logo"></p>
+
 # Nova
+
+[![CI](https://github.com/jevido/nova/actions/workflows/ci.yml/badge.svg)](https://github.com/jevido/nova/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/jevido/nova)](https://github.com/jevido/nova/releases/latest)
 
 A file manager for [nova.storage](https://nova.storage) for your desktop and
 your Android phone, built with [Wails v3](https://v3.wails.io) (Go) and
@@ -10,42 +15,72 @@ it matches the rest of your desktop.
 
 ## Install
 
-Every push to `main` builds all packages in
+### Quick install (Linux)
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/jevido/nova/main/install.sh | sh
+```
+
+This installs the latest release into your home directory (no sudo), where
+Nova can update itself: the binary goes to `~/.local/share/nova`, linked as
+`~/.local/bin/nova`, and Nova is added to your app launcher. The download is
+checked against the release's `checksums.txt`. If GTK 4 or WebKitGTK 6.0 is
+missing, the script prints the command to install them.
+
+To uninstall:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/jevido/nova/main/install.sh | sh -s -- --uninstall
+```
+
+Your settings stay in `~/.config/nova-desktop`.
+
+### Quick install (Android)
+
+On your phone, open
+**[nova-android-arm64.apk](https://github.com/jevido/nova/releases/latest/download/nova-android-arm64.apk)**
+and tap it when the download finishes. The first time, Android asks you to
+allow installing apps from your browser; allow it and tap **Install**.
+
+Requires Android 5.0 or newer on a 64-bit ARM phone. Nova updates itself from
+then on (see [Updates](#updates)).
+
+### Manual download
+
+Download the latest build from [Releases](https://github.com/jevido/nova/releases/latest).
+
+| Platform | Download | Updates itself |
+| --- | --- | --- |
+| Linux | `nova-linux-amd64.tar.gz`: extract anywhere you can write, run `./nova` | yes |
+| Arch / Omarchy | `nova-linux-x86_64.pkg.tar.zst`: `sudo pacman -U nova-linux-x86_64.pkg.tar.zst` | no, you're told when a new version is out |
+| Debian / Ubuntu | `nova-linux-amd64.deb`: `sudo apt install ./nova-linux-amd64.deb` | no, you're told when a new version is out |
+| Fedora / RHEL | `nova-linux-x86_64.rpm`: `sudo dnf install ./nova-linux-x86_64.rpm` | no, you're told when a new version is out |
+| Any Linux | `nova-linux-x86_64.AppImage`: `chmod +x` it and run it | no, you get a download link |
+| Android | `nova-android-arm64.apk` | yes |
+
+Linux needs GTK 4 and WebKitGTK 6.0 (`libgtk-4-1 libwebkitgtk-6.0-4` on
+Debian/Ubuntu 24.04+, `gtk4 webkitgtk-6.0` on Arch, `gtk4 webkitgtk6.0` on
+Fedora).
+
+Every push to `main` also builds everything in
 [GitHub Actions](https://github.com/jevido/nova/actions/workflows/ci.yml)
-(open a run and download the `linux` or `android` artifact). Tagged versions
-are published on the [Releases](https://github.com/jevido/nova/releases) page.
+(open a run and download the `linux` or `android` artifact). Those builds don't
+update themselves.
 
-### Linux
+### Updates
 
-Nova needs GTK 4 and WebKitGTK 6.0, which recent distributions ship
-(Ubuntu 24.04+, Debian 13+, Fedora 40+, Arch).
+Release builds check GitHub Releases shortly after startup and then every 6
+hours; **Check for Updates** in the menu checks right away. A newer version is
+downloaded in the background and verified against the release's
+`checksums.txt`, then Nova shows a notification:
 
-| Distribution    | File                        | Install                                                   |
-| --------------- | --------------------------- | --------------------------------------------------------- |
-| Arch / Omarchy  | `nova-*-x86_64.pkg.tar.zst` | `sudo pacman -U nova-*-x86_64.pkg.tar.zst`                |
-| Debian / Ubuntu | `nova-*-amd64.deb`          | `sudo apt install ./nova-*-amd64.deb`                     |
-| Fedora / RHEL   | `nova-*-x86_64.rpm`         | `sudo dnf install ./nova-*-x86_64.rpm`                    |
-| Anything else   | `nova-*-x86_64.AppImage`    | `chmod +x nova-*-x86_64.AppImage && ./nova-*-x86_64.AppImage` |
+- **Desktop**: click **Restart** and Nova relaunches into the new version.
+- **Android**: tap **Install** and Android's installer takes over. The first
+  time, Android asks you to allow Nova to install apps. Android only accepts
+  the update because it is signed with the same key as the installed app.
 
-The packages install `nova` to `/usr/bin` and add Nova to your application
-launcher. There is also a bare `nova-*-linux-amd64` binary if you want to put
-it somewhere yourself.
-
-### Android
-
-1. Download `nova-*-android-arm64.apk` on your phone (from Releases, or from
-   the `android` artifact of a CI run, which is a zip you need to extract).
-2. Open it. Android asks you to allow installing apps from your browser or
-   file manager the first time; allow it and tap **Install**.
-3. Updating works the same way: install a newer APK over the old one. All
-   builds are signed with the same key, so your sign-in is kept.
-
-Requires Android 5.0 or newer on a 64-bit ARM phone (practically every phone
-from the last years). On the phone Nova works with touch: tap to open,
-long-press for the actions menu (tapping more items then adds them to the
-selection), and the back gesture goes up through your folder history. Downloads
-are saved to `Download/Nova`. Opening files in other apps and uploading whole
-folders are desktop-only for now.
+Pre-releases are never offered. Set `NOVA_NO_UPDATE=1` to turn checking off on
+the desktop.
 
 ### Signing in
 
@@ -102,6 +137,11 @@ git tag v0.2.0
 git push origin v0.2.0
 ```
 
+Release assets use version-less names (`nova-linux-amd64.tar.gz`,
+`nova-android-arm64.apk`, …) so `releases/latest/download/…` links always
+point at the newest release. Tags with a `-` (like `v0.3.0-rc.1`) are
+published as pre-releases.
+
 The Android APK is signed with the key in the `ANDROID_KEYSTORE_BASE64`,
 `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`
 repository secrets. Keep a backup of that keystore: Android refuses to update
@@ -115,8 +155,9 @@ main.go                    app + window setup, OS file-drop wiring
 internal/nova              API client for the nova.storage filesystem API (no Wails deps)
 internal/config            settings + credentials (0600) in the user config dir
 internal/platform          per-OS config, cache and download locations (desktop / Android)
+internal/version           build version (stamped by CI) and version comparison
 internal/icons             freedesktop icon-theme lookup with a bundled Adwaita fallback
-services/                  Wails services: session, files, transfers, media (HTTP route)
+services/                  Wails services: session, files, transfers, updates, media (HTTP route)
 frontend/src               Svelte UI; lib/store.svelte.ts holds all app state
 build/                     packaging: Linux (nfpm, AppImage), Android (Gradle project)
 ```

@@ -4,7 +4,15 @@ import * as Files from "../../bindings/nova/services/filesservice";
 import * as Session from "../../bindings/nova/services/sessionservice";
 import * as Transfers from "../../bindings/nova/services/transferservice";
 import * as Windows from "../../bindings/nova/windowservice";
-import type { Entry, Folder, OpResult, Session as SessionT, Transfer } from "../../bindings/nova/services/models";
+import * as Updates from "../../bindings/nova/services/updateservice";
+import type {
+  Entry,
+  Folder,
+  OpResult,
+  Session as SessionT,
+  Transfer,
+  UpdateStatus,
+} from "../../bindings/nova/services/models";
 import type { Prefs } from "../../bindings/nova/internal/config/models";
 import { pluralize } from "./format";
 
@@ -107,6 +115,7 @@ class AppState {
   modal = $state<Modal | null>(null);
   menu = $state<MenuState>(null);
   trashCount = $state(0);
+  update = $state<UpdateStatus | null>(null);
   private undoStack: Undo[] = [];
   private toastSeq = 0;
 
@@ -178,6 +187,8 @@ class AppState {
       this.upload(dir, ev.data.files);
     });
     Transfers.List().then((t) => (this.transfers = t ?? []));
+    Updates.Status().then((u) => (this.update = u));
+    Events.On("update", (ev) => this.onUpdate(ev.data));
   }
 
   /** Forget everything tied to one account; every account's home is /me. */
@@ -491,11 +502,13 @@ class AppState {
 
   // =============== feedback ===============
 
+  /** Show an in-app notification; timeout 0 keeps it until dismissed. */
   toast(text: string, opts: { action?: Toast["action"]; error?: boolean; timeout?: number } = {}) {
     const id = ++this.toastSeq;
     // GTK shows one in-app notification at a time.
     this.toasts = [{ id, text, action: opts.action, error: opts.error }];
-    setTimeout(() => this.dismissToast(id), opts.timeout ?? (opts.action ? 6000 : 4000));
+    const ms = opts.timeout ?? (opts.action ? 6000 : 4000);
+    if (ms > 0) setTimeout(() => this.dismissToast(id), ms);
   }
 
   dismissToast(id: number) {
@@ -829,6 +842,63 @@ class AppState {
 
   isBookmarked(path = this.path): boolean {
     return (this.prefs.bookmarks ?? []).some((b) => b.path === path);
+  }
+
+  // =============== updates ===============
+
+  private onUpdate(u: UpdateStatus) {
+    const prev = this.update?.state;
+    this.update = u;
+    if (u.state === prev) return;
+    if (u.state === "ready") {
+      this.toast(`Nova ${u.latestVersion} is ready to install`, {
+        action: { label: this.mobile ? "Install" : "Restart", run: () => this.applyUpdate() },
+        timeout: 0,
+      });
+    } else if (u.state === "manual" && prev !== "manual") {
+      this.toast(
+        u.packageManaged
+          ? `Nova ${u.latestVersion} is available — update it with your package manager`
+          : `Nova ${u.latestVersion} is available`,
+        { action: { label: "Download", run: () => Updates.OpenReleasePage() }, timeout: 0 },
+      );
+    }
+  }
+
+  async checkForUpdates() {
+    if (this.update?.state === "ready") return this.applyUpdate();
+    if (this.update?.state === "disabled") {
+      this.toast("This is a development build; updates are only available in releases");
+      return;
+    }
+    this.toast("Checking for updates…");
+    try {
+      const u = await Updates.CheckNow();
+      this.update = u;
+      if (u.state === "up-to-date") this.toast(`Nova ${u.currentVersion} is up to date`);
+      else if (u.state === "error") this.toast(`Could not check for updates: ${u.error}`, { error: true });
+      else if (u.state === "manual") this.onUpdate({ ...u, state: "manual" });
+      // "ready" is announced by the update event.
+    } catch (e) {
+      this.toast(errText(e), { error: true });
+    }
+  }
+
+  async applyUpdate() {
+    const u = this.update;
+    if (!u || u.state !== "ready") return;
+    const android = (window as unknown as { NovaAndroid?: { installApk(p: string): string } }).NovaAndroid;
+    if (android) {
+      const r = android.installApk(u.apkPath);
+      if (r === "permission") this.toast("Allow Nova to install apps, then tap Install again", { timeout: 0, action: { label: "Install", run: () => this.applyUpdate() } });
+      else if (r !== "ok") this.toast(`Could not start the installer: ${r}`, { error: true });
+      return;
+    }
+    try {
+      await Updates.Restart();
+    } catch (e) {
+      this.toast(`Restart failed: ${errText(e)}`, { error: true });
+    }
   }
 
   // =============== transfers ===============

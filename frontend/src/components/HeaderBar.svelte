@@ -216,8 +216,9 @@
         <Icon name="pan-down" />
       </button>
     </div>
-    <button class="btn image" bind:this={menuBtn} class:checked={menuOpen} title="Menu (F10)" onclick={() => (menuOpen = !menuOpen)}>
+    <button class="btn image badge-host" bind:this={menuBtn} class:checked={menuOpen} title="Menu (F10)" onclick={() => (menuOpen = !menuOpen)}>
       <Icon name="open-menu" />
+      {#if app.update?.state === "ready" || app.update?.state === "manual"}<span class="badge" title="Update available"></span>{/if}
     </button>
     {#if !app.mobile}
     <div class="titlebuttons">
@@ -285,6 +286,19 @@
     <div class="psep"></div>
     {#if !app.mobile}
       <button class="modelbutton" onclick={() => (app.modal = { kind: "shortcuts" })}>Keyboard Shortcuts<span class="accel">Ctrl+?</span></button>
+    {/if}
+    {#if app.update?.state === "ready"}
+      <button class="modelbutton" onclick={() => app.applyUpdate()}>
+        <span class="dot"></span>{app.mobile ? "Install" : "Restart to Install"} Nova {app.update.latestVersion}
+      </button>
+    {:else if app.update?.state === "manual"}
+      <button class="modelbutton" onclick={() => app.checkForUpdates()}>
+        <span class="dot"></span>Nova {app.update.latestVersion} Available…
+      </button>
+    {:else}
+      <button class="modelbutton" disabled={app.update?.state === "checking" || app.update?.state === "downloading"} onclick={() => app.checkForUpdates()}>
+        {app.update?.state === "downloading" ? "Downloading Update…" : app.update?.state === "checking" ? "Checking for Updates…" : "Check for Updates"}
+      </button>
     {/if}
     <button class="modelbutton" onclick={() => (app.modal = { kind: "about" })}>About Nova</button>
     <button class="modelbutton" onclick={() => app.signOut()}>Sign Out…</button>
@@ -455,6 +469,26 @@
   .zoom .btn,
   .theme .btn {
     flex: 1;
+  }
+  .badge-host {
+    position: relative;
+  }
+  .badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 2px var(--header-bottom);
+  }
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex: none;
   }
   .label {
     padding: 2px 10px;

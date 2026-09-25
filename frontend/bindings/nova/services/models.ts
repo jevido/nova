@@ -110,3 +110,36 @@ export enum TransferState {
     StateFailed = "failed",
     StateCancelled = "cancelled",
 };
+
+/**
+ * UpdateStatus is what the UI shows about updates.
+ */
+export interface UpdateStatus {
+    "currentVersion": string;
+
+    /**
+     * State is one of: disabled, idle, checking, up-to-date, downloading,
+     * ready, manual, error.
+     */
+    "state": string;
+
+    /**
+     * LatestVersion is set when a newer release was found.
+     */
+    "latestVersion": string;
+    "notes": string;
+    "releaseUrl": string;
+    "error": string;
+    "checkedAt": string;
+
+    /**
+     * PackageManaged is set when Nova was installed by a package manager
+     * (pacman, apt, dnf) and should be updated with it.
+     */
+    "packageManaged": boolean;
+
+    /**
+     * ApkPath is the downloaded update on Android, handed to the installer.
+     */
+    "apkPath": string;
+}

@@ -62,16 +62,22 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.v.outputs.version }}
+      stamp: ${{ steps.v.outputs.stamp }}
       code: ${{ steps.v.outputs.code }}
     steps:
       - id: v
         run: |
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             version="${GITHUB_REF#refs/tags/v}"
+            stamp="$version"
           else
             version="0.1.0-dev.${GITHUB_RUN_NUMBER}"
+            # Builds from main are stamped "dev" so they never replace
+            # themselves with an older release.
+            stamp="dev"
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "stamp=$stamp" >> "$GITHUB_OUTPUT"
           # Android needs a monotonically increasing integer.
           echo "code=$GITHUB_RUN_NUMBER" >> "$GITHUB_OUTPUT"
 
@@ -109,18 +115,20 @@ jobs:
       - name: Build and package
         env:
           APPIMAGE_EXTRACT_AND_RUN: "1"
-        run: task package
+          STAMP: ${{ needs.version.outputs.stamp }}
+        run: task package VERSION="$STAMP" UPDATE_REPO="$GITHUB_REPOSITORY"
 
       - name: Collect artifacts
-        env:
-          VERSION: ${{ needs.version.outputs.version }}
         run: |
           mkdir -p dist
-          cp bin/nova "dist/nova-${VERSION}-linux-amd64"
-          cp bin/nova-x86_64.AppImage "dist/nova-${VERSION}-x86_64.AppImage"
-          cp bin/nova.deb "dist/nova-${VERSION}-amd64.deb"
-          cp bin/nova.rpm "dist/nova-${VERSION}-x86_64.rpm"
-          cp bin/nova.pkg.tar.zst "dist/nova-${VERSION}-x86_64.pkg.tar.zst"
+          # Version-less names so .../releases/latest/download/<name> links
+          # (install.sh, README) always point at the newest release.
+          # The tarball is what install.sh and the in-app updater use.
+          tar -C bin -czf dist/nova-linux-amd64.tar.gz nova
+          cp bin/nova-x86_64.AppImage dist/nova-linux-x86_64.AppImage
+          cp bin/nova.deb dist/nova-linux-amd64.deb
+          cp bin/nova.rpm dist/nova-linux-x86_64.rpm
+          cp bin/nova.pkg.tar.zst dist/nova-linux-x86_64.pkg.tar.zst
           ls -la dist
 
       - uses: actions/upload-artifact@v4
@@ -179,14 +187,13 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           NOVA_VERSION: ${{ needs.version.outputs.version }}
           NOVA_VERSION_CODE: ${{ needs.version.outputs.code }}
-        run: task android:package ARCH=arm64
+          STAMP: ${{ needs.version.outputs.stamp }}
+        run: task android:package ARCH=arm64 VERSION="$STAMP" UPDATE_REPO="$GITHUB_REPOSITORY"
 
       - name: Collect artifact
-        env:
-          VERSION: ${{ needs.version.outputs.version }}
         run: |
           mkdir -p dist
-          cp bin/nova.apk "dist/nova-${VERSION}-android-arm64.apk"
+          cp bin/nova.apk dist/nova-android-arm64.apk
 
       - uses: actions/upload-artifact@v4
         with:
@@ -207,13 +214,16 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum * > checksums.txt && cat checksums.txt
+
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
-          ls -la dist
-          gh release create "$TAG" dist/* \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "Nova ${TAG}" \
-            --generate-notes
+          flags=(--title "Nova ${TAG#v}" --generate-notes)
+          # v1.2.0-rc.1 style tags become pre-releases, which the updaters skip.
+          case "$TAG" in *-*) flags+=(--prerelease) ;; esac
+          gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" "${flags[@]}"

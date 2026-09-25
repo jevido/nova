@@ -28,9 +28,11 @@ func init() {
 	application.RegisterEvent[services.Transfer](services.EventTransfer)
 	application.RegisterEvent[string](services.EventChanged)
 	application.RegisterEvent[DropEvent]("files:dropped")
+	application.RegisterEvent[services.UpdateStatus](services.EventUpdate)
 }
 
 func main() {
+	services.GuardUpdaterHelper()
 	cfgPath, err := config.DefaultPath()
 	if err != nil {
 		log.Fatal(err)
@@ -58,6 +60,7 @@ func main() {
 			application.NewService(services.NewFilesService(client)),
 			application.NewService(transfers),
 			application.NewService(windows),
+			application.NewService(services.NewUpdateService()),
 			application.NewServiceWithOptions(
 				services.NewMediaService(client, icons.NewResolver()),
 				application.ServiceOptions{Route: services.MediaRoute},

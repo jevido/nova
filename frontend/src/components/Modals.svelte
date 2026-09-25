@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as Files from "../../bindings/nova/services/filesservice";
+  import * as Updates from "../../bindings/nova/services/updateservice";
   import type { Entry, FolderSize } from "../../bindings/nova/services/models";
   import { app, parentOf, TRASH, type Modal } from "../lib/store.svelte";
   import { formatDateLong, formatSize, pluralize, stemLength } from "../lib/format";
@@ -343,9 +344,17 @@
         <div class="about-body">
           <img src="/nova.png" alt="" width="96" height="96" />
           <h2>Nova</h2>
-          <div class="dim">0.1.0</div>
+          <div class="dim">{app.update?.currentVersion === "dev" ? "Development build" : `Version ${app.update?.currentVersion ?? ""}`}</div>
           <p>A desktop file manager for nova.storage.</p>
           <p class="dim small">Built with Wails, Go and Svelte. Icons follow your system theme.</p>
+          {#if app.update?.state === "ready"}
+            <button class="btn suggested" onclick={() => app.applyUpdate()}>{app.mobile ? "Install" : "Restart to Install"} {app.update.latestVersion}</button>
+          {:else if app.update?.state !== "disabled"}
+            <button class="btn" disabled={app.update?.state === "checking" || app.update?.state === "downloading"} onclick={() => app.checkForUpdates()}>
+              {app.update?.state === "downloading" ? "Downloading…" : "Check for Updates"}
+            </button>
+          {/if}
+          <button class="link" onclick={() => Updates.OpenReleasePage()}>Release notes</button>
         </div>
       </div>
     {/if}
@@ -666,5 +675,16 @@
   }
   .about-body p {
     margin: 12px 0 0;
+  }
+  .about-body .btn {
+    margin-top: 16px;
+  }
+  .about-body .link {
+    margin-top: 10px;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    text-decoration: underline;
+    cursor: pointer;
   }
 </style>

@@ -18,6 +18,7 @@ declare module "@wailsio/runtime" {
             "files:dropped": main$0.DropEvent;
             "fs:changed": string;
             "transfer": services$0.Transfer;
+            "update": services$0.UpdateStatus;
         }
     }
 }

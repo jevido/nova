@@ -4,10 +4,12 @@
 import * as FilesService from "./filesservice.js";
 import * as SessionService from "./sessionservice.js";
 import * as TransferService from "./transferservice.js";
+import * as UpdateService from "./updateservice.js";
 export {
     FilesService,
     SessionService,
-    TransferService
+    TransferService,
+    UpdateService
 };
 
 export {
@@ -21,5 +23,6 @@ export type {
     FolderSize,
     OpResult,
     Session,
-    Transfer
+    Transfer,
+    UpdateStatus
 } from "./models.js";

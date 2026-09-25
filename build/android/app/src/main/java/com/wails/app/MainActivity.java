@@ -214,6 +214,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Add JavaScript interface for Go communication
         webView.addJavascriptInterface(new WailsJSBridge(bridge, webView), "wails");
+        webView.addJavascriptInterface(new NovaUpdater(this), "NovaAndroid");
     }
 
     private void loadApplication() {
