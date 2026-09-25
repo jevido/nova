@@ -103,7 +103,8 @@ jobs:
         env:
           VERSION: ${{ needs.version.outputs.version }}
         run: |
-          sed -i "s/^version: .*/version: \"${VERSION}\"/" build/linux/nfpm/nfpm.yaml
+          # pacman versions may not contain "-", so 0.1.0-dev.5 becomes 0.1.0.dev.5.
+          sed -i "s/^version: .*/version: \"${VERSION//-/.}\"/" build/linux/nfpm/nfpm.yaml
 
       - name: Build and package
         env:
@@ -116,9 +117,10 @@ jobs:
         run: |
           mkdir -p dist
           cp bin/nova "dist/nova-${VERSION}-linux-amd64"
-          for f in bin/*.AppImage bin/*.deb bin/*.rpm bin/*.pkg.tar.zst; do
-            [ -e "$f" ] && cp "$f" dist/
-          done
+          cp bin/nova-x86_64.AppImage "dist/nova-${VERSION}-x86_64.AppImage"
+          cp bin/nova.deb "dist/nova-${VERSION}-amd64.deb"
+          cp bin/nova.rpm "dist/nova-${VERSION}-x86_64.rpm"
+          cp bin/nova.pkg.tar.zst "dist/nova-${VERSION}-x86_64.pkg.tar.zst"
           ls -la dist
 
       - uses: actions/upload-artifact@v4

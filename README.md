@@ -20,12 +20,12 @@ are published on the [Releases](https://github.com/jevido/nova/releases) page.
 Nova needs GTK 4 and WebKitGTK 6.0, which recent distributions ship
 (Ubuntu 24.04+, Debian 13+, Fedora 40+, Arch).
 
-| Distribution    | File                     | Install                                              |
-| --------------- | ------------------------ | ---------------------------------------------------- |
-| Arch / Omarchy  | `nova-*.pkg.tar.zst`     | `sudo pacman -U nova-*.pkg.tar.zst`                  |
-| Debian / Ubuntu | `nova_*_amd64.deb`       | `sudo apt install ./nova_*_amd64.deb`                |
-| Fedora / RHEL   | `nova-*.x86_64.rpm`      | `sudo dnf install ./nova-*.x86_64.rpm`               |
-| Anything else   | `nova-*.AppImage`        | `chmod +x nova-*.AppImage && ./nova-*.AppImage`      |
+| Distribution    | File                        | Install                                                   |
+| --------------- | --------------------------- | --------------------------------------------------------- |
+| Arch / Omarchy  | `nova-*-x86_64.pkg.tar.zst` | `sudo pacman -U nova-*-x86_64.pkg.tar.zst`                |
+| Debian / Ubuntu | `nova-*-amd64.deb`          | `sudo apt install ./nova-*-amd64.deb`                     |
+| Fedora / RHEL   | `nova-*-x86_64.rpm`         | `sudo dnf install ./nova-*-x86_64.rpm`                    |
+| Anything else   | `nova-*-x86_64.AppImage`    | `chmod +x nova-*-x86_64.AppImage && ./nova-*-x86_64.AppImage` |
 
 The packages install `nova` to `/usr/bin` and add Nova to your application
 launcher. There is also a bare `nova-*-linux-amd64` binary if you want to put
