@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Nova, a file manager for nova.storage</title>
-  <meta name="description" content="Nova is a file manager for your nova.storage account on Linux and Android. Browse, upload, preview and share your files like they're on your own disk.">
+  <meta name="description" content="Nova is a file manager for your nova.storage account on Linux, Windows, Android, iPhone and iPad. Browse, upload, preview and share your files like they're on your own disk.">
   <meta name="theme-color" content="#040a00">
   <meta name="color-scheme" content="dark">
   <link rel="icon" type="image/png" href="assets/icon.png">
@@ -43,7 +43,9 @@
           <a class="button" href="#features"><svg class="icon"><use href="#i-star"/></svg>Features</a>
           <a class="button" href="#download"><svg class="icon"><use href="#i-download"/></svg>Download</a>
           <a class="button sub" href="#linux"><svg class="icon"><use href="#i-computer"/></svg>Linux</a>
+          <a class="button sub" href="#windows"><svg class="icon"><use href="#i-computer"/></svg>Windows</a>
           <a class="button sub" href="#android"><svg class="icon"><use href="#i-phone"/></svg>Android</a>
+          <a class="button sub" href="#ios"><svg class="icon"><use href="#i-phone"/></svg>iPhone &amp; iPad</a>
           <a class="button" href="#sign-in"><svg class="icon"><use href="#i-login"/></svg>Sign in</a>
           <p class="nav_title">Elsewhere</p>
           <a class="button" href="https://github.com/jevido/nova"><svg class="icon"><use href="#i-code"/></svg>Source code</a>
@@ -71,16 +73,16 @@
 
       <main>
         <div class="page_content">
-          <div class="highlight_green">Linux (x86_64) and Android (arm64). No account with us, no tracking. Just you and your storage.</div>
+          <div class="highlight_green">Linux and Windows (x86_64), Android (arm64), iPhone and iPad. No account with us, no tracking. Just you and your storage.</div>
 
           <section class="intro">
             <div class="intro_copy">
               <p>Nova is a file manager for your <a href="https://nova.storage">nova.storage</a> account. It looks and works like the file manager you already know, so your cloud storage behaves like just another folder, on your desktop and on your phone.</p>
-              <p>It takes its cues from GNOME Files: headerbar and path bar, places sidebar, icon and list views, right-click menus and the usual shortcuts. On the desktop it uses your system icon theme, so it fits right in.</p>
+              <p>It takes its cues from GNOME Files: headerbar and path bar, places sidebar, icon and list views, right-click menus and the usual shortcuts. On Linux it uses your system icon theme, so it fits right in.</p>
               <p class="cta" data-primary>
                 <a class="button highlight big" data-dl="linux" href="#download">
                   <svg class="icon"><use href="#i-download"/></svg>
-                  <span><strong data-label>Download Nova</strong><small data-sub>Linux &amp; Android</small></span>
+                  <span><strong data-label>Download Nova</strong><small data-sub>Linux, Windows, Android &amp; iOS</small></span>
                 </a>
                 <a class="button big" href="#download">All downloads</a>
               </p>
@@ -126,7 +128,8 @@
 
             <h3>What you don't get</h3>
             <ul>
-              <li>Windows and macOS builds. Not available yet. Want to help? <a href="https://github.com/jevido/nova">Nova is open source</a>.</li>
+              <li>A macOS build. Not available yet. Want to help? <a href="https://github.com/jevido/nova">Nova is open source</a>.</li>
+              <li>Nova in the App Store. For now you install the iPhone and iPad app yourself (see <a href="#ios">below</a>).</li>
             </ul>
           </section>
         </div>
@@ -178,6 +181,39 @@
             </div>
           </article>
 
+          <article class="platform" data-platform="windows" id="windows">
+            <div class="p_head">
+              <svg viewBox="0 0 24 24" aria-hidden="true" class="logo"><path fill="currentColor" d="M3 5.1 10.4 4v7.1H3V5.1zm8.4-1.2L21 2.5v8.6h-9.6V3.9zM3 12.1h7.4v7.1L3 18.1v-6zm8.4 0H21v8.6l-9.6-1.4v-7.2z"/></svg>
+              <div>
+                <h2>Windows</h2>
+                <small>Windows 10 &amp; 11 · 64-bit</small>
+              </div>
+              <span class="rec">Your device</span>
+            </div>
+
+            <div class="p_part">
+              <a class="button highlight big wide" href="https://github.com/jevido/nova/releases/latest/download/nova-windows-amd64-setup.exe">
+                <svg class="icon"><use href="#i-download"/></svg>
+                <span><strong>Download installer</strong><small>nova-windows-amd64-setup.exe</small></span>
+              </a>
+              <p class="hint">Installs for your user account only, so no admin rights needed. Nova goes in the Start menu and updates itself.</p>
+            </div>
+
+            <div class="p_part">
+              <p class="label">Or run it without installing <span class="tag">updates itself</span></p>
+              <table class="pkgs">
+                <tbody>
+                  <tr><td><a href="https://github.com/jevido/nova/releases/latest/download/nova-windows-amd64.exe">Portable</a></td><td>.exe</td></tr>
+                </tbody>
+              </table>
+              <p class="hint">Put it in a folder you can write to, like Documents, and double-click it.</p>
+              <details>
+                <summary>“Windows protected your PC”?</summary>
+                <p class="hint">Nova isn't code-signed yet, so SmartScreen doesn't know it. Click <b>More info</b>, then <b>Run anyway</b>. You only need to do this once.</p>
+              </details>
+            </div>
+          </article>
+
           <article class="platform" data-platform="android" id="android">
             <div class="p_head">
               <svg viewBox="0 0 24 24" aria-hidden="true" class="logo"><path fill="currentColor" d="M17.6 9.48l1.84-3.18a.38.38 0 00-.66-.38l-1.87 3.23a11.5 11.5 0 00-9.82 0L5.22 5.92a.38.38 0 00-.66.38L6.4 9.48A10.8 10.8 0 001 18h22a10.8 10.8 0 00-5.4-8.52zM7 15.25a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5zm10 0a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5z"/></svg>
@@ -207,6 +243,35 @@
               <p>On your computer? Scan this with your phone to download.</p>
             </div>
           </article>
+
+          <article class="platform" data-platform="ios" id="ios">
+            <div class="p_head">
+              <svg viewBox="0 0 24 24" aria-hidden="true" class="logo"><path fill="currentColor" d="M12.15 6.9c-.95 0-2.42-1.08-3.96-1.04-2.04.03-3.91 1.18-4.96 3.01-2.12 3.68-.55 9.1 1.52 12.09 1.01 1.45 2.2 3.09 3.79 3.04 1.52-.07 2.09-.99 3.93-.99 1.83 0 2.35.99 3.96.95 1.64-.03 2.68-1.48 3.68-2.95 1.16-1.69 1.64-3.33 1.66-3.42-.04-.01-3.18-1.22-3.22-4.86-.03-3.04 2.48-4.49 2.6-4.56-1.43-2.09-3.62-2.32-4.39-2.38-2-.16-3.68 1.09-4.61 1.09zm3.38-3.07c.84-1.01 1.4-2.43 1.25-3.83-1.21.05-2.66.8-3.53 1.82-.78.9-1.46 2.34-1.27 3.71 1.34.1 2.71-.69 3.55-1.7z"/></svg>
+              <div>
+                <h2>iPhone &amp; iPad</h2>
+                <small>iOS 15+ · sideloaded</small>
+              </div>
+              <span class="rec">Your device</span>
+            </div>
+
+            <div class="p_part">
+              <a class="button highlight big wide" href="https://github.com/jevido/nova/releases/latest/download/nova-ios.ipa">
+                <svg class="icon"><use href="#i-download"/></svg>
+                <span><strong>Download IPA</strong><small>nova-ios.ipa</small></span>
+              </a>
+
+              <ol class="steps">
+                <li>Install <a href="https://altstore.io">AltStore</a> (or <a href="https://sidestore.io">SideStore</a>) on your iPhone, or <a href="https://sideloadly.io">Sideloadly</a> on your computer.</li>
+                <li>Download <b>nova-ios.ipa</b> and open it with that app. Sign in with your Apple ID when it asks; it signs Nova for your device.</li>
+                <li>The first time, allow the developer profile under <b>Settings › General › VPN &amp; Device Management</b>, and turn on <b>Developer Mode</b> if iOS asks.</li>
+              </ol>
+              <p class="hint">With a free Apple ID the app has to be refreshed every 7 days; AltStore and SideStore do that for you. Nova tells you when a new version is out; install it the same way.</p>
+            </div>
+
+            <div class="p_part">
+              <p class="hint">Not on the App Store or TestFlight: both need a paid Apple Developer account, which Nova doesn't have yet.</p>
+            </div>
+          </article>
         </div>
 
         <div class="page_content closing" id="sign-in">
@@ -219,7 +284,7 @@
       </main>
 
       <footer>
-        <p>Nova <span data-version-footer></span> is a desktop and Android client for <a href="https://nova.storage">nova.storage</a></p>
+        <p>Nova <span data-version-footer></span> is a desktop and mobile client for <a href="https://nova.storage">nova.storage</a></p>
         <p class="links">
           <a href="https://github.com/jevido/nova">Source</a> |
           <a href="https://github.com/jevido/nova/releases">Releases</a> |
