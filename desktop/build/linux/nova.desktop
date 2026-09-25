@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=nova
+Exec=nova
+Icon=nova
+Categories=System;FileTools;FileManager;Network;
+Terminal=false
+Keywords=wails
+Version=1.0
+StartupNotify=false
