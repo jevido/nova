@@ -62,6 +62,7 @@
     onToggleSidebar,
   }: { compact?: boolean; sidebarShown?: boolean; onToggleSidebar: () => void } = $props();
 
+  const windowsHost = /Windows/i.test(navigator.userAgent);
   const active = $derived(app.activeTransfers);
   const opsProgress = $derived.by(() => {
     const total = active.reduce((a, t) => a + t.totalBytes, 0);
@@ -220,7 +221,14 @@
     {#if !compact}<ViewControls />{/if}
     {#if !sidebarShown && !compact}<MainMenu />{/if}
     {#if !app.mobile}
-      <button class="btn image round close" title="Close" onclick={() => Window.Close()}><Icon name="window-close" /></button>
+      <span class="titlebuttons">
+        {#if windowsHost}
+          <!-- Windows users expect all three; GNOME's default is close only. -->
+          <button class="btn image round" title="Minimise" onclick={() => Window.Minimise()}><Icon name="window-minimize" /></button>
+          <button class="btn image round" title="Maximise" onclick={() => Window.ToggleMaximise()}><Icon name="window-maximize" /></button>
+        {/if}
+        <button class="btn image round" title="Close" onclick={() => Window.Close()}><Icon name="window-close" /></button>
+      </span>
     {/if}
   </div>
 </header>
@@ -388,10 +396,12 @@
     position: absolute;
     right: 9px;
   }
-  .close {
+  .titlebuttons {
+    display: flex;
+    gap: 12px;
     margin-left: 6px;
   }
-  .close :global(.icon) {
+  .titlebuttons :global(.icon) {
     width: 16px !important;
     height: 16px !important;
   }
