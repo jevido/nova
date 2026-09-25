@@ -34,6 +34,7 @@ func init() {
 	application.RegisterEvent[string](services.EventChanged)
 	application.RegisterEvent[DropEvent]("files:dropped")
 	application.RegisterEvent[string](EventMouseNav)
+	application.RegisterEvent[CrossDrag](EventCrossDrag)
 	application.RegisterEvent[services.UpdateStatus](services.EventUpdate)
 }
 
@@ -72,6 +73,14 @@ func main() {
 				services.NewMediaService(client, icons.NewResolver()),
 				application.ServiceOptions{Route: services.MediaRoute},
 			),
+		},
+		// Launching Nova again opens another window in the running app, like
+		// Nautilus, so windows can share drags and transfers.
+		SingleInstance: &application.SingleInstanceOptions{
+			UniqueID: "storage.nova.desktop",
+			OnSecondInstanceLaunch: func(application.SecondInstanceData) {
+				windows.NewWindow("")
+			},
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
@@ -126,6 +135,7 @@ func (s *WindowService) NewWindow(path string) {
 	})
 
 	enableMouseNav(win)
+	enableCrossDrag(win)
 
 	// Deliver OS file drops only to the window they were dropped on.
 	win.OnWindowEvent(events.Common.WindowFilesDropped, func(e *application.WindowEvent) {

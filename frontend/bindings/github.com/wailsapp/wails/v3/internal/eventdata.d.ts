@@ -17,8 +17,10 @@ declare module "@wailsio/runtime" {
         interface CustomEvents {
             "files:dropped": main$0.DropEvent;
             "fs:changed": string;
+            "mouse:nav": string;
             "transfer": services$0.Transfer;
             "update": services$0.UpdateStatus;
+            "xdrag": main$0.CrossDrag;
         }
     }
 }

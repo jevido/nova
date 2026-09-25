@@ -7,5 +7,7 @@ export {
 };
 
 export type {
+    CrossDrag,
+    DragPayload,
     DropEvent
 } from "./models.js";

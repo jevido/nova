@@ -10,9 +10,22 @@
 // @ts-ignore: Unused imports
 import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as $models from "./models.js";
+
 /**
  * NewWindow opens a window showing path (the home folder when empty).
  */
 export function NewWindow(path: string): $CancellablePromise<void> {
     return $Call.ByID(3096593237, path);
+}
+
+/**
+ * StartDrag hands the calling window's item drag over to the platform once
+ * the pointer leaves the window. It returns false when that isn't possible;
+ * the window then keeps the drag to itself.
+ */
+export function StartDrag(p: $models.DragPayload): $CancellablePromise<boolean> {
+    return $Call.ByID(522538417, p);
 }

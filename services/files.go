@@ -334,7 +334,26 @@ func (s *FilesService) Move(paths []string, destDir string) (*OpResult, error) {
 		res.Done = append(res.Done, target)
 		res.From = append(res.From, p)
 	}
+	emitChanged(res.From, destDir)
 	return res, nil
+}
+
+// emitChanged tells every window that the parents of paths, and extra, have
+// changed, so another window showing one of them refreshes.
+func emitChanged(paths []string, extra ...string) {
+	if len(paths) == 0 {
+		return
+	}
+	dirs := map[string]bool{}
+	for _, p := range paths {
+		dirs[nova.Parent(p)] = true
+	}
+	for _, d := range extra {
+		dirs[d] = true
+	}
+	for d := range dirs {
+		emit(EventChanged, d)
+	}
 }
 
 // Delete permanently deletes paths.
@@ -470,6 +489,7 @@ func (s *FilesService) Trash(paths []string) (*OpResult, error) {
 			res.Errors = append(res.Errors, "could not save trash info: "+err.Error())
 		}
 	}
+	emitChanged(res.Done, TrashDir)
 	return res, nil
 }
 

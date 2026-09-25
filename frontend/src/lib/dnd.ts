@@ -1,3 +1,6 @@
+import { Events } from "@wailsio/runtime";
+import * as Windows from "../../bindings/nova/windowservice";
+import type { CrossDrag } from "../../bindings/nova/models";
 import { app, parentOf, TRASH } from "./store.svelte";
 
 // Internal drag and drop, done with plain mouse events instead of the HTML5
@@ -5,6 +8,11 @@ import { app, parentOf, TRASH } from "./store.svelte";
 // drag machinery (GTK on Linux), which Wails also hooks for OS file drops, so
 // it isn't reliable there. Mouse events behave the same everywhere.
 // OS file drops still come in through Wails (data-file-drop-target).
+//
+// When an item drag leaves its window, it is handed to the platform's drag
+// and drop (see crossdrag_linux.go), so it can be dropped in another Nova
+// window. The window under it then gets "xdrag" events and runs the same
+// drop target logic as a drag of its own.
 //
 // Drop targets:
 //  - an element with data-drop-path="<folder>": dropping moves (Ctrl: copies)
@@ -35,6 +43,10 @@ let intent: DropIntent = null;
 let copy = false;
 let pointer = { x: 0, y: 0 };
 let scrollFrame = 0;
+// Set while the drag came from another window (or left this one and came back).
+let remote = false;
+let handingOff = false;
+let canHandOff = true;
 
 /** Svelte action: make an element a drop zone. */
 export function dropZone(node: HTMLElement, zone: DropZone) {
@@ -78,16 +90,22 @@ function arm(e: MouseEvent, make: () => DragPayload | null) {
 }
 
 function begin() {
+  canHandOff = true;
   payload = pending?.make() ?? null;
   pending = null;
   if (!payload) return disarm();
-  app.dragging = payload.kind === "items" ? { paths: payload.paths, allDirs: payload.allDirs } : null;
-  app.draggingBookmark = payload.kind === "bookmark" ? payload.path : null;
   ghost = document.createElement("div");
   ghost.className = "drag-ghost";
   document.body.appendChild(ghost);
-  document.documentElement.classList.add("dragging");
   addEventListener("keydown", onKey, true);
+  show(payload);
+}
+
+function show(p: DragPayload) {
+  app.dragging = p.kind === "items" ? { paths: p.paths, allDirs: p.allDirs } : null;
+  app.draggingBookmark = p.kind === "bookmark" ? p.path : null;
+  document.documentElement.classList.add("dragging");
+  cancelAnimationFrame(scrollFrame);
   scrollFrame = requestAnimationFrame(autoScroll);
 }
 
@@ -101,11 +119,56 @@ function onMove(e: MouseEvent) {
   if (!payload) return;
   e.preventDefault();
   copy = e.ctrlKey;
+  if (outside(e.clientX, e.clientY)) handOff();
   track(e.clientX, e.clientY);
 }
 
+function outside(x: number, y: number) {
+  return x < 0 || y < 0 || x >= innerWidth || y >= innerHeight;
+}
+
+/** Give an item drag that left the window to the platform, so other windows can take it. */
+async function handOff() {
+  if (handingOff || !canHandOff || payload?.kind !== "items") return;
+  handingOff = true;
+  const p = payload;
+  try {
+    if (await Windows.StartDrag(p)) {
+      // The platform has the pointer now; this window hears of the drag
+      // again through "xdrag" if it comes back.
+      if (payload === p) finish();
+    } else {
+      canHandOff = false; // keep dragging inside this window
+    }
+  } catch {
+    canHandOff = false;
+  } finally {
+    handingOff = false;
+  }
+}
+
+function onCrossDrag(d: CrossDrag) {
+  if (app.mobile || !d.payload) return;
+  if (d.type === "leave") {
+    if (remote) finish();
+    return;
+  }
+  if (!remote) {
+    if (payload) return; // a drag of our own is still going
+    remote = true;
+    payload = { kind: "items", paths: d.payload.paths ?? [], allDirs: d.payload.allDirs, label: d.payload.label };
+    show(payload);
+  }
+  copy = d.copy;
+  pointer = { x: d.x, y: d.y };
+  track(d.x, d.y);
+  if (d.type === "drop") drop();
+}
+
+Events.On("xdrag", (ev) => onCrossDrag(ev.data));
+
 function track(x: number, y: number) {
-  if (!payload || !ghost) return;
+  if (!payload) return;
   const target = document.elementFromPoint(x, y);
   const zoneEl = target?.closest("[data-drop-zone]");
   const zone = zoneEl ? zones.get(zoneEl) ?? null : null;
@@ -123,6 +186,7 @@ function track(x: number, y: number) {
   intent = next;
   app.dropTarget = intent?.kind === "into" ? intent.path : null;
 
+  if (!ghost) return;
   ghost.style.transform = `translate(${x + 14}px, ${y + 14}px)`;
   ghost.textContent = payload.label;
   ghost.dataset.action = intent === null ? "none" : intent.kind === "insert" ? "bookmark" : intent.path === TRASH ? "trash" : copy ? "copy" : "move";
@@ -143,14 +207,19 @@ function onUp(e: MouseEvent) {
   e.preventDefault();
   copy = e.ctrlKey;
   track(e.clientX, e.clientY);
+  // The mouseup would otherwise also count as a click on whatever is below.
+  addEventListener("click", swallow, { capture: true, once: true });
+  setTimeout(() => removeEventListener("click", swallow, true), 0);
+  drop();
+}
+
+/** Drop the payload where track() last put it. */
+function drop() {
   const p = payload;
   const it = intent;
   const zone = activeZone;
   finish();
-  // The mouseup would otherwise also count as a click on whatever is below.
-  addEventListener("click", swallow, { capture: true, once: true });
-  setTimeout(() => removeEventListener("click", swallow, true), 0);
-  if (!it) return;
+  if (!p || !it) return;
   if (it.kind === "insert") zone?.drop(it, p);
   else if (p.kind === "items") dropItems(p.paths, it.path, copy);
 }
@@ -176,6 +245,7 @@ function finish() {
   activeZone = null;
   intent = null;
   payload = null;
+  remote = false;
   ghost?.remove();
   ghost = null;
   cancelAnimationFrame(scrollFrame);
