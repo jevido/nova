@@ -9,6 +9,7 @@
   import Modals from "./components/Modals.svelte";
   import Sidebar from "./components/Sidebar.svelte";
   import Toasts from "./components/Toasts.svelte";
+  import Settings from "./components/Settings.svelte";
   import Icon from "./components/Icon.svelte";
   import ViewControls from "./components/ViewControls.svelte";
 
@@ -70,7 +71,7 @@
 
   // Global shortcuts, matching Nautilus where possible.
   function onKey(e: KeyboardEvent) {
-    if (!app.session?.signedIn || app.modal || app.menu) return;
+    if (!app.session?.signedIn || app.modal || app.menu || app.settingsOpen) return;
     if (e.key === "Escape" && app.drawerOpen) {
       app.drawerOpen = false;
       e.preventDefault();
@@ -100,6 +101,7 @@
       queueMicrotask(() => (document.querySelector("[data-main-menu]") as HTMLElement)?.click());
     }
     else if (ctrl && (k === "?" || (e.shiftKey && k === "/"))) app.modal = { kind: "shortcuts" };
+    else if (ctrl && k === ",") app.settingsOpen = true;
     else if (e.altKey && k === "ArrowLeft") app.back();
     else if (e.altKey && k === "ArrowRight") app.forward();
     else if (e.altKey && k === "ArrowUp") app.up();
@@ -137,7 +139,10 @@
   }}
   onfocus={() => {
     // No file monitors on a remote FS: refresh when the user comes back.
-    if (app.session?.signedIn && !app.loading && !app.modal && !app.renaming) app.reload(true);
+    if (app.session?.signedIn && !app.loading && !app.modal && !app.renaming) {
+      app.reload(true);
+      app.syncBookmarks(false);
+    }
   }}
 />
 
@@ -178,6 +183,7 @@
   </div>
 {/if}
 
+{#if app.session?.signedIn}<Settings />{/if}
 <Menu />
 <Modals />
 

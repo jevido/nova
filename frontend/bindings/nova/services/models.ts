@@ -46,6 +46,15 @@ export interface FolderSize {
 }
 
 /**
+ * FolderStatus says whether a recommended folder exists already.
+ */
+export interface FolderStatus {
+    "name": string;
+    "path": string;
+    "exists": boolean;
+}
+
+/**
  * OpResult reports partial failure of a batch operation.
  */
 export interface OpResult {
@@ -142,4 +151,14 @@ export interface UpdateStatus {
      * ApkPath is the downloaded update on Android, handed to the installer.
      */
     "apkPath": string;
+}
+
+/**
+ * UsageSeries is one chart's worth of data for the UI.
+ */
+export interface UsageSeries {
+    "kind": string;
+    "timestamps": string[] | null;
+    "amounts": number[] | null;
+    "total": number;
 }

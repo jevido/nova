@@ -58,6 +58,7 @@ func main() {
 		Services: []application.Service{
 			application.NewService(services.NewSessionService(client, store)),
 			application.NewService(services.NewFilesService(client)),
+			application.NewService(services.NewAccountService(client, store)),
 			application.NewService(transfers),
 			application.NewService(windows),
 			application.NewService(services.NewUpdateService()),

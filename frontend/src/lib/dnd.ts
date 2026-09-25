@@ -7,8 +7,11 @@ let dragging: string[] = [];
 
 export function startDrag(e: DragEvent, paths: string[]) {
   dragging = paths;
+  const dirs = new Set(app.entries.filter((x) => x.isDir).map((x) => x.path));
+  app.dragging = { paths, allDirs: paths.every((p) => dirs.has(p)) };
   if (!e.dataTransfer) return;
-  e.dataTransfer.effectAllowed = "copyMove";
+  // "link" too: dropping folders into the sidebar bookmarks them.
+  e.dataTransfer.effectAllowed = "all";
   e.dataTransfer.setData(MIME, JSON.stringify(paths));
   e.dataTransfer.setData("text/plain", paths.join("\n"));
   const n = paths.length;
@@ -27,6 +30,7 @@ export function startDrag(e: DragEvent, paths: string[]) {
 export function endDrag() {
   dragging = [];
   app.dropTarget = null;
+  app.dragging = null;
 }
 
 function acceptable(target: string): boolean {

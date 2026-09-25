@@ -157,6 +157,7 @@
         ["Ctrl+Z", "Undo"],
         ["Ctrl+I / Alt+Return", "Properties"],
         ["Ctrl+D", "Bookmark location"],
+        ["Ctrl+,", "Settings"],
       ],
     ],
   ];

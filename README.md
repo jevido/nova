@@ -106,7 +106,16 @@ Keys created by a password sign-in are revoked again when you sign out.
 - Trash with restore and empty, stored on the server in `/me/.Trash`, so it
   works across devices; permanent delete with `Shift+Delete`
 - Undo (`Ctrl+Z`) for rename, move and trash
-- Starred items and folder bookmarks in the sidebar
+- Starred items, and your own shortcuts in the sidebar: drag a folder between
+  the sidebar rows (or onto "New Bookmark") to add it, drag bookmarks to
+  reorder them, right-click to rename, move or remove. Bookmarks are stored in
+  `/me/.nova/bookmarks.json`, the same file the nova.storage website uses, so
+  they are the same everywhere.
+- Settings (click your name in the sidebar, or `Ctrl+,`): storage and transfer
+  used, your plan, graphs of transfer and downloads over a day up to a year,
+  update checks and sign-out. **Folders** creates a recommended layout
+  (Documents, Downloads, Music, Pictures, Videos, Projects, Backups); it only
+  adds folders you don't have and never removes or renames anything.
 - Properties dialog with folder size, checksums and a public-link toggle
 - Background transfers with progress, speed and cancel (the operations button)
 - Multiple windows (`Ctrl+N`)

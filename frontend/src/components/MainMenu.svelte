@@ -34,6 +34,7 @@
       {/each}
     </div>
     <div class="psep"></div>
+    <button class="modelbutton" onclick={() => (app.settingsOpen = true)}>Settings<span class="accel">Ctrl+,</span></button>
     {#if !app.mobile}
       <button class="modelbutton" onclick={() => (app.modal = { kind: "shortcuts" })}>Keyboard Shortcuts<span class="accel">Ctrl+?</span></button>
     {/if}
@@ -42,17 +43,11 @@
         <span class="dot"></span>{app.mobile ? "Install" : "Restart to Install"} Nova {app.update.latestVersion}
       </button>
     {:else if app.update?.state === "manual"}
-      <button class="modelbutton" onclick={() => app.checkForUpdates()}>
+      <button class="modelbutton" onclick={() => (app.settingsOpen = true)}>
         <span class="dot"></span>Nova {app.update.latestVersion} Available…
-      </button>
-    {:else}
-      <button class="modelbutton" disabled={app.update?.state === "checking" || app.update?.state === "downloading"} onclick={() => app.checkForUpdates()}>
-        {app.update?.state === "downloading" ? "Downloading Update…" : app.update?.state === "checking" ? "Checking for Updates…" : "Check for Updates"}
       </button>
     {/if}
     <button class="modelbutton" onclick={() => (app.modal = { kind: "about" })}>About Nova</button>
-    <div class="psep"></div>
-    <button class="modelbutton" onclick={() => app.signOut()}>Sign Out…</button>
   </div>
 </Popover>
 

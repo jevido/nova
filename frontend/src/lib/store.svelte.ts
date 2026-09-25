@@ -5,6 +5,7 @@ import * as Session from "../../bindings/nova/services/sessionservice";
 import * as Transfers from "../../bindings/nova/services/transferservice";
 import * as Windows from "../../bindings/nova/windowservice";
 import * as Updates from "../../bindings/nova/services/updateservice";
+import * as Account from "../../bindings/nova/services/accountservice";
 import type {
   Entry,
   Folder,
@@ -107,12 +108,16 @@ class AppState {
   cursor = $state<string | null>(null);
   renaming = $state<string | null>(null);
   dropTarget = $state<string | null>(null);
+  /** What is being dragged inside the app, so the sidebar can offer to bookmark folders. */
+  dragging = $state<{ paths: string[]; allDirs: boolean } | null>(null);
 
   // ---- misc ----
   clipboard = $state<{ mode: "copy" | "cut"; paths: string[] } | null>(null);
   transfers = $state<Transfer[]>([]);
   toasts = $state<Toast[]>([]);
   modal = $state<Modal | null>(null);
+  /** The settings page; a layer of its own so dialogs can open on top. */
+  settingsOpen = $state(false);
   menu = $state<MenuState>(null);
   trashCount = $state(0);
   update = $state<UpdateStatus | null>(null);
@@ -207,6 +212,21 @@ class AppState {
     const start = new URLSearchParams(location.search).get("path");
     await this.navigate(start && (start === HOME || start.startsWith(HOME + "/")) ? start : HOME, false);
     this.refreshTrashCount();
+    this.syncBookmarks();
+  }
+
+  private lastBookmarkSync = 0;
+
+  /** Pull the sidebar bookmarks from the server (shared with the web interface). */
+  async syncBookmarks(force = true) {
+    if (!force && Date.now() - this.lastBookmarkSync < 30_000) return;
+    this.lastBookmarkSync = Date.now();
+    try {
+      const list = await Account.SyncBookmarks();
+      if (list) this.prefs.bookmarks = list;
+    } catch {
+      /* offline: keep the local copy */
+    }
   }
 
   async signInWithKey(key: string) {
@@ -256,6 +276,10 @@ class AppState {
   handleBack(): boolean {
     if (this.modal) {
       this.dismissModal();
+      return true;
+    }
+    if (this.settingsOpen) {
+      this.settingsOpen = false;
       return true;
     }
     if (this.menu) {
@@ -629,7 +653,7 @@ class AppState {
     if (!np) return;
     const oldName = baseName(path);
     this.retargetStars(path, np);
-    this.pushUndo({ label: "rename", run: () => Files.Rename(np, oldName).then(() => {}) });
+    this.pushUndo({ label: "rename", run: () => Files.Rename(np, oldName).then((back) => this.retargetStars(np, back)) });
     await this.reload(true);
     this.selectPaths([np]);
   }
@@ -797,17 +821,68 @@ class AppState {
   }
 
   toggleBookmark(path = this.path) {
-    if (path === HOME || path === TRASH) return;
-    const bm = this.prefs.bookmarks ?? [];
-    const i = bm.findIndex((b) => b.path === path);
-    if (i >= 0) bm.splice(i, 1);
-    else bm.push({ name: baseName(path), path });
-    this.prefs.bookmarks = bm;
-    this.savePrefs();
+    if (path === HOME || path === TRASH || path === STARRED) return;
+    if (this.isBookmarked(path)) this.removeBookmark(path);
+    else this.addBookmarks([path]);
   }
 
-  /** Keep stars pointing at renamed or moved items (and their children). */
+  /** Add folders to the sidebar, at index `at` (default: the end). */
+  addBookmarks(paths: string[], at?: number) {
+    const bm = [...(this.prefs.bookmarks ?? [])];
+    const fresh = paths.filter((p) => p !== HOME && !p.startsWith(TRASH) && !bm.some((b) => b.path === p));
+    if (!fresh.length) return;
+    bm.splice(at ?? bm.length, 0, ...fresh.map((p) => ({ name: baseName(p), path: p })));
+    this.setBookmarks(bm);
+  }
+
+  removeBookmark(path: string) {
+    this.setBookmarks((this.prefs.bookmarks ?? []).filter((b) => b.path !== path));
+  }
+
+  renameBookmarkTo(path: string, name: string) {
+    this.setBookmarks((this.prefs.bookmarks ?? []).map((b) => (b.path === path ? { ...b, name } : b)));
+  }
+
+  /** Move a bookmark so it ends up before index `to` of the current list. */
+  moveBookmark(path: string, to: number) {
+    const bm = [...(this.prefs.bookmarks ?? [])];
+    const from = bm.findIndex((b) => b.path === path);
+    if (from < 0) return;
+    const [b] = bm.splice(from, 1);
+    bm.splice(from < to ? to - 1 : to, 0, b);
+    this.setBookmarks(bm);
+  }
+
+  private bookmarkTimer: ReturnType<typeof setTimeout> | undefined;
+
+  private setBookmarks(bm: { name: string; path: string }[]) {
+    this.prefs.bookmarks = bm;
+    this.savePrefs();
+    // Batch quick edits (like dragging several rows) into one upload.
+    clearTimeout(this.bookmarkTimer);
+    this.bookmarkTimer = setTimeout(() => {
+      Account.SaveBookmarks($state.snapshot(this.prefs.bookmarks) ?? []).catch((e) =>
+        this.toast(`Could not save bookmarks to nova.storage: ${errText(e)}`, { error: true }),
+      );
+    }, 400);
+  }
+
+  /** Keep bookmarks pointing at renamed or moved folders. */
+  private retargetBookmarks(from: string, to: string) {
+    const bm = this.prefs.bookmarks ?? [];
+    if (!bm.some((b) => b.path === from || b.path.startsWith(from + "/"))) return;
+    this.setBookmarks(
+      bm.map((b) => {
+        if (b.path === from) return { name: b.name === baseName(from) ? baseName(to) : b.name, path: to };
+        if (b.path.startsWith(from + "/")) return { ...b, path: to + b.path.slice(from.length) };
+        return b;
+      }),
+    );
+  }
+
+  /** Keep stars and bookmarks pointing at renamed or moved items (and their children). */
   private retargetStars(from: string, to: string) {
+    this.retargetBookmarks(from, to);
     const st = this.prefs.starred ?? [];
     let changed = false;
     const next = st.map((p) => {

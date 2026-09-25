@@ -248,6 +248,28 @@ func (c *Client) Logout(ctx context.Context) error {
 	return c.doJSON(ctx, http.MethodDelete, "user/session", nil, nil)
 }
 
+// Series is a usage time series: amounts[i] happened in the interval
+// starting at timestamps[i].
+type Series struct {
+	Timestamps []string  `json:"timestamps"`
+	Amounts    []float64 `json:"amounts"`
+}
+
+// TimeSeries returns the user's usage of kind ("egress" or "downloads")
+// between start and end, bucketed per interval.
+func (c *Client) TimeSeries(ctx context.Context, kind string, start, end time.Time, interval time.Duration) (*Series, error) {
+	q := url.Values{
+		"start":    {start.UTC().Format(time.RFC3339)},
+		"end":      {end.UTC().Format(time.RFC3339)},
+		"interval": {strconv.Itoa(int(interval / time.Minute))},
+	}
+	var s Series
+	if err := c.doJSON(ctx, http.MethodGet, "user/time_series/"+url.PathEscape(kind)+"?"+q.Encode(), nil, &s); err != nil {
+		return nil, err
+	}
+	return &s, nil
+}
+
 // ---- Filesystem ----
 
 type Permissions struct {
