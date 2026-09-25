@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="wails_blue">#3584E4</color>
+    <color name="wails_blue_dark">#1C71D8</color>
+    <!-- Adwaita headerbar colours so the status bar blends with the app. -->
+    <color name="wails_background">#DAD6D2</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+</resources>
