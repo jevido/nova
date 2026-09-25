@@ -34,3 +34,15 @@ export interface DropEvent {
     "dir": string;
     "files": string[] | null;
 }
+
+/**
+ * ItemClipboard is what Cut or Copy put aside for the Paste command. It
+ * lives here in Go so that every Nova window pastes the same items.
+ */
+export interface ItemClipboard {
+    /**
+     * "copy" or "cut"
+     */
+    "mode": string;
+    "paths": string[] | null;
+}

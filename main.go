@@ -35,6 +35,7 @@ func init() {
 	application.RegisterEvent[DropEvent]("files:dropped")
 	application.RegisterEvent[string](EventMouseNav)
 	application.RegisterEvent[CrossDrag](EventCrossDrag)
+	application.RegisterEvent[*ItemClipboard](EventClipboard)
 	application.RegisterEvent[services.UpdateStatus](services.EventUpdate)
 }
 

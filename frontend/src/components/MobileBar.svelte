@@ -35,7 +35,7 @@
   {#if app.clipboard && app.canWrite && !selecting}
     <div class="pastebar">
       <span class="grow">{pluralize(app.clipboard.paths.length, "item", "items")} to {app.clipboard.mode === "cut" ? "move" : "copy"}</span>
-      <button class="btn flat" onclick={() => (app.clipboard = null)}>Cancel</button>
+      <button class="btn flat" onclick={() => app.setClipboard(null)}>Cancel</button>
       <button class="btn suggested" onclick={() => app.paste()}>{app.clipboard.mode === "cut" ? "Move Here" : "Paste Here"}</button>
     </div>
   {:else if app.canWrite && !selecting && !app.searchOpen && !app.drawerOpen}

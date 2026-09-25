@@ -15,10 +15,25 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 import * as $models from "./models.js";
 
 /**
+ * Clipboard returns the items waiting to be pasted, or nil.
+ */
+export function Clipboard(): $CancellablePromise<$models.ItemClipboard | null> {
+    return $Call.ByID(919387997);
+}
+
+/**
  * NewWindow opens a window showing path (the home folder when empty).
  */
 export function NewWindow(path: string): $CancellablePromise<void> {
     return $Call.ByID(3096593237, path);
+}
+
+/**
+ * SetClipboard puts items on the clipboard shared by all windows; nil (or no
+ * paths) clears it.
+ */
+export function SetClipboard(c: $models.ItemClipboard | null): $CancellablePromise<void> {
+    return $Call.ByID(1010165295, c);
 }
 
 /**

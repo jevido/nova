@@ -9,5 +9,6 @@ export {
 export type {
     CrossDrag,
     DragPayload,
-    DropEvent
+    DropEvent,
+    ItemClipboard
 } from "./models.js";

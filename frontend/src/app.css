@@ -103,6 +103,15 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Text fields stay selectable, so a long press offers Paste on touch screens. */
+input,
+textarea,
+[contenteditable] {
+  user-select: text;
+  -webkit-user-select: text;
+  -webkit-touch-callout: default;
+}
+
 input,
 button,
 select,

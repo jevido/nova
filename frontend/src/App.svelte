@@ -133,7 +133,10 @@
 <svelte:window
   bind:innerWidth={width}
   onkeydown={onKey}
-  oncontextmenu={(e) => e.preventDefault()}
+  oncontextmenu={(e) => {
+    // Text fields keep the webview's own menu (a long press on touch), for paste.
+    if (!(e.target as HTMLElement).closest?.("input, textarea, [contenteditable]")) e.preventDefault();
+  }}
   onmousedown={(e) => (e.button === 3 || e.button === 4) && e.preventDefault()}
   onmouseup={(e) => {
     // Mouse side buttons navigate history. (On Linux they arrive from Go as

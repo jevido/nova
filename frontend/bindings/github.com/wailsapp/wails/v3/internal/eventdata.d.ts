@@ -15,6 +15,7 @@ import type * as services$0 from "../../../../../nova/services/models.js";
 declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
+            "clipboard": main$0.ItemClipboard | null;
             "files:dropped": main$0.DropEvent;
             "fs:changed": string;
             "mouse:nav": string;

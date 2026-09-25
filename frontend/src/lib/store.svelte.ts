@@ -37,6 +37,9 @@ export type MenuItem =
   | { label: string; accel?: string; disabled?: boolean; checked?: boolean; run: () => void; sep?: false };
 export type MenuState = { x: number; y: number; items: MenuItem[]; minWidth?: number } | null;
 
+/** Items Cut or Copy put aside; Go keeps it (ItemClipboard) for all windows. */
+type ItemClipboard = { mode: "copy" | "cut"; paths: string[] };
+
 type Undo = { label: string; run: () => Promise<void> };
 
 export const ZOOM_SIZES = [48, 64, 96, 128, 192];
@@ -115,7 +118,7 @@ class AppState {
   draggingBookmark = $state<string | null>(null);
 
   // ---- misc ----
-  clipboard = $state<{ mode: "copy" | "cut"; paths: string[] } | null>(null);
+  clipboard = $state<ItemClipboard | null>(null);
   transfers = $state<Transfer[]>([]);
   toasts = $state<Toast[]>([]);
   modal = $state<Modal | null>(null);
@@ -189,6 +192,9 @@ class AppState {
     }
 
     Events.On("transfer", (ev) => this.onTransfer(ev.data));
+    // Cut/Copy is shared by all Nova windows, so Paste works in any of them.
+    Events.On("clipboard", (ev) => (this.clipboard = ev.data as ItemClipboard | null));
+    Windows.Clipboard().then((c) => (this.clipboard = c as ItemClipboard | null));
     Events.On("fs:changed", (ev) => {
       if (ev.data === this.path) this.reload(true);
     });
@@ -261,6 +267,8 @@ class AppState {
     this.session = { signedIn: false, server: this.session?.server ?? "", user: null };
     this.folder = null;
     this.resetAccountState();
+    // Other windows' items belong to the old account too.
+    this.setClipboard(null);
   }
 
   async refreshUser() {
@@ -756,10 +764,16 @@ class AppState {
 
   copy(cut = false, paths = this.selection.map((e) => e.path)) {
     if (!paths.length) return;
-    this.clipboard = { mode: cut ? "cut" : "copy", paths };
+    this.setClipboard({ mode: cut ? "cut" : "copy", paths });
     this.toast(
       `${pluralize(paths.length, "item", "items")} ${cut ? "will be moved" : "will be copied"} if you select the Paste command`,
     );
+  }
+
+  /** Put items on (or clear) the clipboard every window shares. */
+  setClipboard(c: ItemClipboard | null) {
+    this.clipboard = c;
+    Windows.SetClipboard(c).catch(() => {});
   }
 
   async paste(dir = this.path) {
@@ -767,7 +781,7 @@ class AppState {
     if (!cb || this.inTrash) return;
     if (cb.mode === "cut") {
       await this.move(cb.paths, dir);
-      this.clipboard = null;
+      this.setClipboard(null);
     } else {
       await this.copyTo(cb.paths, dir);
     }
