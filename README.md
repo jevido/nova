@@ -152,7 +152,11 @@ Keys created by a password sign-in are revoked again when you sign out.
 - Download files and folders (recursively) to a local folder
 - Open files with the default local application (downloaded to a cache first)
 - Quick preview for images, video, audio and text (`Space`)
-- Cut/copy/paste, drag-and-drop move (hold `Ctrl` to copy), rename (`F2`)
+- Cut/copy/paste, drag files and folders onto a folder, a path bar segment or
+  a sidebar entry to move them (hold `Ctrl` to copy, `Esc` cancels), rename
+  (`F2`)
+- Mouse back/forward buttons navigate; middle-click a folder to open it in a
+  new window
 - Trash with restore and empty, stored on the server in `/me/.Trash`, so it
   works across devices; permanent delete with `Shift+Delete`
 - Undo (`Ctrl+Z`) for rename, move and trash

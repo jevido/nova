@@ -1,7 +1,7 @@
 <script lang="ts">
   import { app, HOME, STARRED, TRASH } from "../lib/store.svelte";
   import { formatSize } from "../lib/format";
-  import { dragLeave, dragOver, dropOn, endDrag } from "../lib/dnd";
+  import { dropZone, pressBookmark, type DropZone } from "../lib/dnd";
   import Icon from "./Icon.svelte";
   import MainMenu from "./MainMenu.svelte";
 
@@ -43,70 +43,52 @@
   }
 
   // ---------- editing the bookmarks by drag and drop, like Nautilus ----------
-  const BM_MIME = "application/x-nova-bookmark";
-  let movingBookmark = $state<string | null>(null);
   /** Where a dragged folder or bookmark would be inserted, as a list index. */
   let insertAt = $state<number | null>(null);
 
   const addingFolders = $derived(!!app.dragging?.allDirs);
-  const editing = $derived(addingFolders || movingBookmark !== null);
+  const editing = $derived(addingFolders || app.draggingBookmark !== null);
 
-  function onBookmarkDragStart(e: DragEvent, path: string) {
-    movingBookmark = path;
-    e.dataTransfer?.setData(BM_MIME, path);
-    if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
-  }
+  // Over a bookmark's middle, dragged items move into that folder; between
+  // rows (or anywhere for a dragged bookmark) folders are inserted as bookmarks.
+  const bookmarkZone: DropZone = {
+    over(x, y, target, payload) {
+      const list = target.closest(".bookmarks");
+      const row = target.closest<HTMLElement>(".row[data-path]");
+      if (payload.kind === "items" && row) {
+        const r = row.getBoundingClientRect();
+        const t = (y - r.top) / r.height;
+        if (!payload.allDirs || (t >= 0.25 && t <= 0.75)) {
+          insertAt = null;
+          return { kind: "into", path: row.dataset.path! };
+        }
+      }
+      if (payload.kind === "items" && !payload.allDirs) {
+        insertAt = null;
+        return null;
+      }
+      const rows = [...(list?.querySelectorAll<HTMLElement>(".row[data-path]") ?? [])];
+      insertAt = rows.filter((r) => {
+        const b = r.getBoundingClientRect();
+        return b.top + b.height / 2 < y;
+      }).length;
+      return { kind: "insert", index: insertAt };
+    },
+    drop(intent, payload) {
+      if (intent?.kind !== "insert") return;
+      if (payload.kind === "bookmark") app.moveBookmark(payload.path, intent.index);
+      else if (payload.allDirs) app.addBookmarks(payload.paths, intent.index);
+    },
+    leave() {
+      insertAt = null;
+    },
+  };
 
-  function onBookmarkDragEnd() {
-    movingBookmark = null;
-    insertAt = null;
-  }
-
-  /** Over a bookmark row's middle: move the dragged items into that folder.
-   * Everywhere else in the list (row edges, gaps) is handled by the list and
-   * inserts a bookmark. */
-  function inMiddle(e: DragEvent): boolean {
-    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const y = (e.clientY - r.top) / r.height;
-    return y >= 0.25 && y <= 0.75;
-  }
-
-  function onRowDragOver(e: DragEvent, path: string) {
-    if (movingBookmark !== null || (addingFolders && !inMiddle(e))) return;
-    insertAt = null;
-    dragOver(e, path);
-  }
-
-  function onRowDrop(e: DragEvent, path: string) {
-    if (insertAt !== null) return;
-    dropOn(e, path);
-  }
-
-  function onListDragOver(e: DragEvent) {
-
-    if (!editing || e.defaultPrevented) return;
+  function middleClick(e: MouseEvent, path: string) {
+    if (e.button !== 1 || app.mobile) return;
     e.preventDefault();
-    if (e.dataTransfer) e.dataTransfer.dropEffect = movingBookmark !== null ? "move" : "link";
-    const rows = [...(e.currentTarget as HTMLElement).querySelectorAll<HTMLElement>(".row[data-path]")];
-    insertAt = rows.filter((r) => {
-      const b = r.getBoundingClientRect();
-      return b.top + b.height / 2 < e.clientY;
-    }).length;
-    app.dropTarget = null;
+    app.newWindow(path);
   }
-
-  function dropInsert(e: DragEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    const at = insertAt ?? bookmarks.length;
-    if (movingBookmark !== null) app.moveBookmark(movingBookmark, at);
-    else if (app.dragging?.allDirs) app.addBookmarks(app.dragging.paths, at);
-    movingBookmark = null;
-    insertAt = null;
-    endDrag();
-  }
-
-
 </script>
 
 <aside class="sidebar">
@@ -123,11 +105,11 @@
       class:selected={app.path === HOME && !app.results}
       class:drop={app.dropTarget === HOME}
       data-path={HOME}
+      data-drop-path={HOME}
       data-file-drop-target
       onclick={() => app.navigate(HOME)}
-      ondragover={(e) => dragOver(e, HOME)}
-      ondragleave={(e) => dragLeave(e, HOME)}
-      ondrop={(e) => dropOn(e, HOME)}
+      onmousedown={(e) => e.button === 1 && e.preventDefault()}
+      onauxclick={(e) => middleClick(e, HOME)}
     >
       <Icon name="user-home" /><span>Home</span>
     </button>
@@ -138,10 +120,8 @@
       class="row"
       class:selected={app.inTrash}
       class:drop={app.dropTarget === TRASH}
+      data-drop-path={TRASH}
       onclick={() => app.navigate(TRASH)}
-      ondragover={(e) => dragOver(e, TRASH)}
-      ondragleave={(e) => dragLeave(e, TRASH)}
-      ondrop={(e) => dropOn(e, TRASH)}
       oncontextmenu={(e) => {
         e.preventDefault();
         app.openMenu(e.clientX, e.clientY, [
@@ -156,30 +136,21 @@
     {#if bookmarks.length || editing}
       <div class="sep"></div>
       <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
-        class="bookmarks"
-        ondragover={onListDragOver}
-        ondrop={(e) => insertAt !== null && dropInsert(e)}
-        ondragleave={(e) => !(e.currentTarget as Node).contains(e.relatedTarget as Node) && (insertAt = null)}
-      >
+      <div class="bookmarks" use:dropZone={bookmarkZone}>
         {#each bookmarks as b, i (b.path)}
           {#if insertAt === i}<div class="insert"></div>{/if}
           <button
             class="row"
             class:selected={app.path === b.path && !app.results}
             class:drop={app.dropTarget === b.path}
-            class:moving={movingBookmark === b.path}
+            class:moving={app.draggingBookmark === b.path}
             title={b.path.replace(/^\/me/, "")}
             data-path={b.path}
             data-file-drop-target
-            draggable={!app.mobile}
             onclick={() => app.navigate(b.path)}
             oncontextmenu={(e) => bookmarkMenu(e, b.path)}
-            ondragstart={(e) => onBookmarkDragStart(e, b.path)}
-            ondragend={onBookmarkDragEnd}
-            ondragover={(e) => onRowDragOver(e, b.path)}
-            ondragleave={(e) => dragLeave(e, b.path)}
-            ondrop={(e) => onRowDrop(e, b.path)}
+            onmousedown={(e) => (e.button === 1 ? e.preventDefault() : pressBookmark(e, b.path, b.name))}
+            onauxclick={(e) => middleClick(e, b.path)}
           >
             <Icon name="folder" /><span>{b.name}</span>
           </button>

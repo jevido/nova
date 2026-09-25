@@ -131,11 +131,15 @@
   bind:innerWidth={width}
   onkeydown={onKey}
   oncontextmenu={(e) => e.preventDefault()}
+  onmousedown={(e) => (e.button === 3 || e.button === 4) && e.preventDefault()}
   onmouseup={(e) => {
-    // Mouse side buttons navigate history.
-    if (!app.session?.signedIn) return;
+    // Mouse side buttons navigate history. (On Linux they arrive from Go as
+    // the mouse:nav event instead; WebKitGTK doesn't pass them to the page.)
+    if (e.button !== 3 && e.button !== 4) return;
+    e.preventDefault();
+    if (!app.session?.signedIn || app.modal || app.settingsOpen) return;
     if (e.button === 3) app.back();
-    else if (e.button === 4) app.forward();
+    else app.forward();
   }}
   onfocus={() => {
     // No file monitors on a remote FS: refresh when the user comes back.

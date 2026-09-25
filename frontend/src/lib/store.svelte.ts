@@ -110,6 +110,8 @@ class AppState {
   dropTarget = $state<string | null>(null);
   /** What is being dragged inside the app, so the sidebar can offer to bookmark folders. */
   dragging = $state<{ paths: string[]; allDirs: boolean } | null>(null);
+  /** The sidebar bookmark being dragged to a new position. */
+  draggingBookmark = $state<string | null>(null);
 
   // ---- misc ----
   clipboard = $state<{ mode: "copy" | "cut"; paths: string[] } | null>(null);
@@ -185,6 +187,11 @@ class AppState {
     Events.On("transfer", (ev) => this.onTransfer(ev.data));
     Events.On("fs:changed", (ev) => {
       if (ev.data === this.path) this.reload(true);
+    });
+    Events.On("mouse:nav", (ev) => {
+      if (!this.session?.signedIn || this.modal || this.settingsOpen) return;
+      if (ev.data === "back") this.back();
+      else if (ev.data === "forward") this.forward();
     });
     Events.On("files:dropped", (ev) => {
       const dir = ev.data.dir || this.path;

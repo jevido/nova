@@ -3,7 +3,7 @@
   import type { Entry } from "../../bindings/nova/services/models";
   import { app, STARRED, TRASH, ZOOM_SIZES, LIST_ZOOM_SIZES, parentOf, type MenuItem } from "../lib/store.svelte";
   import { formatDate, formatSize, pluralize, stemLength } from "../lib/format";
-  import { dragLeave, dragOver, dropOn, endDrag, startDrag } from "../lib/dnd";
+  import { pressItems } from "../lib/dnd";
   import FileIcon from "./FileIcon.svelte";
   import Icon from "./Icon.svelte";
 
@@ -46,6 +46,11 @@
       if (!app.selected.has(entry.path)) app.selectPaths([entry.path]);
       return;
     }
+    if (e.button === 1) {
+      // Middle click opens in a new window (on auxclick); no autoscroll or paste.
+      e.preventDefault();
+      return;
+    }
     if (e.button !== 0) return;
     view?.focus();
     const wasSelected = app.selected.has(entry.path);
@@ -56,6 +61,9 @@
       app.selectPaths([entry.path]);
     }
     app.cursor = entry.path;
+    // Keep the webview from starting a text selection; a drag starts on move.
+    e.preventDefault();
+    if (app.selected.has(entry.path)) pressItems(e);
   }
 
   function itemClick(e: MouseEvent, entry: Entry) {
@@ -285,16 +293,13 @@
     ]);
   }
 
-  // ---------- drag and drop ----------
+  // ---------- middle click: open folders in a new window ----------
 
-  function onDragStart(e: DragEvent, entry: Entry) {
-    if (app.inTrash) {
-      e.preventDefault();
-      return;
-    }
-    if (!app.selected.has(entry.path)) app.selectPaths([entry.path]);
-    pressed = null;
-    startDrag(e, app.selection.map((x) => x.path));
+  function itemAux(e: MouseEvent, entry: Entry) {
+    if (e.button !== 1 || app.mobile) return;
+    e.preventDefault();
+    if (entry.isDir && !app.inTrash) app.newWindow(entry.path);
+    else if (!entry.isDir) app.open(entry);
   }
 
   // ---------- rename popover ----------
@@ -387,9 +392,7 @@
       app.prefs.zoom = Math.max(0, Math.min(ZOOM_SIZES.length - 1, app.prefs.zoom + (e.deltaY < 0 ? 1 : -1)));
       app.savePrefs();
     }}
-    ondragover={(e) => !isSearch && dragOver(e, app.path)}
-    ondragleave={(e) => !isSearch && dragLeave(e, app.path)}
-    ondrop={(e) => !isSearch && dropOn(e, app.path)}
+    data-drop-path={app.canWrite && !isSearch ? app.path : undefined}
   >
     {#if !grid && entries.length}
       <div class="colhead" role="row">
@@ -457,16 +460,12 @@
             data-path={e.path}
             data-file-drop-target={e.isDir && !app.inTrash ? "" : undefined}
             title={isSearch ? e.path.replace(/^\/me/, "") : undefined}
-            draggable={!app.mobile}
+            data-drop-path={e.isDir && !app.inTrash ? e.path : undefined}
             onmousedown={(ev) => itemDown(ev, e)}
+            onauxclick={(ev) => itemAux(ev, e)}
             onclick={(ev) => itemClick(ev, e)}
             ondblclick={() => !app.mobile && app.open(e)}
             oncontextmenu={(ev) => itemMenu(ev, e)}
-            ondragstart={(ev) => onDragStart(ev, e)}
-            ondragend={endDrag}
-            ondragover={e.isDir ? (ev) => dragOver(ev, e.path) : undefined}
-            ondragleave={e.isDir ? (ev) => dragLeave(ev, e.path) : undefined}
-            ondrop={e.isDir ? (ev) => dropOn(ev, e.path) : undefined}
           >
             <div class="icon-box" style:height="{iconSize}px"><FileIcon entry={e} size={iconSize} /></div>
             <div class="label">{e.name}</div>
@@ -489,17 +488,13 @@
             tabindex="-1"
             data-path={e.path}
             data-file-drop-target={e.isDir && !app.inTrash ? "" : undefined}
-            draggable={!app.mobile}
+            data-drop-path={e.isDir && !app.inTrash ? e.path : undefined}
             style:min-height="{Math.max(rowIcon + 10, 32)}px"
             onmousedown={(ev) => itemDown(ev, e)}
+            onauxclick={(ev) => itemAux(ev, e)}
             onclick={(ev) => itemClick(ev, e)}
             ondblclick={() => !app.mobile && app.open(e)}
             oncontextmenu={(ev) => itemMenu(ev, e)}
-            ondragstart={(ev) => onDragStart(ev, e)}
-            ondragend={endDrag}
-            ondragover={e.isDir ? (ev) => dragOver(ev, e.path) : undefined}
-            ondragleave={e.isDir ? (ev) => dragLeave(ev, e.path) : undefined}
-            ondrop={e.isDir ? (ev) => dropOn(ev, e.path) : undefined}
           >
             <div class="col col-name"><FileIcon entry={e} size={rowIcon} /><span class="name">{e.name}</span></div>
             <div class="col col-size">{e.isDir ? "" : formatSize(e.size)}</div>

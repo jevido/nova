@@ -6,7 +6,6 @@
   import MainMenu from "./MainMenu.svelte";
   import Popover from "./Popover.svelte";
   import ViewControls from "./ViewControls.svelte";
-  import { dragOver, dropOn, dragLeave } from "../lib/dnd";
 
   let opsBtn = $state<HTMLButtonElement>();
   let opsOpen = $state(false);
@@ -161,10 +160,10 @@
               class:current={c === app.path}
               data-path={c}
               title={relPath(c)}
+              data-drop-path={c === STARRED ? undefined : c}
               onclick={() => (c === app.path ? (app.editingLocation = true) : app.navigate(c))}
-              ondragover={(e) => dragOver(e, c)}
-              ondragleave={(e) => dragLeave(e, c)}
-              ondrop={(e) => dropOn(e, c)}
+              onmousedown={(e) => e.button === 1 && e.preventDefault()}
+              onauxclick={(e) => e.button === 1 && c !== STARRED && !app.mobile && app.newWindow(c)}
               oncontextmenu={(e) => {
                 e.preventDefault();
                 app.openMenu(e.clientX, e.clientY, [

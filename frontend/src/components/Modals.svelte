@@ -126,6 +126,8 @@
         ["Alt+Right", "Go forward"],
         ["Alt+Up", "Go to parent folder"],
         ["Alt+Home", "Go to home folder"],
+        ["Mouse back / forward", "Go back / forward"],
+        ["Middle click a folder", "Open in a new window"],
         ["Ctrl+L", "Enter location"],
         ["Ctrl+F", "Search"],
         ["F5 / Ctrl+R", "Reload"],

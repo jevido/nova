@@ -383,3 +383,34 @@ textarea {
     transform: translateY(100%);
   }
 }
+
+/* ---------- Internal drag and drop (lib/dnd.ts) ---------- */
+:root.dragging,
+:root.dragging * {
+  cursor: grabbing !important;
+}
+.drag-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 2000;
+  max-width: 260px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-weight: bold;
+  font-size: 0.93em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+.drag-ghost[data-action="none"] {
+  background: var(--popover-bg);
+  color: var(--fg);
+}
+.drag-ghost[data-action="copy"]::before {
+  content: "+ ";
+}

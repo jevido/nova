@@ -20,6 +20,9 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+// EventMouseNav carries "back" or "forward" from the mouse's side buttons.
+const EventMouseNav = "mouse:nav"
+
 // DropEvent tells the UI which files the OS dropped onto which folder.
 type DropEvent struct {
 	Dir   string   `json:"dir"`
@@ -30,6 +33,7 @@ func init() {
 	application.RegisterEvent[services.Transfer](services.EventTransfer)
 	application.RegisterEvent[string](services.EventChanged)
 	application.RegisterEvent[DropEvent]("files:dropped")
+	application.RegisterEvent[string](EventMouseNav)
 	application.RegisterEvent[services.UpdateStatus](services.EventUpdate)
 }
 
@@ -120,6 +124,8 @@ func (s *WindowService) NewWindow(path string) {
 			TitleBar:                application.MacTitleBarHiddenInset,
 		},
 	})
+
+	enableMouseNav(win)
 
 	// Deliver OS file drops only to the window they were dropped on.
 	win.OnWindowEvent(events.Common.WindowFilesDropped, func(e *application.WindowEvent) {
