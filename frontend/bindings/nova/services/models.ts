@@ -147,6 +147,44 @@ export interface Sharing {
 }
 
 /**
+ * SystemTheme is how the desktop looks, so Nova can look like it belongs.
+ * Empty fields are unknown; the UI keeps its own defaults for those.
+ */
+export interface SystemTheme {
+    /**
+     * runtime.GOOS
+     */
+    "platform": string;
+
+    /**
+     * "dark", "light" or ""
+     */
+    "mode": string;
+
+    /**
+     * "#rrggbb"
+     */
+    "accent": string;
+
+    /**
+     * interface font family
+     */
+    "font": string;
+
+    /**
+     * interface font size in points
+     */
+    "fontSize": number;
+
+    /**
+     * Name and Palette describe a desktop colour theme (Omarchy's
+     * colors.toml): background, foreground, accent, red, ...
+     */
+    "name": string;
+    "palette": { [_ in string]?: string } | null;
+}
+
+/**
  * Transfer is one batch job (upload of several files, download of a folder...).
  */
 export interface Transfer {

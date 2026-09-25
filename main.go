@@ -36,7 +36,9 @@ func init() {
 	application.RegisterEvent[string](EventMouseNav)
 	application.RegisterEvent[CrossDrag](EventCrossDrag)
 	application.RegisterEvent[*ItemClipboard](EventClipboard)
+	application.RegisterEvent[bool](EventOSClipboardFiles)
 	application.RegisterEvent[services.UpdateStatus](services.EventUpdate)
+	application.RegisterEvent[services.SystemTheme](services.EventTheme)
 }
 
 func main() {
@@ -59,6 +61,8 @@ func main() {
 
 	transfers := services.NewTransferService(client)
 	windows := &WindowService{}
+	dragTransfers = transfers
+	cleanDragExports()
 
 	app := application.New(application.Options{
 		Name:        "Nova",
@@ -70,6 +74,7 @@ func main() {
 			application.NewService(transfers),
 			application.NewService(windows),
 			application.NewService(services.NewUpdateService()),
+			application.NewService(services.NewThemeService()),
 			application.NewServiceWithOptions(
 				services.NewMediaService(client, icons.NewResolver()),
 				application.ServiceOptions{Route: services.MediaRoute},
@@ -137,6 +142,7 @@ func (s *WindowService) NewWindow(path string) {
 
 	enableMouseNav(win)
 	enableCrossDrag(win)
+	enableOSClipboard(win)
 
 	// Deliver OS file drops only to the window they were dropped on.
 	win.OnWindowEvent(events.Common.WindowFilesDropped, func(e *application.WindowEvent) {

@@ -257,7 +257,7 @@
       { label: "Upload Files…", accel: "Ctrl+U", disabled: !app.canWrite, run: () => app.pickUpload(false) },
       ...(app.mobile ? [] : [{ label: "Upload Folder…", disabled: !app.canWrite, run: () => app.pickUpload(true) }]),
       { sep: true },
-      { label: "Paste", accel: "Ctrl+V", disabled: !app.clipboard || !app.canWrite, run: () => app.paste() },
+      { label: "Paste", accel: "Ctrl+V", disabled: !app.canPaste || !app.canWrite, run: () => app.paste() },
       { label: "Select All", accel: "Ctrl+A", run: () => app.selectAll() },
       { sep: true },
       { label: "Show Hidden Files", accel: "Ctrl+H", checked: app.prefs.showHidden, run: () => ((app.prefs.showHidden = !app.prefs.showHidden), app.savePrefs()) },

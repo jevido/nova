@@ -22,6 +22,22 @@ export function Clipboard(): $CancellablePromise<$models.ItemClipboard | null> {
 }
 
 /**
+ * ClipboardFiles returns the local paths of the files on the system
+ * clipboard.
+ */
+export function ClipboardFiles(): $CancellablePromise<string[] | null> {
+    return $Call.ByID(1373921720);
+}
+
+/**
+ * ClipboardHasFiles reports whether the system clipboard holds files copied
+ * in another application.
+ */
+export function ClipboardHasFiles(): $CancellablePromise<boolean> {
+    return $Call.ByID(2505668690);
+}
+
+/**
  * NewWindow opens a window showing path (the home folder when empty).
  */
 export function NewWindow(path: string): $CancellablePromise<void> {

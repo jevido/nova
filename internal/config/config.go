@@ -11,9 +11,12 @@ import (
 	"nova/internal/platform"
 )
 
+// Bookmark is one sidebar row: a folder, or a divider line between rows.
+// A divider's Path is only an id ("divider:…").
 type Bookmark struct {
-	Name string `json:"name"`
-	Path string `json:"path"`
+	Name    string `json:"name"`
+	Path    string `json:"path"`
+	Divider bool   `json:"divider,omitempty"`
 }
 
 // Prefs are UI preferences owned by the frontend.

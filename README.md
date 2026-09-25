@@ -151,10 +151,12 @@ Keys created by a password sign-in are revoked again when you sign out.
 - Upload files and folders: menu, `Ctrl+U`, or drag from your desktop file
   manager onto the window (or onto a folder). Existing files are never
   overwritten; clashing names become "name (copy)".
-- Download files and folders (recursively) to a local folder
+- Download files and folders (recursively) to a local folder, or drag them
+  out of Nova onto your file manager or desktop (Linux)
+- Paste files copied in your file manager (`Ctrl+V`) to upload them (Linux)
 - Open files with the default local application (downloaded to a cache first)
 - Quick preview for images, video, audio and text (`Space`)
-- Cut/copy/paste, drag files and folders onto a folder, a path bar segment or
+- Cut/copy/paste, also between Nova windows, drag files and folders onto a folder, a path bar segment or
   a sidebar entry to move them (hold `Ctrl` to copy, `Esc` cancels), rename
   (`F2`)
 - Mouse back/forward buttons navigate; middle-click a folder to open it in a

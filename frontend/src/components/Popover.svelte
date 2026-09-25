@@ -154,7 +154,7 @@
     top: 1.5px;
     width: 3.5px;
     height: 7.5px;
-    border: solid #fff;
+    border: solid var(--accent-fg);
     border-width: 0 2px 2px 0;
     transform: rotate(45deg);
   }

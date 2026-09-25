@@ -93,7 +93,7 @@ body,
 
 body {
   font-family: var(--font);
-  font-size: 14.667px; /* 11pt, the GNOME default */
+  font-size: var(--font-size, 14.667px); /* the desktop's, else 11pt like GNOME */
   line-height: 1.35;
   color: var(--fg);
   background: var(--bg);
@@ -342,6 +342,35 @@ textarea {
   width: 16px;
   text-align: center;
 }
+/* A line of icon buttons (Cut, Copy, ...), like GTK's horizontal-buttons. */
+.menu .row {
+  display: flex;
+  gap: 2px;
+}
+.menu .rowbtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: var(--radius);
+  color: var(--fg);
+  outline: none;
+}
+.menu .rowbtn:hover:not(:disabled),
+.menu .rowbtn.focused:not(:disabled) {
+  background: var(--hover);
+}
+.menu .rowbtn:active:not(:disabled) {
+  background: var(--active);
+}
+.menu .rowbtn:disabled {
+  opacity: 0.5;
+}
 .menu .sep {
   height: 1px;
   margin: 6px 0;
@@ -353,6 +382,12 @@ textarea {
 :root[data-mobile="true"] .btn {
   min-height: 40px;
   min-width: 40px;
+}
+:root[data-mobile="true"] .menu .row {
+  padding: 0 8px;
+}
+:root[data-mobile="true"] .menu .rowbtn {
+  height: 44px;
 }
 :root[data-mobile="true"] .menu .item,
 :root[data-mobile="true"] .popover .modelbutton {

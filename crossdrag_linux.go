@@ -8,9 +8,72 @@ package main
 #include <gtk/gtk.h>
 
 extern void novaDragAt(uintptr_t win, int type, double x, double y, int copy);
-extern void novaDragEnded(void);
+extern void novaDragEnded(int dropped);
+extern void novaDragExport(uintptr_t task);
 
 #define NOVA_MIME "application/x-nova-items"
+#define URI_LIST "text/uri-list"
+
+// The content of an item drag. Nova windows only look for NOVA_MIME; other
+// applications ask for text/uri-list, and get the items once Go has
+// downloaded them (see nova_export_done).
+typedef struct { GdkContentProvider parent; } NovaItems;
+typedef struct { GdkContentProviderClass parent_class; } NovaItemsClass;
+// cgo copies this preamble into two objects; keep the type function static.
+static GType nova_items_get_type(void);
+G_DEFINE_TYPE(NovaItems, nova_items, GDK_TYPE_CONTENT_PROVIDER)
+
+static GdkContentFormats *nova_items_ref_formats(GdkContentProvider *p) {
+	const char *mimes[] = { NOVA_MIME, URI_LIST };
+	return gdk_content_formats_new(mimes, 2);
+}
+
+static void nova_items_write_async(GdkContentProvider *p, const char *mime, GOutputStream *stream,
+		int io_priority, GCancellable *cancellable, GAsyncReadyCallback cb, gpointer data) {
+	GTask *task = g_task_new(p, cancellable, cb, data);
+	g_task_set_priority(task, io_priority);
+	if (g_str_equal(mime, NOVA_MIME)) {
+		// The payload lives in Go.
+		g_task_return_boolean(task, TRUE);
+		g_object_unref(task);
+		return;
+	}
+	if (!g_str_equal(mime, URI_LIST)) {
+		g_task_return_new_error(task, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED, "Cannot provide %s", mime);
+		g_object_unref(task);
+		return;
+	}
+	g_task_set_task_data(task, g_object_ref(stream), g_object_unref);
+	novaDragExport((uintptr_t)task);
+}
+
+static gboolean nova_items_write_finish(GdkContentProvider *p, GAsyncResult *res, GError **error) {
+	return g_task_propagate_boolean(G_TASK(res), error);
+}
+
+static void nova_items_class_init(NovaItemsClass *klass) {
+	GdkContentProviderClass *pc = GDK_CONTENT_PROVIDER_CLASS(klass);
+	pc->ref_formats = nova_items_ref_formats;
+	pc->write_mime_type_async = nova_items_write_async;
+	pc->write_mime_type_finish = nova_items_write_finish;
+}
+
+static void nova_items_init(NovaItems *self) {}
+
+// Answer a text/uri-list request; err is NULL on success. Main thread only.
+static void nova_export_done(uintptr_t t, const char *uris, const char *err) {
+	GTask *task = G_TASK((gpointer)t);
+	GError *e = NULL;
+	if (err) {
+		g_task_return_new_error(task, G_IO_ERROR, G_IO_ERROR_FAILED, "%s", err);
+	} else if (g_output_stream_write_all(g_task_get_task_data(task), uris, strlen(uris), NULL,
+			g_task_get_cancellable(task), &e)) {
+		g_task_return_boolean(task, TRUE);
+	} else {
+		g_task_return_error(task, e);
+	}
+	g_object_unref(task);
+}
 
 // Only drags started by nova_start_drag in this process carry NOVA_MIME.
 static gboolean nova_is_ours(GdkDrop *drop) {
@@ -85,15 +148,19 @@ static void nova_attach_drop_target(void *window, uintptr_t id) {
 	gtk_widget_add_controller(view, GTK_EVENT_CONTROLLER(t));
 }
 
-static void nova_drag_done(GdkDrag *drag, gpointer data) {
+static void nova_drag_end(GdkDrag *drag, int dropped) {
 	if (g_object_get_data(G_OBJECT(drag), "nova-done")) return;
 	g_object_set_data(G_OBJECT(drag), "nova-done", GINT_TO_POINTER(1));
-	novaDragEnded();
+	novaDragEnded(dropped);
 	g_object_unref(drag);
 }
 
+static void nova_drag_done(GdkDrag *drag, gpointer data) {
+	nova_drag_end(drag, 1);
+}
+
 static void nova_drag_cancel(GdkDrag *drag, GdkDragCancelReason reason, gpointer data) {
-	nova_drag_done(drag, data);
+	nova_drag_end(drag, 0);
 }
 
 static void nova_drag_style(GdkDisplay *display) {
@@ -117,9 +184,7 @@ static int nova_start_drag(void *window, const char *label) {
 	GdkDisplay *display = gdk_surface_get_display(surface);
 	GdkDevice *device = gdk_seat_get_pointer(gdk_display_get_default_seat(display));
 	if (!device) return 0;
-	GBytes *bytes = g_bytes_new_static("", 0);
-	GdkContentProvider *content = gdk_content_provider_new_for_bytes(NOVA_MIME, bytes);
-	g_bytes_unref(bytes);
+	GdkContentProvider *content = g_object_new(nova_items_get_type(), NULL);
 	GdkDrag *drag = gdk_drag_begin(surface, device, content, GDK_ACTION_COPY | GDK_ACTION_MOVE, 0, 0);
 	g_object_unref(content);
 	if (!drag) return 0;
@@ -138,6 +203,7 @@ static int nova_start_drag(void *window, const char *label) {
 import "C"
 
 import (
+	"errors"
 	"sync"
 	"unsafe"
 
@@ -218,6 +284,32 @@ func novaDragAt(id C.uintptr_t, typ C.int, x, y C.double, copy C.int) {
 }
 
 //export novaDragEnded
-func novaDragEnded() {
-	setDrag(nil)
+func novaDragEnded(dropped C.int) {
+	endDrag(dropped != 0)
+}
+
+// novaDragExport answers another application's request for the dragged
+// items as files, once they are downloaded.
+//
+//export novaDragExport
+func novaDragExport(task C.uintptr_t) {
+	ex := exportDrag()
+	go func() {
+		uris, err := "", error(nil)
+		if ex == nil {
+			err = errors.New("the drag has ended")
+		} else {
+			uris, err = ex.wait()
+		}
+		application.InvokeAsync(func() {
+			u := C.CString(uris)
+			defer C.free(unsafe.Pointer(u))
+			var e *C.char
+			if err != nil {
+				e = C.CString(err.Error())
+				defer C.free(unsafe.Pointer(e))
+			}
+			C.nova_export_done(task, u, e)
+		})
+	}()
 }

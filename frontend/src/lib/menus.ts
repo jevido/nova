@@ -4,6 +4,7 @@ import { app, parentOf, type MenuItem } from "./store.svelte";
 /** The menu for selected items: the context menu, and ⋮ on phones. */
 export function itemMenu(sel: Entry[], isSearch: boolean): MenuItem[] {
   const one = sel.length === 1 ? sel[0] : null;
+  const starred = sel.every((x) => app.isStarred(x.path));
   if (app.inTrash) {
     return [
       { label: "Restore From Trash", run: () => app.restore(sel) },
@@ -25,9 +26,18 @@ export function itemMenu(sel: Entry[], isSearch: boolean): MenuItem[] {
     ...(one && !one.isDir ? [{ label: "Preview", accel: "Space", run: () => app.preview(one) }] : []),
     ...(isSearch && one ? [{ label: "Open Item Location", run: () => app.navigate(parentOf(one.path), true, [one.path]) }] : []),
     { sep: true },
-    { label: "Cut", accel: "Ctrl+X", run: () => app.copy(true) },
-    { label: "Copy", accel: "Ctrl+C", run: () => app.copy(false) },
-    ...(one?.isDir ? [{ label: "Paste Into Folder", disabled: !app.clipboard, run: () => app.paste(one.path) }] : []),
+    {
+      row: [
+        { label: "Cut", icon: "edit-cut", accel: "Ctrl+X", run: () => app.copy(true) },
+        { label: "Copy", icon: "edit-copy", accel: "Ctrl+C", run: () => app.copy(false) },
+        ...(one?.isDir ? [{ label: "Paste Into Folder", icon: "edit-paste", disabled: !app.canPaste, run: () => app.paste(one.path) }] : []),
+        { label: "Rename", icon: "document-edit", accel: "F2", disabled: !one, run: () => app.startRename(one!) },
+        starred
+          ? { label: "Unstar", icon: "starred", run: () => app.toggleStar(sel) }
+          : { label: "Star", icon: "non-starred", run: () => app.toggleStar(sel) },
+        { label: "Move to Trash", icon: "user-trash", accel: "Delete", run: () => app.trash(sel) },
+      ],
+    },
     { sep: true },
     { label: app.mobile ? "Download" : "Download…", run: () => app.download(sel) },
     ...(one
@@ -37,10 +47,6 @@ export function itemMenu(sel: Entry[], isSearch: boolean): MenuItem[] {
           ...(one.public ? [{ label: "Stop Sharing Link", run: () => app.stopSharing(one) }] : []),
         ]
       : []),
-    { sep: true },
-    { label: sel.every((x) => app.isStarred(x.path)) ? "Unstar" : "Star", run: () => app.toggleStar(sel) },
-    { label: "Rename…", accel: "F2", disabled: !one, run: () => app.startRename(one!) },
-    { label: "Move to Trash", accel: "Delete", run: () => app.trash(sel) },
     { sep: true },
     ...(one?.isDir
       ? [{ label: app.isBookmarked(one.path) ? "Remove from Bookmarks" : "Add to Bookmarks", run: () => app.toggleBookmark(one.path) }]

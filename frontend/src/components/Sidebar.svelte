@@ -28,22 +28,29 @@
     app.openMenu(e.clientX, e.clientY, [
       { label: "Open", run: () => app.navigate(path) },
       ...(app.mobile ? [] : [{ label: "Open in New Window", run: () => app.newWindow(path) }]),
+      { label: "New Folder Inside…", run: () => app.newFolderIn(path) },
       { sep: true },
-      { label: "Cut", run: () => app.copy(true, [path]) },
-      { label: "Copy", run: () => app.copy(false, [path]) },
-      { label: "Paste Into Folder", disabled: !app.clipboard, run: () => app.paste(path) },
+      {
+        row: [
+          { label: "Cut", icon: "edit-cut", run: () => app.copy(true, [path]) },
+          { label: "Copy", icon: "edit-copy", run: () => app.copy(false, [path]) },
+          { label: "Paste Into Folder", icon: "edit-paste", disabled: !app.canPaste, run: () => app.paste(path) },
+          { label: "Rename Folder", icon: "document-edit", run: () => renameFolder(path) },
+          app.isStarred(path)
+            ? { label: "Unstar", icon: "starred", run: () => app.toggleStar([entry]) }
+            : { label: "Star", icon: "non-starred", run: () => app.toggleStar([entry]) },
+          { label: "Move to Trash", icon: "user-trash", run: () => app.trash([entry]).then(() => app.removeBookmark(path)) },
+        ],
+      },
       { sep: true },
       { label: app.mobile ? "Download" : "Download…", run: () => app.download([entry]) },
       { label: "Share…", run: () => app.openShare(entry) },
       { label: "Copy Public Link", run: () => app.copyLink(entry) },
       { sep: true },
-      { label: app.isStarred(path) ? "Unstar" : "Star", run: () => app.toggleStar([entry]) },
-      { label: "Rename Folder…", run: () => renameFolder(path) },
-      { label: "Move to Trash", run: () => app.trash([entry]).then(() => app.removeBookmark(path)) },
-      { sep: true },
       { label: "Rename Bookmark…", run: () => renameBookmark(path) },
       { label: "Move Up", disabled: i <= 0, run: () => app.moveBookmark(path, i - 1) },
       { label: "Move Down", disabled: i >= bookmarks.length - 1, run: () => app.moveBookmark(path, i + 2) },
+      { label: "Add Divider Below", run: () => app.addDivider(i + 1) },
       { label: "Remove from Sidebar", run: () => app.removeBookmark(path) },
       { sep: true },
       { label: "Copy Location", run: () => app.copyPath(entry) },
@@ -57,11 +64,38 @@
     app.openMenu(e.clientX, e.clientY, [
       { label: "Open", run: () => app.navigate(HOME) },
       ...(app.mobile ? [] : [{ label: "Open in New Window", run: () => app.newWindow(HOME) }]),
+      { label: "New Folder Inside…", run: () => app.newFolderIn(HOME) },
       { sep: true },
-      { label: "Paste Into Folder", disabled: !app.clipboard, run: () => app.paste(HOME) },
+      { label: "Paste Into Folder", disabled: !app.canPaste, run: () => app.paste(HOME) },
       { sep: true },
       { label: "Copy Location", run: () => app.copyPath(entry) },
       { label: "Properties", run: () => (app.modal = { kind: "properties", entry }) },
+    ]);
+  }
+
+  function dividerMenu(e: MouseEvent, path: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    const i = bookmarks.findIndex((b) => b.path === path);
+    app.openMenu(e.clientX, e.clientY, [
+      { label: "Move Up", disabled: i <= 0, run: () => app.moveBookmark(path, i - 1) },
+      { label: "Move Down", disabled: i >= bookmarks.length - 1, run: () => app.moveBookmark(path, i + 2) },
+      { sep: true },
+      { label: "Remove Divider", run: () => app.removeBookmark(path) },
+    ]);
+  }
+
+  /** Right-click on empty sidebar space: add things at that spot. */
+  function backgroundMenu(e: MouseEvent) {
+    e.preventDefault();
+    if ((e.target as HTMLElement).closest(".row, .divider")) return;
+    const at = bookmarkIndexAt(e.clientY);
+    const here = app.path;
+    const canBookmark = here !== HOME && here !== STARRED && !app.inTrash && !app.isBookmarked(here);
+    app.openMenu(e.clientX, e.clientY, [
+      { label: "New Folder…", run: () => app.newFolderIn(HOME, at) },
+      { label: "Add Divider", run: () => app.addDivider(at) },
+      ...(canBookmark ? [{ label: `Bookmark “${baseName(here)}”`, run: () => app.addBookmarks([here], at) }] : []),
     ]);
   }
 
@@ -92,7 +126,7 @@
   let rowsEl = $state<HTMLElement>();
 
   function bookmarkIndexAt(y: number): number {
-    const rows = [...(rowsEl?.querySelectorAll<HTMLElement>(".bookmarks .row[data-path]") ?? [])];
+    const rows = [...(rowsEl?.querySelectorAll<HTMLElement>(".bookmarks [data-path]") ?? [])];
     return rows.filter((r) => {
       const b = r.getBoundingClientRect();
       return b.top + b.height / 2 < y;
@@ -142,7 +176,8 @@
     <span class="side-title">Nova</span>
     <MainMenu />
   </header>
-  <div class="rows" bind:this={rowsEl} use:dropZone={sidebarZone}>
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="rows" bind:this={rowsEl} use:dropZone={sidebarZone} oncontextmenu={backgroundMenu}>
     <button
       class="row"
       class:selected={app.path === HOME && !app.results}
@@ -183,22 +218,35 @@
       <div class="bookmarks">
         {#each bookmarks as b, i (b.path)}
           {#if insertAt === i}<div class="insert"></div>{/if}
-          <button
-            class="row"
-            class:selected={app.path === b.path && !app.results}
-            class:drop={app.dropTarget === b.path}
-            class:moving={app.draggingBookmark === b.path}
-            title={b.path.replace(/^\/me/, "")}
-            data-path={b.path}
-            data-drop-path={b.path}
-            data-file-drop-target
-            onclick={() => app.navigate(b.path)}
-            oncontextmenu={(e) => bookmarkMenu(e, b.path)}
-            onmousedown={(e) => (e.button === 1 ? e.preventDefault() : pressBookmark(e, b.path, b.name))}
-            onauxclick={(e) => middleClick(e, b.path)}
-          >
-            <Icon name="folder" /><span>{b.name}</span>
-          </button>
+          {#if b.divider}
+            <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+            <div
+              class="divider"
+              class:moving={app.draggingBookmark === b.path}
+              role="separator"
+              data-path={b.path}
+              title="Drag to move, right-click for options"
+              oncontextmenu={(e) => dividerMenu(e, b.path)}
+              onmousedown={(e) => e.button === 0 && pressBookmark(e, b.path, "Divider")}
+            ></div>
+          {:else}
+            <button
+              class="row"
+              class:selected={app.path === b.path && !app.results}
+              class:drop={app.dropTarget === b.path}
+              class:moving={app.draggingBookmark === b.path}
+              title={b.path.replace(/^\/me/, "")}
+              data-path={b.path}
+              data-drop-path={b.path}
+              data-file-drop-target
+              onclick={() => app.navigate(b.path)}
+              oncontextmenu={(e) => bookmarkMenu(e, b.path)}
+              onmousedown={(e) => (e.button === 1 ? e.preventDefault() : pressBookmark(e, b.path, b.name))}
+              onauxclick={(e) => middleClick(e, b.path)}
+            >
+              <Icon name="folder" /><span>{b.name}</span>
+            </button>
+          {/if}
         {/each}
         {#if insertAt === bookmarks.length && bookmarks.length}<div class="insert"></div>{/if}
         {#if addingFolders}
@@ -252,6 +300,7 @@
   }
   .rows {
     flex: 1;
+    min-height: 0; /* lets it shrink below its content, so it scrolls */
     overflow-y: auto;
     padding: 0 6px 6px;
   }
@@ -305,8 +354,27 @@
     position: relative;
     z-index: 1;
   }
-  .row.moving {
+  .row.moving,
+  .divider.moving {
     opacity: 0.4;
+  }
+  /* A tall hit area around a thin line, so it is easy to grab. */
+  .divider {
+    position: relative;
+    height: 13px;
+    border-radius: 6px;
+  }
+  .divider::after {
+    content: "";
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    top: 6px;
+    height: 1px;
+    background: var(--border);
+  }
+  .divider:hover {
+    background: var(--hover);
   }
   .new-bookmark {
     color: var(--fg-dim);

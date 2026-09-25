@@ -68,6 +68,7 @@ type job struct {
 	cancel   context.CancelFunc
 	ctx      context.Context
 	run      func(*job) error
+	done     chan struct{} // closed when the job has finished
 	lastEmit time.Time
 	moved    atomic.Int64 // bytes moved, updated from io hot path
 }
@@ -137,20 +138,25 @@ func (p *progressReader) Read(b []byte) (int, error) {
 }
 
 func (s *TransferService) enqueue(kind TransferKind, title, dest string, run func(*job) error) Transfer {
+	return s.enqueueJob(kind, title, dest, run).snapshot()
+}
+
+func (s *TransferService) enqueueJob(kind TransferKind, title, dest string, run func(*job) error) *job {
 	ctx, cancel := context.WithCancel(context.Background())
 	s.mu.Lock()
 	s.nextID++
-	j := &job{ctx: ctx, cancel: cancel, run: run,
+	j := &job{ctx: ctx, cancel: cancel, run: run, done: make(chan struct{}),
 		t: Transfer{ID: s.nextID, Kind: kind, Title: title, Dest: dest, State: StateQueued}}
 	s.jobs[j.t.ID] = j
 	s.order = append(s.order, j.t.ID)
 	s.mu.Unlock()
 	j.emit(true)
 	go s.execute(j)
-	return j.snapshot()
+	return j
 }
 
 func (s *TransferService) execute(j *job) {
+	defer close(j.done)
 	select {
 	case s.sem <- struct{}{}:
 	case <-j.ctx.Done():
@@ -374,16 +380,49 @@ func (s *TransferService) PickAndDownload(paths []string) (*Transfer, error) {
 
 // Download copies remote paths (files or folders) into a local directory.
 func (s *TransferService) Download(paths []string, localDir string) (Transfer, error) {
+	t, _, err := s.download(paths, localDir, nil)
+	return t, err
+}
+
+// DownloadAndWait downloads like Download, but returns once the transfer has
+// finished, with the local path of each item. Cancelling ctx cancels it.
+// It is a function rather than a method so it isn't bound to the frontend.
+func DownloadAndWait(ctx context.Context, s *TransferService, paths []string, localDir string) ([]string, error) {
+	var tops []string
+	t, j, err := s.download(paths, localDir, &tops)
+	if err != nil {
+		return nil, err
+	}
+	select {
+	case <-j.done:
+	case <-ctx.Done():
+		j.cancel()
+		<-j.done
+	}
+	switch t = j.snapshot(); t.State {
+	case StateDone:
+		return tops, nil
+	case StateFailed:
+		return nil, errors.New(t.Error)
+	default:
+		return nil, context.Canceled
+	}
+}
+
+// download starts a download job. When tops is given, the job fills it with
+// the local path of each item before it starts copying.
+func (s *TransferService) download(paths []string, localDir string, tops *[]string) (Transfer, *job, error) {
 	if len(paths) == 0 {
-		return Transfer{}, errors.New("nothing to download")
+		return Transfer{}, nil, errors.New("nothing to download")
 	}
 	if err := os.MkdirAll(localDir, 0o755); err != nil {
-		return Transfer{}, fmt.Errorf("cannot write to %s: %w", localDir, err)
+		return Transfer{}, nil, fmt.Errorf("cannot write to %s: %w", localDir, err)
 	}
+	paths = append([]string(nil), paths...)
 	for i, p := range paths {
 		c, err := checkPath(p)
 		if err != nil {
-			return Transfer{}, err
+			return Transfer{}, nil, err
 		}
 		paths[i] = c
 	}
@@ -391,8 +430,8 @@ func (s *TransferService) Download(paths []string, localDir string) (Transfer, e
 	if len(paths) > 1 {
 		title = fmt.Sprintf("%d items", len(paths))
 	}
-	return s.enqueue(KindDownload, title, localDir, func(j *job) error {
-		files, err := s.collect(j.ctx, paths, localDir)
+	j := s.enqueueJob(KindDownload, title, localDir, func(j *job) error {
+		files, err := s.collect(j.ctx, paths, localDir, tops)
 		if err != nil {
 			return err
 		}
@@ -412,11 +451,13 @@ func (s *TransferService) Download(paths []string, localDir string) (Transfer, e
 			j.update(func(t *Transfer) { t.DoneFiles++ })
 		}
 		return nil
-	}), nil
+	})
+	return j.snapshot(), j, nil
 }
 
 // collect expands remote folders into a flat file list with local targets.
-func (s *TransferService) collect(ctx context.Context, paths []string, localDir string) ([]remoteFile, error) {
+// The local path of each top-level item is appended to tops when given.
+func (s *TransferService) collect(ctx context.Context, paths []string, localDir string, tops *[]string) ([]remoteFile, error) {
 	var out []remoteFile
 	// Names are picked before anything is written, so remember them to keep
 	// two items of one batch from landing on the same local path.
@@ -450,6 +491,9 @@ func (s *TransferService) collect(ctx context.Context, paths []string, localDir 
 	}
 	for _, p := range paths {
 		target := uniqueLocal(filepath.Join(localDir, safeLocalName(nova.Base(p))), reserved)
+		if tops != nil {
+			*tops = append(*tops, target)
+		}
 		if err := walk(p, target, 0); err != nil {
 			return nil, err
 		}

@@ -16,9 +16,11 @@ declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
             "clipboard": main$0.ItemClipboard | null;
+            "clipboard:files": boolean;
             "files:dropped": main$0.DropEvent;
             "fs:changed": string;
             "mouse:nav": string;
+            "theme": services$0.SystemTheme;
             "transfer": services$0.Transfer;
             "update": services$0.UpdateStatus;
             "xdrag": main$0.CrossDrag;

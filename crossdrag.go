@@ -2,9 +2,18 @@ package main
 
 import (
 	"context"
+	"net/url"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+
+	"nova/internal/platform"
+	"nova/services"
 )
 
 // EventCrossDrag tells a window that an item drag from some Nova window is
@@ -36,6 +45,7 @@ type CrossDrag struct {
 var (
 	dragMu      sync.Mutex
 	dragPayload *DragPayload
+	dragOut     *dragExport
 )
 
 func currentDrag() *DragPayload {
@@ -47,7 +57,101 @@ func currentDrag() *DragPayload {
 func setDrag(p *DragPayload) {
 	dragMu.Lock()
 	dragPayload = p
+	dragOut = nil
 	dragMu.Unlock()
+}
+
+// dragTransfers downloads items dragged out of Nova; set in main.
+var dragTransfers *services.TransferService
+
+// A drag that ends in another application (a file manager, the desktop)
+// asks for the items as local files. They are downloaded once per drag into
+// a folder of their own, and the drop waits for that.
+type dragExport struct {
+	done   chan struct{} // closed once the download has finished
+	ctx    context.Context
+	cancel context.CancelFunc
+	dir    string
+	uris   string
+	err    error
+}
+
+// exportDrag returns the export of the current drag, or nil if there is none.
+func exportDrag() *dragExport {
+	dragMu.Lock()
+	defer dragMu.Unlock()
+	if dragPayload == nil || dragTransfers == nil {
+		return nil
+	}
+	if dragOut == nil {
+		ctx, cancel := context.WithCancel(context.Background())
+		ex := &dragExport{done: make(chan struct{}), ctx: ctx, cancel: cancel,
+			dir: filepath.Join(dragExportRoot(), strconv.FormatInt(time.Now().UnixNano(), 36))}
+		go ex.download(dragPayload.Paths)
+		dragOut = ex
+	}
+	return dragOut
+}
+
+func (e *dragExport) download(paths []string) {
+	defer close(e.done)
+	tops, err := services.DownloadAndWait(e.ctx, dragTransfers, paths, e.dir)
+	if err != nil {
+		e.err = err
+		os.RemoveAll(e.dir)
+		return
+	}
+	// text/uri-list: one URI per line, CRLF.
+	var b strings.Builder
+	for _, t := range tops {
+		b.WriteString((&url.URL{Scheme: "file", Path: t}).String())
+		b.WriteString("\r\n")
+	}
+	e.uris = b.String()
+}
+
+// wait blocks until the items are on disk and returns them as a uri list.
+func (e *dragExport) wait() (string, error) {
+	<-e.done
+	return e.uris, e.err
+}
+
+// endDrag forgets the current drag. A drag that was not dropped anywhere
+// throws away what it may have started downloading.
+func endDrag(dropped bool) {
+	dragMu.Lock()
+	ex := dragOut
+	dragPayload, dragOut = nil, nil
+	dragMu.Unlock()
+	if ex == nil {
+		return
+	}
+	if dropped {
+		// The receiving application is reading the items, or already has.
+		go func() {
+			ex.wait()
+			ex.cancel()
+		}()
+		return
+	}
+	ex.cancel()
+	go func() {
+		ex.wait()
+		os.RemoveAll(ex.dir)
+	}()
+}
+
+func dragExportRoot() string { return filepath.Join(platform.CacheDir(), "drag") }
+
+// cleanDragExports removes items dragged out more than a day ago. The
+// receiving app has copied or moved them by then.
+func cleanDragExports() {
+	ents, _ := os.ReadDir(dragExportRoot())
+	for _, e := range ents {
+		if info, err := e.Info(); err == nil && time.Since(info.ModTime()) > 24*time.Hour {
+			os.RemoveAll(filepath.Join(dragExportRoot(), e.Name()))
+		}
+	}
 }
 
 // StartDrag hands the calling window's item drag over to the platform once

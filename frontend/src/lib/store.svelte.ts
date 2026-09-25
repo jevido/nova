@@ -6,15 +6,18 @@ import * as Transfers from "../../bindings/nova/services/transferservice";
 import * as Windows from "../../bindings/nova/windowservice";
 import * as Updates from "../../bindings/nova/services/updateservice";
 import * as Account from "../../bindings/nova/services/accountservice";
+import * as Theme from "../../bindings/nova/services/themeservice";
+import { applySystemTheme } from "./theme";
 import type {
   Entry,
   Folder,
   OpResult,
   Session as SessionT,
+  SystemTheme,
   Transfer,
   UpdateStatus,
 } from "../../bindings/nova/services/models";
-import type { Prefs } from "../../bindings/nova/internal/config/models";
+import type { Bookmark, Prefs } from "../../bindings/nova/internal/config/models";
 import { pluralize } from "./format";
 
 export const HOME = "/me";
@@ -32,9 +35,13 @@ export type Modal =
   | { kind: "preview"; entry: Entry }
   | { kind: "shortcuts" }
   | { kind: "about" };
+/** An icon button in a menu row; the label is its tooltip. */
+export type MenuButton = { label: string; icon: string; accel?: string; disabled?: boolean; run: () => void };
 export type MenuItem =
   | { sep: true }
-  | { label: string; accel?: string; disabled?: boolean; checked?: boolean; run: () => void; sep?: false };
+  /** A line of icon buttons, like GTK's horizontal-buttons menu sections. */
+  | { row: MenuButton[]; sep?: false }
+  | { label: string; accel?: string; disabled?: boolean; checked?: boolean; run: () => void; sep?: false; row?: undefined };
 export type MenuState = { x: number; y: number; items: MenuItem[]; minWidth?: number } | null;
 
 /** Items Cut or Copy put aside; Go keeps it (ItemClipboard) for all windows. */
@@ -86,6 +93,8 @@ class AppState {
   prefs = $state<Prefs>({ ...defaultPrefs });
   /** Phone build: touch interaction, drawer sidebar, no window controls. */
   mobile = $state(false);
+  /** How the desktop looks (scheme, accent, font, colour theme). */
+  system: SystemTheme | null = null;
   drawerOpen = $state(false);
 
   // ---- navigation ----
@@ -119,6 +128,8 @@ class AppState {
 
   // ---- misc ----
   clipboard = $state<ItemClipboard | null>(null);
+  /** Files copied in another application (Nautilus' Copy); Paste uploads them. */
+  osClipboardFiles = $state(false);
   transfers = $state<Transfer[]>([]);
   toasts = $state<Toast[]>([]);
   modal = $state<Modal | null>(null);
@@ -158,6 +169,10 @@ class AppState {
     return this.path === TRASH || this.path.startsWith(TRASH + "/");
   }
 
+  get canPaste(): boolean {
+    return !!this.clipboard || this.osClipboardFiles;
+  }
+
   get canWrite(): boolean {
     return !!this.folder?.canWrite && this.results === null;
   }
@@ -179,7 +194,16 @@ class AppState {
     } catch {
       /* keep defaults */
     }
+    try {
+      this.system = await Theme.Current();
+    } catch {
+      /* keep Nova's own look */
+    }
     this.applyTheme();
+    Events.On("theme", (ev) => {
+      this.system = ev.data;
+      this.applyTheme();
+    });
     try {
       const s = await Session.Restore();
       this.session = s;
@@ -195,6 +219,8 @@ class AppState {
     // Cut/Copy is shared by all Nova windows, so Paste works in any of them.
     Events.On("clipboard", (ev) => (this.clipboard = ev.data as ItemClipboard | null));
     Windows.Clipboard().then((c) => (this.clipboard = c as ItemClipboard | null));
+    Events.On("clipboard:files", (ev) => (this.osClipboardFiles = ev.data));
+    Windows.ClipboardHasFiles().then((has) => (this.osClipboardFiles = has));
     Events.On("fs:changed", (ev) => {
       if (ev.data === this.path) this.reload(true);
     });
@@ -287,8 +313,10 @@ class AppState {
 
   applyTheme() {
     const t = this.prefs.theme;
-    const dark = t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+    const sys = this.system?.mode;
+    const dark = t === "dark" || (t !== "light" && (sys ? sys === "dark" : matchMedia("(prefers-color-scheme: dark)").matches));
     document.documentElement.dataset.theme = dark ? "dark" : "light";
+    applySystemTheme(this.system, dark);
   }
 
   /** System back: close the topmost thing, else go back in history. */
@@ -777,8 +805,18 @@ class AppState {
   }
 
   async paste(dir = this.path) {
+    if (dir.startsWith(TRASH)) return;
+    // Whatever was copied last wins: Nova's Cut/Copy takes over the system
+    // clipboard, so files there were copied in another application.
+    if (this.osClipboardFiles) {
+      const files = await this.guard(() => Windows.ClipboardFiles());
+      if (files?.length) {
+        await this.upload(dir, files);
+        return;
+      }
+    }
     const cb = this.clipboard;
-    if (!cb || this.inTrash) return;
+    if (!cb) return;
     if (cb.mode === "cut") {
       await this.move(cb.paths, dir);
       this.setClipboard(null);
@@ -876,6 +914,24 @@ class AppState {
     this.setBookmarks(bm);
   }
 
+  /** Add a divider line to the sidebar, at index `at` (default: the end). */
+  addDivider(at?: number) {
+    const bm = [...(this.prefs.bookmarks ?? [])];
+    bm.splice(at ?? bm.length, 0, { name: "", path: `divider:${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, divider: true });
+    this.setBookmarks(bm);
+  }
+
+  /** Create a folder in `dir` from the sidebar; bookmark it at `at` when given. */
+  async newFolderIn(dir: string, at?: number) {
+    const name = await this.prompt({ title: "New Folder", label: "Folder name", value: "Untitled Folder", confirm: "Create" });
+    if (!name?.trim()) return;
+    const p = await this.guard(() => Files.CreateFolder(dir, name.trim()));
+    if (!p) return;
+    if (at !== undefined) this.addBookmarks([p], at);
+    if (dir === this.path) this.reload(true);
+    else this.toast(`Created “${baseName(p)}”`, { action: { label: "Open", run: () => this.navigate(p) } });
+  }
+
   removeBookmark(path: string) {
     this.setBookmarks((this.prefs.bookmarks ?? []).filter((b) => b.path !== path));
   }
@@ -896,7 +952,7 @@ class AppState {
 
   private bookmarkTimer: ReturnType<typeof setTimeout> | undefined;
 
-  private setBookmarks(bm: { name: string; path: string }[]) {
+  private setBookmarks(bm: Bookmark[]) {
     this.prefs.bookmarks = bm;
     this.savePrefs();
     // Batch quick edits (like dragging several rows) into one upload.

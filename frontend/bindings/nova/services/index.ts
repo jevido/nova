@@ -4,12 +4,14 @@
 import * as AccountService from "./accountservice.js";
 import * as FilesService from "./filesservice.js";
 import * as SessionService from "./sessionservice.js";
+import * as ThemeService from "./themeservice.js";
 import * as TransferService from "./transferservice.js";
 import * as UpdateService from "./updateservice.js";
 export {
     AccountService,
     FilesService,
     SessionService,
+    ThemeService,
     TransferService,
     UpdateService
 };
@@ -29,6 +31,7 @@ export type {
     Person,
     Session,
     Sharing,
+    SystemTheme,
     Transfer,
     UpdateStatus,
     UsageSeries

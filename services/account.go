@@ -20,6 +20,57 @@ import (
 // and every device.
 const BookmarksFile = HomeDir + "/.nova/bookmarks.json"
 
+// SidebarFile keeps what only Nova's sidebar has, so the web interface's
+// bookmarks file stays in the format it expects.
+const SidebarFile = HomeDir + "/.nova/sidebar.json"
+
+// sidebarLayout is SidebarFile: each divider sits right after the bookmark
+// with path After, or at the top when After is empty.
+type sidebarLayout struct {
+	Dividers []dividerAnchor `json:"dividers"`
+}
+
+type dividerAnchor struct {
+	After string `json:"after"`
+}
+
+// dividerAnchors records where the dividers of list are.
+func dividerAnchors(list []config.Bookmark) []dividerAnchor {
+	out := []dividerAnchor{}
+	after := ""
+	for _, b := range list {
+		if b.Divider {
+			out = append(out, dividerAnchor{After: after})
+		} else {
+			after = b.Path
+		}
+	}
+	return out
+}
+
+// placeDividers puts dividers back between bookmarks. Dividers whose
+// bookmark is gone are dropped.
+func placeDividers(list []config.Bookmark, anchors []dividerAnchor) []config.Bookmark {
+	count := map[string]int{}
+	for _, d := range anchors {
+		count[d.After]++
+	}
+	out := make([]config.Bookmark, 0, len(list)+len(anchors))
+	n := 0
+	add := func(after string) {
+		for range count[after] {
+			n++
+			out = append(out, config.Bookmark{Path: fmt.Sprintf("divider:%d", n), Divider: true})
+		}
+	}
+	add("")
+	for _, b := range list {
+		out = append(out, b)
+		add(b.Path)
+	}
+	return out
+}
+
 // remoteBookmark is one entry of BookmarksFile, in the web interface's format.
 type remoteBookmark struct {
 	ID    string `json:"id"`
@@ -96,6 +147,29 @@ func (a *AccountService) readRemote(ctx context.Context) ([]remoteBookmark, bool
 	return list, true, nil
 }
 
+// readLayout returns the dividers stored on the server, or ok false when
+// there is no (readable) sidebar file.
+func (a *AccountService) readLayout(ctx context.Context) ([]dividerAnchor, bool) {
+	res, err := a.client.Do(ctx, http.MethodGet, a.client.FileURL(SidebarFile, ""), nil, nil)
+	if err != nil {
+		return nil, false
+	}
+	defer res.Body.Close()
+	var l sidebarLayout
+	if json.NewDecoder(io.LimitReader(res.Body, 1<<20)).Decode(&l) != nil {
+		return nil, false
+	}
+	return l.Dividers, true
+}
+
+func (a *AccountService) writeLayout(ctx context.Context, list []config.Bookmark) error {
+	body, err := json.Marshal(sidebarLayout{Dividers: dividerAnchors(list)})
+	if err != nil {
+		return err
+	}
+	return a.client.Upload(ctx, SidebarFile, bytes.NewReader(body), int64(len(body)), "application/json")
+}
+
 // SyncBookmarks returns the bookmarks stored on the server and saves them
 // locally. When the server has none yet, the local bookmarks are uploaded.
 func (a *AccountService) SyncBookmarks() ([]config.Bookmark, error) {
@@ -108,7 +182,10 @@ func (a *AccountService) SyncBookmarks() ([]config.Bookmark, error) {
 	if !found {
 		local := a.store.Get().Prefs.Bookmarks
 		if len(local) > 0 {
-			return local, a.writeRemote(ctx, local, nil)
+			if err := a.writeRemote(ctx, local, nil); err != nil {
+				return local, err
+			}
+			return local, a.writeLayout(ctx, local)
 		}
 		return local, nil
 	}
@@ -124,6 +201,12 @@ func (a *AccountService) SyncBookmarks() ([]config.Bookmark, error) {
 		}
 		list = append(list, config.Bookmark{Name: name, Path: p})
 	}
+	// Without a sidebar file (yet), keep the dividers this device has.
+	anchors, ok := a.readLayout(ctx)
+	if !ok {
+		anchors = dividerAnchors(a.store.Get().Prefs.Bookmarks)
+	}
+	list = placeDividers(list, anchors)
 	err = a.store.Update(func(c *config.Config) { c.Prefs.Bookmarks = list })
 	return list, err
 }
@@ -143,7 +226,10 @@ func (a *AccountService) SaveBookmarks(list []config.Bookmark) error {
 	if err != nil {
 		return err
 	}
-	return a.writeRemote(ctx, list, remote)
+	if err := a.writeRemote(ctx, list, remote); err != nil {
+		return err
+	}
+	return a.writeLayout(ctx, list)
 }
 
 func (a *AccountService) writeRemote(ctx context.Context, list []config.Bookmark, prev []remoteBookmark) error {
@@ -159,6 +245,9 @@ func (a *AccountService) writeRemote(ctx context.Context, list []config.Bookmark
 	}
 	out := make([]remoteBookmark, 0, len(list)+len(keep))
 	for _, b := range list {
+		if b.Divider {
+			continue
+		}
 		id := ids[b.Path]
 		if id == "" {
 			// The web interface removes bookmarks by node ID.

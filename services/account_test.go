@@ -116,6 +116,40 @@ func TestBookmarksRoundTripKeepsForeignEntries(t *testing.T) {
 	}
 }
 
+func TestDividersSyncBesideBookmarks(t *testing.T) {
+	a, fs := newTestAccount(t)
+	list := []config.Bookmark{
+		{Path: "divider:a", Divider: true},
+		{Name: "Music", Path: "/me/Music"},
+		{Path: "divider:b", Divider: true},
+		{Path: "divider:c", Divider: true},
+		{Name: "Work", Path: "/me/Work"},
+	}
+	if err := a.SaveBookmarks(list); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(fs.files[BookmarksFile]), "divider") {
+		t.Fatalf("dividers leaked into the web bookmarks: %s", fs.files[BookmarksFile])
+	}
+	// Another device syncs: same shape back, dividers after the same bookmarks.
+	_ = a.store.Update(func(c *config.Config) { c.Prefs.Bookmarks = nil })
+	got, err := a.SyncBookmarks()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var shape []string
+	for _, b := range got {
+		if b.Divider {
+			shape = append(shape, "-")
+		} else {
+			shape = append(shape, b.Path)
+		}
+	}
+	if s := strings.Join(shape, " "); s != "- /me/Music - - /me/Work" {
+		t.Fatalf("synced %q", s)
+	}
+}
+
 func TestSyncBookmarksUploadsLocalWhenServerHasNone(t *testing.T) {
 	a, fs := newTestAccount(t)
 	_ = a.store.Update(func(c *config.Config) { c.Prefs.Bookmarks = []config.Bookmark{{Name: "Work", Path: "/me/Work"}} })
