@@ -120,6 +120,9 @@ class AppState {
   modal = $state<Modal | null>(null);
   /** The settings page; a layer of its own so dialogs can open on top. */
   settingsOpen = $state(false);
+  /** The Search Everywhere dialog (Ctrl+Shift+F) and the text it starts with. */
+  globalSearchOpen = $state(false);
+  globalSearchSeed = $state("");
   menu = $state<MenuState>(null);
   trashCount = $state(0);
   update = $state<UpdateStatus | null>(null);
@@ -289,6 +292,10 @@ class AppState {
       this.settingsOpen = false;
       return true;
     }
+    if (this.globalSearchOpen) {
+      this.globalSearchOpen = false;
+      return true;
+    }
     if (this.menu) {
       this.menu = null;
       return true;
@@ -412,6 +419,12 @@ class AppState {
 
   openSearch() {
     this.searchOpen = true;
+  }
+
+  /** Search the whole storage, starting from the current search text if any. */
+  searchEverywhere(seed = this.query) {
+    this.globalSearchSeed = seed;
+    this.globalSearchOpen = true;
   }
 
   closeSearch(reload = true) {

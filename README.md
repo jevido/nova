@@ -145,7 +145,9 @@ Keys created by a password sign-in are revoked again when you sign out.
 - Grid and list views, zoom levels (`Ctrl+scroll`), sorting, hidden files,
   rubber-band selection
 - Path bar with editable location entry (`Ctrl+L`), back/forward/up history
-- Search below the current folder (`Ctrl+F`)
+- Search below the current folder (`Ctrl+F`), or everywhere at once with
+  Search Everywhere (`Shift+Ctrl+F`, like GNOME Files): Enter opens a match,
+  `Alt+Enter` shows it in its folder
 - Upload files and folders: menu, `Ctrl+U`, or drag from your desktop file
   manager onto the window (or onto a folder). Existing files are never
   overwritten; clashing names become "name (copy)".

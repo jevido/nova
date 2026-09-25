@@ -10,6 +10,7 @@
   import Sidebar from "./components/Sidebar.svelte";
   import Toasts from "./components/Toasts.svelte";
   import Settings from "./components/Settings.svelte";
+  import SearchEverywhere from "./components/SearchEverywhere.svelte";
   import Icon from "./components/Icon.svelte";
   import ViewControls from "./components/ViewControls.svelte";
 
@@ -71,7 +72,7 @@
 
   // Global shortcuts, matching Nautilus where possible.
   function onKey(e: KeyboardEvent) {
-    if (!app.session?.signedIn || app.modal || app.menu || app.settingsOpen) return;
+    if (!app.session?.signedIn || app.modal || app.menu || app.settingsOpen || app.globalSearchOpen) return;
     if (e.key === "Escape" && app.drawerOpen) {
       app.drawerOpen = false;
       e.preventDefault();
@@ -86,6 +87,7 @@
     else if (ctrl && k === "w") Window.Close();
     else if (ctrl && !e.shiftKey && k === "n") app.newWindow();
     else if (ctrl && k === "l") app.editingLocation = true;
+    else if (ctrl && e.shiftKey && k === "f") app.searchEverywhere();
     else if (ctrl && k === "f") app.searchOpen ? app.closeSearch() : app.openSearch();
     else if ((ctrl && k === "r") || k === "F5") app.reload();
     else if (ctrl && k === "h") (app.prefs.showHidden = !app.prefs.showHidden), app.savePrefs();
@@ -187,7 +189,7 @@
   </div>
 {/if}
 
-{#if app.session?.signedIn}<Settings />{/if}
+{#if app.session?.signedIn}<Settings /><SearchEverywhere />{/if}
 <Menu />
 <Modals />
 

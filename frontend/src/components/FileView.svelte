@@ -1,7 +1,7 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import type { Entry } from "../../bindings/nova/services/models";
-  import { app, STARRED, TRASH, ZOOM_SIZES, LIST_ZOOM_SIZES, parentOf, type MenuItem } from "../lib/store.svelte";
+  import { app, displayName, HOME, STARRED, TRASH, ZOOM_SIZES, LIST_ZOOM_SIZES, parentOf, type MenuItem } from "../lib/store.svelte";
   import { formatDate, formatSize, pluralize, stemLength } from "../lib/format";
   import { pressItems } from "../lib/dnd";
   import FileIcon from "./FileIcon.svelte";
@@ -429,7 +429,12 @@
         {#if isSearch}
           <Icon name="system-search" size={96} />
           <h2>No Results Found</h2>
-          <p class="dim">Try a different search.</p>
+          {#if app.results !== null && app.path !== HOME}
+            <p class="dim">Only this folder and the folders in it were searched.</p>
+            <button class="btn suggested pill" onclick={() => app.searchEverywhere()}>Search Everywhere</button>
+          {:else}
+            <p class="dim">Try a different search.</p>
+          {/if}
         {:else if app.path === STARRED}
           <Icon name="starred" size={96} />
           <h2>No Starred Files</h2>
@@ -521,6 +526,12 @@
     <div class="floating">{status}</div>
   {/if}
 
+  {#if app.results !== null && app.path !== HOME && entries.length}
+    <div class="trashbar">
+      <span class="dim">Searching in “{displayName(app.path)}” and the folders in it.</span>
+      <button class="btn" onclick={() => app.searchEverywhere()}>Search Everywhere</button>
+    </div>
+  {/if}
   {#if app.inTrash && entries.length && !isSearch}
     <div class="trashbar">
       <span class="dim">Items in the trash are kept until you empty it.</span>

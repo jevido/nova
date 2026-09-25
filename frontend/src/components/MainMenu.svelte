@@ -34,6 +34,7 @@
       {/each}
     </div>
     <div class="psep"></div>
+    <button class="modelbutton" onclick={() => app.searchEverywhere("")}>Search Everywhere…<span class="accel">Shift+Ctrl+F</span></button>
     <button class="modelbutton" onclick={() => (app.settingsOpen = true)}>Settings<span class="accel">Ctrl+,</span></button>
     {#if !app.mobile}
       <button class="modelbutton" onclick={() => (app.modal = { kind: "shortcuts" })}>Keyboard Shortcuts<span class="accel">Ctrl+?</span></button>
