@@ -6,6 +6,16 @@
 import * as nova$0 from "../internal/nova/models.js";
 
 /**
+ * Access is what someone may do with a shared file or folder. Write and
+ * Delete only mean something for folders.
+ */
+export interface Access {
+    "read": boolean;
+    "write": boolean;
+    "delete": boolean;
+}
+
+/**
  * Entry is a filesystem node as the UI sees it.
  */
 export interface Entry {
@@ -20,7 +30,12 @@ export interface Entry {
     "mode": string;
     "owner": string;
     "sha256": string;
+
+    /**
+     * Shared: someone besides the owner can reach it. Public: through its link.
+     */
     "shared": boolean;
+    "public": boolean;
 
     /**
      * Trash only: where the item came from.
@@ -68,12 +83,67 @@ export interface OpResult {
 }
 
 /**
+ * Person is a nova.storage user the item is shared with.
+ */
+export interface Person {
+    "name": string;
+    "access": Access;
+}
+
+/**
  * Session is the signed-in state shown to the UI.
  */
 export interface Session {
     "signedIn": boolean;
     "server": string;
     "user": nova$0.User | null;
+}
+
+/**
+ * Sharing describes who can reach an item, as the Share dialog shows it.
+ */
+export interface Sharing {
+    "path": string;
+    "isDir": boolean;
+
+    /**
+     * CanShare is false when the account's plan doesn't include sharing.
+     */
+    "canShare": boolean;
+
+    /**
+     * Link is what anyone with this item's own link may do.
+     */
+    "link": Access;
+
+    /**
+     * URL opens the item in the browser, through its own link or that of a
+     * shared parent folder. Empty when neither is public.
+     */
+    "url": string;
+
+    /**
+     * DirectURL downloads a file straight away (a hotlink).
+     */
+    "directUrl": string;
+
+    /**
+     * PeopleURL is the item's own link, for the people it is shared with. It
+     * only works for them once they sign in, unless the item is public.
+     */
+    "peopleUrl": string;
+
+    /**
+     * Via is the path of the parent folder whose link URL goes through, when
+     * the item isn't public itself.
+     */
+    "via": string;
+    "people": Person[] | null;
+
+    /**
+     * Abuse is set when the item was reported and taken down.
+     */
+    "abuse": string;
 }
 
 /**

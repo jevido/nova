@@ -28,6 +28,7 @@ export type Modal =
   | { kind: "confirm"; title: string; body: string; confirm: string; destructive?: boolean; resolve: (ok: boolean) => void }
   | { kind: "prompt"; title: string; label: string; value: string; confirm: string; select?: number; resolve: (v: string | null) => void }
   | { kind: "properties"; entry: Entry }
+  | { kind: "share"; entry: Entry }
   | { kind: "preview"; entry: Entry }
   | { kind: "shortcuts" }
   | { kind: "about" };
@@ -822,16 +823,23 @@ class AppState {
     return this.guard(() => Transfers.PickAndDownload(entries.map((e) => e.path)));
   }
 
-  async share(e: Entry, on: boolean) {
-    const url = await this.guard(() => Files.Share(e.path, on));
-    if (url === undefined) return;
-    if (on && url) {
-      await Clipboard.SetText(url);
-      this.toast("Public link copied to clipboard");
-    } else {
-      this.toast(`“${e.name}” is no longer shared`);
-    }
+  /** Copy a link to e, making it public first when it isn't reachable yet. */
+  async copyLink(e: Entry) {
+    const url = await this.guard(() => Files.ShareLink(e.path));
+    if (!url) return;
+    await Clipboard.SetText(url);
+    this.toast("Link copied to clipboard");
+    if (!e.public) this.reload(true);
+  }
+
+  async stopSharing(e: Entry) {
+    if (!(await this.guard(() => Files.StopSharing(e.path).then(() => true)))) return;
+    this.toast(`“${e.name}” no longer has a public link`);
     this.reload(true);
+  }
+
+  openShare(e: Entry) {
+    this.modal = { kind: "share", entry: e };
   }
 
   async copyPath(e: Entry) {

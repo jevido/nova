@@ -26,7 +26,7 @@
     <img class="icon" src={fileIconUrl(entry)} alt="" draggable="false" />
   {/if}
   {#if entry.shared}
-    <span class="emblem" title="Shared publicly"></span>
+    <span class="emblem" title={entry.public ? "Shared with a public link" : "Shared with people"}></span>
   {/if}
 </span>
 

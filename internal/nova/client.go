@@ -293,6 +293,9 @@ type Node struct {
 	FileType        string       `json:"file_type"`
 	SHA256          string       `json:"sha256_sum"`
 	LinkPermissions *Permissions `json:"link_permissions,omitempty"`
+	// UserPermissions maps usernames to what they may do with this node.
+	UserPermissions map[string]Permissions `json:"user_permissions,omitempty"`
+	AbuseType       string                 `json:"abuse_type,omitempty"`
 }
 
 func (n Node) IsDir() bool { return n.Type == "dir" }
@@ -302,6 +305,9 @@ type Listing struct {
 	BaseIndex   int         `json:"base_index"`
 	Children    []Node      `json:"children"`
 	Permissions Permissions `json:"permissions"`
+	Context     struct {
+		CanShare bool `json:"can_share"`
+	} `json:"context"`
 }
 
 // Stat returns the node at p and, for directories, its children.
@@ -348,11 +354,27 @@ func (c *Client) CopyFile(ctx context.Context, from, to string, progress func(io
 	return c.Upload(ctx, to, body, res.ContentLength, ct)
 }
 
-// SetShared toggles the public link of a node and returns the updated node.
-func (c *Client) SetShared(ctx context.Context, p string, shared bool) (*Node, error) {
+// SetPermissions changes who may reach a node besides its owner: anyone with
+// its link, and named users (by username or e-mail). A nil argument leaves
+// that setting as it is; an empty users map removes everyone.
+func (c *Client) SetPermissions(ctx context.Context, p string, link *Permissions, users map[string]Permissions) (*Node, error) {
+	form := url.Values{"action": {"update"}}
+	if link != nil {
+		b, err := json.Marshal(link)
+		if err != nil {
+			return nil, err
+		}
+		form.Set("link_permissions", string(b))
+	}
+	if users != nil {
+		b, err := json.Marshal(users)
+		if err != nil {
+			return nil, err
+		}
+		form.Set("user_permissions", string(b))
+	}
 	var n Node
-	err := c.action(ctx, p, url.Values{"action": {"update"}, "shared": {strconv.FormatBool(shared)}}, &n)
-	if err != nil {
+	if err := c.action(ctx, p, form, &n); err != nil {
 		return nil, err
 	}
 	return &n, nil

@@ -7,6 +7,7 @@
   import { fileIconUrl, isAudio, isImage, isText, isVideo, rawUrl } from "../lib/icons";
   import FileIcon from "./FileIcon.svelte";
   import Icon from "./Icon.svelte";
+  import ShareDialog from "./ShareDialog.svelte";
 
   let promptValue = $state("");
   let promptInput = $state<HTMLInputElement>();
@@ -218,19 +219,10 @@
           <dd class="mono selectable small">{e.sha256}</dd>
         {/if}
         {#if !e.path.startsWith(TRASH) && e.path !== "/me"}
-          <dt>Public Link</dt>
-          <dd>
-            <button
-              class="switch"
-              class:on={e.shared}
-              role="switch"
-              aria-checked={e.shared}
-              aria-label="Public link"
-              onclick={async () => {
-                await app.share(e, !e.shared);
-                fresh = await Files.Stat(e.path);
-              }}
-            ><span></span></button>
+          <dt>Sharing</dt>
+          <dd class="sharing">
+            <span>{e.public ? "Anyone with the link" : e.shared ? "Specific people" : "Not shared"}</span>
+            <button class="btn" onclick={() => app.openShare(e)}>Share…</button>
           </dd>
         {/if}
       </dl>
@@ -280,6 +272,14 @@
       </div>
     {:else if m.kind === "properties"}
       {@render props(m)}
+    {:else if m.kind === "share"}
+      <div class="dialog share" bind:this={dialogEl} role="dialog" aria-modal="true" aria-label="Share {m.entry.name}">
+        <div class="dlg-head">
+          <span class="dlg-title">Share “{m.entry.name}”</span>
+          <button class="btn image flat round default" title="Close" onclick={() => close()}><Icon name="window-close" /></button>
+        </div>
+        <ShareDialog entry={m.entry} />
+      </div>
     {:else if m.kind === "preview"}
       {@const e = m.entry}
       <div class="preview" role="dialog" aria-modal="true" aria-label="Preview {e.name}">
@@ -536,38 +536,14 @@
   .mono {
     font-family: var(--mono);
   }
-  /* GtkSwitch, libadwaita style */
-  .switch {
-    position: relative;
-    width: 48px;
-    height: 26px;
-    border-radius: 14px;
-    border: 0;
-    background: color-mix(in srgb, var(--fg) 20%, transparent);
-    padding: 0;
-    outline: none;
-    transition: background 150ms;
+  .sharing {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 12px;
   }
-  .switch:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-  }
-  .switch span {
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #fff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition: left 150ms;
-  }
-  .switch.on {
-    background: var(--accent);
-  }
-  .switch.on span {
-    left: 25px;
+  .share {
+    width: 520px;
   }
 
   /* Preview (sushi-like) */

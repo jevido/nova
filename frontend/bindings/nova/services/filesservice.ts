@@ -72,10 +72,33 @@ export function Search(dir: string, term: string): $CancellablePromise<$models.E
 }
 
 /**
- * Share enables or disables the public link and returns the link URL.
+ * SetLinkAccess changes what anyone with the link may do with p.
  */
-export function Share(p: string, shared: boolean): $CancellablePromise<string> {
-    return $Call.ByID(4053182397, p, shared);
+export function SetLinkAccess(p: string, a: $models.Access): $CancellablePromise<$models.Sharing | null> {
+    return $Call.ByID(4196174016, p, a);
+}
+
+/**
+ * SetPeople replaces the list of users p is shared with. Names can be
+ * usernames or e-mail addresses; the server rejects unknown ones.
+ */
+export function SetPeople(p: string, people: $models.Person[] | null): $CancellablePromise<$models.Sharing | null> {
+    return $Call.ByID(990717949, p, people);
+}
+
+/**
+ * ShareLink returns a link to p, first making p public when neither it nor a
+ * parent folder is.
+ */
+export function ShareLink(p: string): $CancellablePromise<string> {
+    return $Call.ByID(3300472449, p);
+}
+
+/**
+ * Sharing returns the sharing settings of p.
+ */
+export function Sharing(p: string): $CancellablePromise<$models.Sharing | null> {
+    return $Call.ByID(2651899766, p);
 }
 
 export function Stat(p: string): $CancellablePromise<$models.Entry | null> {
@@ -87,6 +110,13 @@ export function Stat(p: string): $CancellablePromise<$models.Entry | null> {
  */
 export function StatMany(paths: string[] | null): $CancellablePromise<$models.Entry[] | null> {
     return $Call.ByID(1735041219, paths);
+}
+
+/**
+ * StopSharing turns off p's public link. People it is shared with keep access.
+ */
+export function StopSharing(p: string): $CancellablePromise<void> {
+    return $Call.ByID(785526622, p);
 }
 
 /**

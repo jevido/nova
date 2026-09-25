@@ -59,13 +59,26 @@ func TestLiveFiles(t *testing.T) {
 	if err != nil || len(f.Children) != 1 || f.Children[0].Name != "renamed.txt" {
 		t.Fatalf("list: %v %+v", err, f)
 	}
-	url, err := fs.Share(root+"/hello.txt", true)
-	if err != nil || url == "" {
-		t.Fatalf("share: %v %q", err, url)
+	link, err := fs.ShareLink(root + "/hello.txt")
+	if err != nil || !strings.Contains(link, "/d/") {
+		t.Fatalf("share: %v %q", err, link)
 	}
-	t.Logf("share url %s", url)
-	if _, err := fs.Share(root+"/hello.txt", false); err != nil {
+	t.Logf("share url %s", link)
+	sh, err := fs.SetLinkAccess(root, Access{Read: true})
+	if err != nil || sh.URL == "" || sh.Via != "" {
+		t.Fatalf("share folder: %v %+v", err, sh)
+	}
+	if sh, err = fs.Sharing(a); err != nil || sh.Via != root || !strings.HasSuffix(sh.URL, "/a") {
+		t.Fatalf("inherited link: %v %+v", err, sh)
+	}
+	if err := fs.StopSharing(root); err != nil {
+		t.Fatalf("stop sharing folder: %v", err)
+	}
+	if err := fs.StopSharing(root + "/hello.txt"); err != nil {
 		t.Fatalf("unshare: %v", err)
+	}
+	if sh, err = fs.Sharing(root + "/hello.txt"); err != nil || sh.URL != "" {
+		t.Fatalf("still shared: %v %+v", err, sh)
 	}
 	dl := t.TempDir()
 	if _, err := tr.Download([]string{a}, dl); err != nil {

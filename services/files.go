@@ -36,7 +36,9 @@ type Entry struct {
 	Mode     string    `json:"mode"`
 	Owner    string    `json:"owner"`
 	SHA256   string    `json:"sha256"`
-	Shared   bool      `json:"shared"`
+	// Shared: someone besides the owner can reach it. Public: through its link.
+	Shared bool `json:"shared"`
+	Public bool `json:"public"`
 	// Trash only: where the item came from.
 	OrigPath  string     `json:"origPath,omitempty"`
 	DeletedAt *time.Time `json:"deletedAt,omitempty"`
@@ -54,7 +56,8 @@ func toEntry(n nova.Node) Entry {
 		ID: n.ID, Name: n.Name, Path: nova.CleanPath(n.Path), IsDir: n.IsDir(), Size: n.FileSize,
 		Mime: n.FileType, Modified: n.Modified, Created: n.Created, Mode: n.ModeString,
 		Owner: n.CreatedBy, SHA256: n.SHA256,
-		Shared: n.LinkPermissions != nil && n.LinkPermissions.Read,
+		Public: isPublic(n),
+		Shared: isPublic(n) || len(n.UserPermissions) > 0,
 	}
 }
 
@@ -617,22 +620,4 @@ func (s *FilesService) Search(dir, term string) ([]Entry, error) {
 	}
 	sort.SliceStable(res, func(i, j int) bool { return len(res[i].Path) < len(res[j].Path) })
 	return res, nil
-}
-
-// Share enables or disables the public link and returns the link URL.
-func (s *FilesService) Share(p string, shared bool) (string, error) {
-	p, err := checkPath(p)
-	if err != nil {
-		return "", err
-	}
-	ctx, cancel := ctxTimeout()
-	defer cancel()
-	n, err := s.client.SetShared(ctx, p, shared)
-	if err != nil {
-		return "", err
-	}
-	if !shared || n.ID == "" {
-		return "", nil
-	}
-	return s.client.BaseURL() + "/view/" + n.ID, nil
 }

@@ -32,9 +32,9 @@ export function itemMenu(sel: Entry[], isSearch: boolean): MenuItem[] {
     { label: app.mobile ? "Download" : "Download…", run: () => app.download(sel) },
     ...(one
       ? [
-          one.shared
-            ? { label: "Stop Sharing", run: () => app.share(one, false) }
-            : { label: "Copy Public Link", run: () => app.share(one, true) },
+          { label: "Share…", run: () => app.openShare(one) },
+          { label: one.public ? "Copy Link" : "Copy Public Link", run: () => app.copyLink(one) },
+          ...(one.public ? [{ label: "Stop Sharing Link", run: () => app.stopSharing(one) }] : []),
         ]
       : []),
     { sep: true },

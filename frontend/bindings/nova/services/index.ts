@@ -20,12 +20,15 @@ export {
 } from "./models.js";
 
 export type {
+    Access,
     Entry,
     Folder,
     FolderSize,
     FolderStatus,
     OpResult,
+    Person,
     Session,
+    Sharing,
     Transfer,
     UpdateStatus,
     UsageSeries
