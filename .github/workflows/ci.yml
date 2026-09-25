@@ -152,6 +152,9 @@ jobs:
 
       - name: Install Wails and Task
         run: |
+          # The wails3 CLI links against GTK/WebKit even for Android builds.
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgtk-4-dev libwebkitgtk-6.0-dev
           go install github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}
           go install github.com/go-task/task/v3/cmd/task@latest
 
