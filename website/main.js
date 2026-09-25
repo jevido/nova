@@ -4,9 +4,9 @@ const DL = `https://github.com/${REPO}/releases/latest/download/`;
 
 // Recommend the download for the visitor's device.
 const ua = navigator.userAgent;
-const isAndroid = /Android/i.test(ua);
 // iPadOS reports itself as a Mac; touch support gives it away.
 const isIOS = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+const isAndroid = /Android/i.test(ua);
 const isWindows = /Windows/i.test(ua);
 const isLinux = !isAndroid && /Linux|X11/i.test(ua);
 const isMobile = isIOS || /Android|Mobile/i.test(ua);
@@ -15,12 +15,12 @@ const primary = document.querySelector("[data-dl]");
 const label = primary.querySelector("[data-label]");
 const sub = primary.querySelector("[data-sub]");
 
-// Mark the visitor's platform and show its card first.
-const recommend = (name) => {
-  const card = document.querySelector(`[data-platform="${name}"]`);
+function recommend(platform) {
+  const card = document.querySelector(`[data-platform="${platform}"]`);
   card.classList.add("recommended");
+  // The visitor's platform goes first.
   document.querySelector(".platforms").prepend(card);
-};
+}
 
 if (isAndroid) {
   primary.href = DL + "nova-android-arm64.apk";
@@ -28,10 +28,10 @@ if (isAndroid) {
   sub.textContent = "APK · Android 5.0+";
   recommend("android");
 } else if (isIOS) {
-  // An IPA can't be installed by tapping it, so point at the instructions.
+  // An IPA can't be installed by tapping it, so point at the steps instead.
   primary.href = "#ios";
   label.textContent = "Get Nova for iPhone & iPad";
-  sub.textContent = "Sideload with AltStore or Sideloadly";
+  sub.textContent = "Sideload with AltStore";
   recommend("ios");
 } else if (isWindows) {
   primary.href = DL + "nova-windows-amd64-setup.exe";
@@ -84,17 +84,3 @@ fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { Accep
     }
   })
   .catch(() => {});
-
-// Small screens: the sidebar is a drawer behind the menu button.
-const wrap = document.querySelector(".wrap");
-const menuBtn = document.querySelector("[data-menu]");
-const setMenu = (open) => {
-  wrap.classList.toggle("nav_open", open);
-  menuBtn.setAttribute("aria-expanded", String(open));
-};
-menuBtn.addEventListener("click", () => setMenu(!wrap.classList.contains("nav_open")));
-document.querySelector("[data-menu-close]").addEventListener("click", () => setMenu(false));
-document.querySelectorAll("#nav a").forEach((a) => a.addEventListener("click", () => setMenu(false)));
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") setMenu(false);
-});
