@@ -11,13 +11,7 @@
   const user = $derived(app.session?.user);
   const used = $derived(user?.filesystem_storage_used ?? 0);
   const limit = $derived(user?.subscription?.storage_limit ?? -1);
-  const host = $derived.by(() => {
-    try {
-      return new URL(app.session?.server || "https://nova.storage").host;
-    } catch {
-      return "nova.storage";
-    }
-  });
+  const tier = $derived(user?.subscription?.name || "Free");
 
   const bookmarks = $derived(app.prefs.bookmarks ?? []);
 
@@ -220,18 +214,12 @@
       <span class="avatar" aria-hidden="true">{(user?.username ?? "N").slice(0, 1).toUpperCase()}</span>
       <span class="acct-text">
         <span class="acct-name">{user?.username ?? "Nova"}</span>
-        <span class="dim acct-host">{host}</span>
+        <span class="dim">{tier}</span>
       </span>
-      <Icon name="emblem-system" />
     </span>
-    <span class="usage" title="{formatSize(used)} used">
-      {#if limit > 0}
-        <span class="bar"><span style:width="{Math.min(100, (used / limit) * 100)}%"></span></span>
-        <span class="dim">{formatSize(used)} of {formatSize(limit)} used</span>
-      {:else}
-        <span class="dim">{formatSize(used)} used</span>
-      {/if}
-    </span>
+    {#if limit > 0}
+      <span class="bar" title="{formatSize(used)} of {formatSize(limit)} used"><span style:width="{Math.min(100, (used / limit) * 100)}%"></span></span>
+    {/if}
   </button>
 </aside>
 
@@ -364,11 +352,6 @@
     display: flex !important;
     align-items: center;
     gap: 10px;
-    margin-bottom: 10px;
-  }
-  .acct-row > :global(.icon) {
-    margin-left: auto;
-    opacity: 0.6;
   }
   .avatar {
     flex: none;
@@ -393,15 +376,12 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .usage > span {
-    display: block;
-  }
   .bar {
     height: 6px;
     border-radius: 3px;
     background: var(--btn-bg);
     overflow: hidden;
-    margin-bottom: 6px;
+    margin-top: 10px;
   }
   .bar > span {
     height: 100%;
