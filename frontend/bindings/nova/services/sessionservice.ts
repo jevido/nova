@@ -21,10 +21,6 @@ import * as nova$0 from "../internal/nova/models.js";
 // @ts-ignore: Unused imports
 import * as $models from "./models.js";
 
-export function DefaultServer(): $CancellablePromise<string> {
-    return $Call.ByID(3027766693);
-}
-
 export function Prefs(): $CancellablePromise<config$0.Prefs> {
     return $Call.ByID(1516396029);
 }
@@ -50,15 +46,15 @@ export function SavePrefs(p: config$0.Prefs): $CancellablePromise<void> {
 /**
  * SignIn exchanges a username and password for an API key.
  */
-export function SignIn(server: string, username: string, password: string): $CancellablePromise<$models.Session> {
-    return $Call.ByID(3803674863, server, username, password);
+export function SignIn(username: string, password: string): $CancellablePromise<$models.Session> {
+    return $Call.ByID(3803674863, username, password);
 }
 
 /**
  * SignInWithKey signs in using an existing API key.
  */
-export function SignInWithKey(server: string, key: string): $CancellablePromise<$models.Session> {
-    return $Call.ByID(1672214862, server, key);
+export function SignInWithKey(key: string): $CancellablePromise<$models.Session> {
+    return $Call.ByID(1672214862, key);
 }
 
 /**

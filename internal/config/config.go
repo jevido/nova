@@ -31,7 +31,6 @@ type Prefs struct {
 }
 
 type Config struct {
-	Server string `json:"server"`
 	APIKey string `json:"apiKey"`
 	// KeyFromLogin is true when the key was created by a password sign-in,
 	// so it is revoked again on sign-out.

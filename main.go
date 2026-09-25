@@ -42,7 +42,7 @@ func main() {
 		log.Fatal(err)
 	}
 	cfg := store.Get()
-	client := nova.NewClient(cfg.Server, cfg.APIKey)
+	client := nova.NewClient(nova.DefaultBaseURL, cfg.APIKey)
 	// Handy for development: NOVA_API_KEY overrides the stored key for this
 	// run only. It is never written to the config file.
 	if k := os.Getenv("NOVA_API_KEY"); k != "" {

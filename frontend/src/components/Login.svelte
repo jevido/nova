@@ -1,29 +1,22 @@
 <script lang="ts">
   import { Window } from "@wailsio/runtime";
-  import * as Session from "../../bindings/nova/services/sessionservice";
   import { app } from "../lib/store.svelte";
   import Icon from "./Icon.svelte";
 
   let mode = $state<"password" | "key">("password");
-  let server = $state(app.session?.server || "");
   let username = $state("");
   let password = $state("");
   let key = $state("");
   let busy = $state(false);
   let error = $state("");
-  let advanced = $state(false);
-
-  $effect(() => {
-    if (!server) Session.DefaultServer().then((s) => (server ||= s));
-  });
 
   async function submit(e: SubmitEvent) {
     e.preventDefault();
     busy = true;
     error = "";
     try {
-      if (mode === "key") await app.signInWithKey(server, key);
-      else await app.signIn(server, username, password);
+      if (mode === "key") await app.signInWithKey(key);
+      else await app.signIn(username, password);
     } catch (err) {
       error = err instanceof Error ? err.message : String(err);
     } finally {
@@ -56,17 +49,10 @@
       <input class="entry mono" placeholder="API key" bind:value={key} disabled={busy} spellcheck="false" />
     {/if}
 
-    {#if advanced}
-      <input class="entry" placeholder="Server" bind:value={server} disabled={busy} spellcheck="false" />
-    {/if}
-
     {#if error}<div class="error">{error}</div>{/if}
 
     <button class="btn suggested submit" type="submit" disabled={busy}>
       {#if busy}<span class="spinner"></span>{/if}Sign In
-    </button>
-    <button type="button" class="link dim" onclick={() => (advanced = !advanced)}>
-      {advanced ? "Hide server settings" : "Use a different server…"}
     </button>
   </form>
 </div>
@@ -136,12 +122,5 @@
   .error {
     color: var(--destructive);
     font-size: 13px;
-  }
-  .link {
-    border: 0;
-    background: none;
-    font-size: 13px;
-    text-decoration: underline;
-    cursor: pointer;
   }
 </style>

@@ -55,51 +55,42 @@ func (s *SessionService) Restore() (Session, error) {
 }
 
 // SignInWithKey signs in using an existing API key.
-func (s *SessionService) SignInWithKey(server, key string) (Session, error) {
+func (s *SessionService) SignInWithKey(key string) (Session, error) {
 	key = strings.TrimSpace(key)
 	if key == "" {
 		return Session{}, errors.New("enter an API key")
 	}
-	return s.activate(server, key, false)
+	return s.activate(key, false)
 }
 
 // SignIn exchanges a username and password for an API key.
-func (s *SessionService) SignIn(server, username, password string) (Session, error) {
+func (s *SessionService) SignIn(username, password string) (Session, error) {
 	if strings.TrimSpace(username) == "" || password == "" {
 		return Session{}, errors.New("enter your username and password")
 	}
-	prevURL, prevKey := s.client.BaseURL(), s.client.APIKey()
-	s.client.SetBaseURL(server)
+	prevKey := s.client.APIKey()
 	s.client.SetAPIKey("")
 	ctx, cancel := ctxTimeout()
 	defer cancel()
 	key, err := s.client.Login(ctx, strings.TrimSpace(username), password, "Nova Desktop")
 	if err != nil {
-		s.client.SetBaseURL(prevURL)
 		s.client.SetAPIKey(prevKey)
 		return Session{}, err
 	}
-	return s.activate(server, key, true)
+	return s.activate(key, true)
 }
 
-func (s *SessionService) activate(server, key string, fromLogin bool) (Session, error) {
-	if u := strings.TrimSpace(server); strings.HasPrefix(strings.ToLower(u), "http://") &&
-		!strings.Contains(u, "://localhost") && !strings.Contains(u, "://127.0.0.1") {
-		return Session{}, errors.New("use an https:// server address; your key would be sent unencrypted")
-	}
-	prevURL, prevKey := s.client.BaseURL(), s.store.Get().APIKey
-	s.client.SetBaseURL(server)
+func (s *SessionService) activate(key string, fromLogin bool) (Session, error) {
+	prevKey := s.store.Get().APIKey
 	s.client.SetAPIKey(key)
 	ctx, cancel := ctxTimeout()
 	defer cancel()
 	u, err := s.client.User(ctx)
 	if err != nil {
-		s.client.SetBaseURL(prevURL)
 		s.client.SetAPIKey(prevKey)
 		return Session{}, err
 	}
 	if err := s.store.Update(func(c *config.Config) {
-		c.Server = s.client.BaseURL()
 		c.APIKey = key
 		c.KeyFromLogin = fromLogin
 	}); err != nil {
@@ -131,8 +122,6 @@ func (s *SessionService) forget() {
 	s.client.SetAPIKey("")
 	_ = s.store.Update(func(c *config.Config) { c.APIKey, c.KeyFromLogin = "", false })
 }
-
-func (s *SessionService) DefaultServer() string { return nova.DefaultBaseURL }
 
 func (s *SessionService) Prefs() config.Prefs { return s.store.Get().Prefs }
 

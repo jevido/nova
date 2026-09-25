@@ -125,6 +125,10 @@ func (c *Client) newRequest(ctx context.Context, method, rawURL string, body io.
 		req.SetBasicAuth("", k)
 	}
 	req.Header.Set("User-Agent", "nova-desktop/0.1")
+	// The server rejects some requests (like sign-in) unless Origin names its
+	// own domain, as a CSRF guard for browsers. We are the server's own client,
+	// not a third-party page, so say so.
+	req.Header.Set("Origin", c.BaseURL())
 	return req, nil
 }
 

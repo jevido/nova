@@ -209,13 +209,13 @@ class AppState {
     this.refreshTrashCount();
   }
 
-  async signInWithKey(server: string, key: string) {
-    this.session = await Session.SignInWithKey(server, key);
+  async signInWithKey(key: string) {
+    this.session = await Session.SignInWithKey(key);
     await this.afterSignIn();
   }
 
-  async signIn(server: string, user: string, pass: string) {
-    this.session = await Session.SignIn(server, user, pass);
+  async signIn(user: string, pass: string) {
+    this.session = await Session.SignIn(user, pass);
     await this.afterSignIn();
   }
 
