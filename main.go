@@ -42,6 +42,9 @@ func init() {
 }
 
 func main() {
+	if !firstMain() {
+		return
+	}
 	services.GuardUpdaterHelper()
 	cfgPath, err := config.DefaultPath()
 	if err != nil {

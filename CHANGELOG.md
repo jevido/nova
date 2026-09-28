@@ -8,6 +8,16 @@ Format: `## <version> — <date>`, an optional one-line summary, then
 `- [icon-name] **Title** — what it does`; the icon is optional and is a
 symbolic icon name.
 
+## 0.5.1 — 2026-09-28
+
+### Fixed
+
+- **Android app no longer closes on open** — Opening Nova after it sat in the background a while no longer shuts it straight away.
+
+### Improved
+
+- **New Android icon** — Just the N, bigger, on a transparent background.
+
 ## 0.5.0 — 2026-09-25
 
 Nova now works with the rest of your desktop and looks like it.
