@@ -68,14 +68,15 @@ func (m *MediaService) thumb(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	size, _ := strconv.Atoi(r.URL.Query().Get("size"))
+	// The server makes thumbnails of 16 to 128 pixels, in multiples of 16,
+	// and refuses anything larger.
 	switch {
 	case size <= 0:
 		size = 128
-	case size > 512:
-		size = 512
+	case size > 128:
+		size = 128
 	}
-	// Server thumbnails come in fixed steps; ask for the next one up.
-	for _, s := range []int{32, 64, 128, 256, 512} {
+	for _, s := range []int{32, 64, 128} {
 		if size <= s {
 			size = s
 			break

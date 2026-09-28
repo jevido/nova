@@ -56,6 +56,15 @@ export function List(): $CancellablePromise<$models.Transfer[] | null> {
 }
 
 /**
+ * NativeDownloads lists the files below paths for the phone's own download
+ * manager, which shows progress in the notification shade and puts them in
+ * Download/Nova. Other platforms download through PickAndDownload.
+ */
+export function NativeDownloads(paths: string[] | null): $CancellablePromise<$models.NativeDownload[] | null> {
+    return $Call.ByID(672159054, paths);
+}
+
+/**
  * Open downloads a file to the cache and opens it with the system default app.
  */
 export function Open(p: string): $CancellablePromise<$models.Transfer> {

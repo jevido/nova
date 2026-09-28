@@ -949,9 +949,21 @@ class AppState {
     return this.guard(() => Transfers.PickAndUpload(this.path, folders));
   }
 
-  download(entries = this.selection) {
+  async download(entries = this.selection) {
     if (!entries.length) return;
-    return this.guard(() => Transfers.PickAndDownload(entries.map((e) => e.path)));
+    const paths = entries.map((e) => e.path);
+    // Android: hand the files to the system's download manager, so they show
+    // in the notification shade and the Downloads app like any download.
+    const android = (window as unknown as { NovaAndroid?: { download?(json: string): string } }).NovaAndroid;
+    if (android?.download) {
+      const items = await this.guard(() => Transfers.NativeDownloads(paths));
+      if (!items) return;
+      if (!items.length) return this.toast("Nothing to download");
+      const res = android.download(JSON.stringify(items));
+      if (res !== "ok") return this.toast(`Could not start the download: ${res}`, { error: true });
+      return this.toast(items.length === 1 ? `Downloading “${items[0].title}”` : `Downloading ${pluralize(items.length, "file", "files")}`);
+    }
+    return this.guard(() => Transfers.PickAndDownload(paths));
   }
 
   /** Copy a link to e, making it public first when it isn't reachable yet. */
@@ -1165,6 +1177,8 @@ class AppState {
 
   private onTransfer(t: Transfer) {
     const i = this.transfers.findIndex((x) => x.id === t.id);
+    // A late update for a job that was already cleared would bring it back.
+    if (i < 0 && t.state !== "queued" && t.state !== "running") return;
     const prev = i >= 0 ? this.transfers[i] : null;
     if (i >= 0) this.transfers[i] = t;
     else this.transfers.push(t);

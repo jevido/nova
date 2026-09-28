@@ -61,6 +61,18 @@ export interface FolderSize {
 }
 
 /**
+ * NativeDownload is one file for Android's download manager: where to fetch
+ * it, how to sign in, and where under Download it goes (folders keep their
+ * structure).
+ */
+export interface NativeDownload {
+    "url": string;
+    "auth": string;
+    "title": string;
+    "subpath": string;
+}
+
+/**
  * OpResult reports partial failure of a batch operation.
  */
 export interface OpResult {

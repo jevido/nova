@@ -26,6 +26,7 @@ export type {
     Entry,
     Folder,
     FolderSize,
+    NativeDownload,
     OpResult,
     Person,
     Session,

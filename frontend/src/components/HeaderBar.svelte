@@ -73,6 +73,10 @@
   });
 
   let mcrumbsEl = $state<HTMLElement>();
+  // Nothing left to show once the list is cleared.
+  $effect(() => {
+    if (!app.transfers.length) opsOpen = false;
+  });
   // Deep paths scroll the breadcrumb pill; keep the current folder in view.
   $effect(() => {
     void crumbs;
@@ -121,7 +125,7 @@
     <div class="mtop-row">
       <h1 class="mtitle">{isVirtual(app.path) ? displayName(app.path) : app.inTrash ? "Trash" : "Files"}</h1>
       {@render opsButton()}
-      <button class="btn image flat" title="Search" onclick={() => app.openSearch()}><Icon name="edit-find" size={24} /></button>
+      <button class="btn image flat" title="Search" onclick={() => app.openSearch()}><Icon name="edit-find" size={22} /></button>
 <MainMenu phone />
     </div>
     {#if app.editingLocation}
@@ -151,7 +155,7 @@
         {#each crumbs as c, i (c)}
           {#if i > 0}<Icon name="pan-end" size={16} />{/if}
           <button class="mcrumb" class:current={c === app.path} onclick={() => (c === app.path ? (app.editingLocation = true) : app.navigate(c))}>
-            {#if i === 0}<Icon name={c === TRASH ? "user-trash" : c === STARRED ? "starred" : c === RECENT ? "document-open-recent" : c === SHARED ? "folder-publicshare" : "user-home"} size={22} />{/if}
+            {#if i === 0}<Icon name={c === TRASH ? "user-trash" : c === STARRED ? "starred" : c === RECENT ? "document-open-recent" : c === SHARED ? "send-to" : "user-home"} size={22} />{/if}
             {#if i === 0 && c === HOME}<span>Home</span>{:else if i > 0 || isVirtual(c)}<span>{displayName(c)}</span>{/if}
           </button>
         {/each}
@@ -287,7 +291,7 @@
 
 {#snippet opsButton()}
   {#if app.transfers.length}
-    <button class="btn image flat ops" bind:this={opsBtn} class:checked={opsOpen} title="Show operations" onclick={() => (opsOpen = !opsOpen)}>
+    <button class="btn image flat ops" bind:this={opsBtn} class:checked={opsOpen} title="Downloads and uploads" onclick={() => (opsOpen = !opsOpen)}>
       {#if active.length}
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
           <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-opacity="0.25" stroke-width="3" />
@@ -304,7 +308,7 @@
           />
         </svg>
       {:else}
-        <Icon name="object-select" size={app.mobile ? 22 : 16} />
+        <Icon name="nova-transfers" size={app.mobile ? 22 : 16} />
       {/if}
     </button>
   {/if}

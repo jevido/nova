@@ -97,6 +97,9 @@ export function thumbUrl(e: Entry, size: number): string {
   return `/nova/thumb?${q}`;
 }
 
-export function rawUrl(path: string): string {
-  return `/nova/raw?${new URLSearchParams({ path })}`;
+/** The file's contents. `type` lets Android label the response (its bridge only passes the body). */
+export function rawUrl(path: string, type = ""): string {
+  const q = new URLSearchParams({ path });
+  if (type) q.set("type", type);
+  return `/nova/raw?${q}`;
 }

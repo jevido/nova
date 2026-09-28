@@ -371,8 +371,13 @@ public class MainActivity extends AppCompatActivity {
         String mime = null;
         String file = url.getQueryParameter("path");
         String head = new String(data, 0, Math.min(data.length, 256), java.nio.charset.StandardCharsets.UTF_8);
-        if (path.equals("/nova/raw") && file != null) {
-            mime = bridge.getAssetMimeType(file);
+        String type = url.getQueryParameter("type");
+        if (path.equals("/nova/raw") && type != null && !type.isEmpty()) {
+            // The UI knows the file's type from the server; the extension may
+            // be missing or upper case (IMG_0001.JPG).
+            mime = type;
+        } else if (path.equals("/nova/raw") && file != null) {
+            mime = bridge.getAssetMimeType(file.toLowerCase(java.util.Locale.ROOT));
         } else if (head.contains("<svg")) {
             mime = "image/svg+xml";
         } else {

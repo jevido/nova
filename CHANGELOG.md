@@ -8,6 +8,19 @@ Format: `## <version> — <date>`, an optional one-line summary, then
 `- [icon-name] **Title** — what it does`; the icon is optional and is a
 symbolic icon name.
 
+## 0.5.5 — 2026-09-28
+
+### Improved
+
+- [folder-download] **Downloads on Android** — Files go through Android's own downloader, with progress in your notifications and the files in the Downloads app.
+- **Clearer transfers button** — The button for downloads and uploads shows arrows instead of a checkmark, and goes away once you clear the list.
+- **Calmer phone icons** — The bottom bar and top bar use the same thin icons as the viewer.
+
+### Fixed
+
+- **Photos in the viewer** — A preview shows straight away and the full image replaces it when it has loaded.
+- **Thumbnails in the phone's grid** — Pictures show instead of plain icons.
+
 ## 0.5.4 — 2026-09-28
 
 ### New

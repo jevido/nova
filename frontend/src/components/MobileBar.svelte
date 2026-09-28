@@ -14,7 +14,7 @@
     [HOME, "Home", "user-home"],
     [RECENT, "Recent", "document-open-recent"],
     [STARRED, "Starred", "starred"],
-    [SHARED, "Shared", "folder-publicshare"],
+    [SHARED, "Shared", "send-to"],
     [TRASH, "Trash", "user-trash"],
   ];
 
@@ -67,7 +67,7 @@
     <nav class="tabs">
       {#each tabs as [path, label, icon] (path)}
         <button class="tab" class:on={tab === path} onclick={() => go(path)}>
-          <span class="pill"><Icon name={path === TRASH && app.trashCount ? "user-trash-full" : icon} size={24} /></span><span>{label}</span>
+          <span class="pill"><Icon name={path === STARRED && tab !== STARRED ? "non-starred" : icon} size={22} /></span><span>{label}</span>
         </button>
       {/each}
     </nav>
@@ -93,13 +93,13 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 5px;
     border: 0;
     background: none;
     color: var(--fg-dim);
     font: inherit;
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 12px;
+    font-weight: 600;
   }
   .pill {
     display: flex;

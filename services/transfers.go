@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -417,6 +418,57 @@ func (s *TransferService) PickAndDownload(paths []string) (*Transfer, error) {
 	}
 	t, err := s.Download(paths, dest)
 	return &t, err
+}
+
+// NativeDownload is one file for Android's download manager: where to fetch
+// it, how to sign in, and where under Download it goes (folders keep their
+// structure).
+type NativeDownload struct {
+	URL     string `json:"url"`
+	Auth    string `json:"auth"`
+	Title   string `json:"title"`
+	Subpath string `json:"subpath"`
+}
+
+// NativeDownloads lists the files below paths for the phone's own download
+// manager, which shows progress in the notification shade and puts them in
+// Download/Nova. Other platforms download through PickAndDownload.
+func (s *TransferService) NativeDownloads(paths []string) ([]NativeDownload, error) {
+	if !platform.Mobile {
+		return nil, errors.New("only phones download through the system")
+	}
+	root := platform.DownloadDir()
+	base := filepath.Dir(root) // the shared Download folder
+	clean := make([]string, len(paths))
+	for i, p := range paths {
+		c, err := checkPath(p)
+		if err != nil {
+			return nil, err
+		}
+		clean[i] = c
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		return nil, fmt.Errorf("cannot write to %s: %w", root, err)
+	}
+	files, err := s.collect(ctx, clean, root, nil)
+	if err != nil {
+		return nil, err
+	}
+	auth := "Basic " + base64.StdEncoding.EncodeToString([]byte(":"+s.client.APIKey()))
+	out := make([]NativeDownload, 0, len(files))
+	for _, f := range files {
+		rel, err := filepath.Rel(base, f.local)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, NativeDownload{
+			URL: s.client.FileURL(f.remote, ""), Auth: auth,
+			Title: filepath.Base(f.local), Subpath: filepath.ToSlash(rel),
+		})
+	}
+	return out, nil
 }
 
 // Download copies remote paths (files or folders) into a local directory.

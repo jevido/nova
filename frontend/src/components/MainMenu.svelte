@@ -11,7 +11,7 @@
 </script>
 
 <button class="btn image flat badge-host" data-main-menu bind:this={btn} class:checked={open} title="Main Menu (F10)" onclick={() => (open = !open)}>
-  <Icon name={phone ? "view-more" : "open-menu"} size={phone ? 24 : 16} />
+  <Icon name={phone ? "view-more" : "open-menu"} size={phone ? 22 : 16} />
   {#if app.update?.state === "ready" || app.update?.state === "manual"}<span class="badge" title="Update available"></span>{/if}
 </button>
 

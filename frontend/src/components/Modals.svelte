@@ -6,7 +6,7 @@
   import { app, parentOf, TRASH, type Modal, isVirtual } from "../lib/store.svelte";
   import { itemMenu } from "../lib/menus";
   import { formatAgo, formatDateLong, formatSize, pluralize, stemLength } from "../lib/format";
-  import { fileIconUrl, isAudio, isImage, isText, isVideo, rawUrl } from "../lib/icons";
+  import { fileIconUrl, hasThumbnail, isAudio, isImage, isText, isVideo, rawUrl, thumbUrl } from "../lib/icons";
   import FileIcon from "./FileIcon.svelte";
   import Icon from "./Icon.svelte";
   import ShareDialog from "./ShareDialog.svelte";
@@ -94,6 +94,14 @@
 
   // Phone viewer: swipe sideways for the next file, tap to hide the bars.
   let bare = $state(false);
+  let fullLoaded = $state(false);
+  let fullFailed = $state(false);
+  $effect(() => {
+    const m = app.modal;
+    void (m?.kind === "preview" && m.entry.path);
+    fullLoaded = false;
+    fullFailed = false;
+  });
   let showInfo = $state(false);
   let touch: { x: number; y: number } | null = null;
   $effect(() => {
@@ -259,14 +267,31 @@
 
 {#snippet previewBody(e: Entry)}
   {#if isImage(e)}
-    <img src={rawUrl(e.path)} alt={e.name} />
+    {#key e.path}
+      <!-- The thumbnail shows at once; the full image replaces it once loaded. -->
+      <span class="pv-img">
+        {#if hasThumbnail(e) && !fullLoaded}<img class="pv-thumb" src={thumbUrl(e, 128)} alt="" />{/if}
+        {#if fullFailed}
+          <span class="pv-failed">Couldn't load the full image.</span>
+        {:else}
+          <img
+            class="pv-full"
+            class:ready={fullLoaded}
+            src={rawUrl(e.path, e.mime)}
+            alt={e.name}
+            onload={() => (fullLoaded = true)}
+            onerror={() => (fullFailed = true)}
+          />
+        {/if}
+      </span>
+    {/key}
   {:else if isVideo(e)}
     <!-- svelte-ignore a11y_media_has_caption -->
-    <video src={rawUrl(e.path)} controls autoplay></video>
+    <video src={rawUrl(e.path, e.mime)} controls autoplay></video>
   {:else if isAudio(e)}
     <div class="pv-audio">
       <img src={fileIconUrl(e)} alt="" width="128" height="128" />
-      <audio src={rawUrl(e.path)} controls autoplay></audio>
+      <audio src={rawUrl(e.path, e.mime)} controls autoplay></audio>
     </div>
   {:else if isText(e)}
     <pre class="pv-text">{text ?? "Loading…"}</pre>
@@ -351,7 +376,7 @@
           class="mpv-content"
           ontouchstart={touchStart}
           ontouchend={touchEnd}
-          onclick={(ev) => ev.target instanceof HTMLImageElement && isImage(e) && (bare = !bare)}
+          onclick={(ev) => (ev.target as HTMLElement).closest?.(".pv-img") && (bare = !bare)}
         >
           {@render previewBody(e)}
           {#if showInfo}
@@ -705,7 +730,36 @@
     border-radius: 0 0 8px 8px;
     overflow: hidden;
   }
-  .pv-content img,
+  .pv-img {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+  }
+  .pv-img img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+  .pv-thumb {
+    width: 100%;
+    height: 100%;
+  }
+  .pv-failed {
+    position: absolute;
+    bottom: 16px;
+    padding: 6px 12px;
+    border-radius: 9999px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    font-size: 13px;
+  }
+  .pv-full:not(.ready) {
+    position: absolute;
+    opacity: 0;
+  }
   .pv-content video {
     max-width: 100%;
     max-height: 100%;
@@ -851,7 +905,6 @@
     justify-content: center;
     overflow: hidden;
   }
-  .mpv-content img,
   .mpv-content video {
     max-width: 100%;
     max-height: 100%;
