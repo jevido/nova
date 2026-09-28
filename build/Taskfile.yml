@@ -189,6 +189,11 @@ tasks:
       - frontend/bindings/**/*
     cmds:
       - wails3 generate bindings -f '{{.BUILD_FLAGS}}' -clean=true{{if eq .OBFUSCATED "true"}} -obfuscated{{end}} -ts -i
+    env:
+      # Bindings only need the Go types. With cgo on, loading Wails' Android
+      # files needs the NDK headers and prints "could not import C" warnings
+      # that CI flags as errors; the cgo-free Android files load cleanly.
+      CGO_ENABLED: '{{if contains "android" .BUILD_FLAGS}}0{{else}}{{env "CGO_ENABLED"}}{{end}}'
 
   generate:icons:
     summary: Generates Windows `.ico` and Mac `.icns` from an image; on macOS, `-iconcomposerinput appicon.icon -macassetdir darwin` also produces `Assets.car` from a `.icon` file (skipped on other platforms).

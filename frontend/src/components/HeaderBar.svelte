@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Window } from "@wailsio/runtime";
-  import { app, HOME, STARRED, TRASH, displayName } from "../lib/store.svelte";
+  import { app, HOME, STARRED, TRASH, displayName, type MenuItem } from "../lib/store.svelte";
   import { formatDuration, formatRate, formatSize } from "../lib/format";
   import Icon from "./Icon.svelte";
   import MainMenu from "./MainMenu.svelte";
@@ -72,6 +72,47 @@
     return total > 0 ? done / total : 0;
   });
 
+  let mcrumbsEl = $state<HTMLElement>();
+  // Deep paths scroll the breadcrumb pill; keep the current folder in view.
+  $effect(() => {
+    void crumbs;
+    queueMicrotask(() => mcrumbsEl && (mcrumbsEl.scrollLeft = mcrumbsEl.scrollWidth));
+  });
+
+  /** The phone's ⋮ menu: this folder's actions, the view, and the app. */
+  function pageMenu(e: MouseEvent) {
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const inFiles = !app.inTrash && app.path !== STARRED;
+    const items: MenuItem[] = [
+      ...(inFiles
+        ? [
+            { label: "New Folder…", disabled: !app.canWrite, run: () => app.newFolder() },
+            { label: "Upload Files…", disabled: !app.canWrite, run: () => app.pickUpload(false) },
+            {
+              label: app.isBookmarked() ? "Remove from Bookmarks" : "Add to Bookmarks",
+              disabled: app.path === HOME,
+              run: () => app.toggleBookmark(),
+            },
+            { sep: true as const },
+          ]
+        : []),
+      ...(app.inTrash ? [{ label: "Empty Trash…", disabled: !app.trashCount, run: () => app.emptyTrash() }, { sep: true as const }] : []),
+      { label: app.mobileGrid ? "Show as List" : "Show as Grid", run: () => app.setMobileGrid(!app.mobileGrid) },
+      { label: "Select All", disabled: !app.entries.length, run: () => app.selectAll() },
+      { label: "Reload", run: () => app.reload() },
+      { sep: true },
+      ...(app.update?.state === "ready"
+        ? [{ label: `Install Nova ${app.update.latestVersion}`, run: () => app.applyUpdate() }]
+        : app.update?.state === "manual"
+          ? [{ label: `Nova ${app.update.latestVersion} Available…`, run: () => (app.settingsOpen = true) }]
+          : []),
+      { label: "Account and Settings", run: () => (app.settingsOpen = true) },
+      { label: "What's New", run: () => (app.modal = { kind: "whatsnew", versions: [] }) },
+      { label: "About Nova", run: () => (app.modal = { kind: "about" }) },
+    ];
+    app.openMenu(r.right, r.bottom + 6, items);
+  }
+
   function folderMenu(e: MouseEvent) {
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const here = app.folder?.crumbs?.[app.folder.crumbs.length - 1];
@@ -100,30 +141,36 @@
   <header class="headerbar selecting" role="toolbar" tabindex="-1">
     <button class="btn image flat" title="Cancel" onclick={() => app.clearSelection()}><Icon name="window-close" size={22} /></button>
     <span class="title">{app.selected.size} selected</span>
+    {#if !app.inTrash}
+      {@const starred = app.selection.every((x) => app.isStarred(x.path))}
+      <button class="btn image flat" title={starred ? "Unstar" : "Star"} onclick={() => app.toggleStar(app.selection)}>
+        <Icon name={starred ? "starred" : "non-starred"} size={22} />
+      </button>
+    {/if}
     <button class="btn image flat" title="Select All" onclick={() => app.selectAll()}><Icon name="edit-select-all" size={22} /></button>
   </header>
-{:else if app.mobile && !app.searchOpen && !canUp}
-  <!-- The tabs' own pages get a search bar with the account, like other phone apps. -->
-  <header class="headerbar root" role="toolbar" tabindex="-1">
-    <div class="searchbar">
-      <button class="sb-field" onclick={() => app.openSearch()}>
-        <Icon name="system-search" size={20} />
-        <span>{app.path === HOME ? "Search in Nova" : `Search ${displayName(app.path)}`}</span>
-      </button>
+{:else if app.mobile && !app.searchOpen}
+  <!-- Phones: a large page title, then a breadcrumb pill for where you are. -->
+  <header class="mtop" role="toolbar" tabindex="-1">
+    <div class="mtop-row">
+      <h1 class="mtitle">{app.path === STARRED ? "Starred" : app.inTrash ? "Trash" : "Files"}</h1>
       {@render opsButton()}
-      <button class="avatar" title="Account and settings" onclick={() => (app.settingsOpen = true)}>
-        {(app.session?.user?.username ?? "N").slice(0, 1).toUpperCase()}
+      <button class="btn image flat" title="Search" onclick={() => app.openSearch()}><Icon name="edit-find" size={24} /></button>
+      <button class="btn image flat badge-host" title="Menu" onclick={pageMenu}>
+        <Icon name="view-more" size={24} />
+        {#if app.update?.state === "ready" || app.update?.state === "manual"}<span class="badge"></span>{/if}
       </button>
     </div>
-  </header>
-{:else if app.mobile && !app.searchOpen}
-  <header class="headerbar" role="toolbar" tabindex="-1">
-    <button class="btn image flat" title="Up" onclick={() => app.up()}><Icon name="go-previous" size={22} /></button>
-    <span class="title">{displayName(app.path)}</span>
-    {@render opsButton()}
-    <button class="btn image flat" title="Search" onclick={() => app.openSearch()}><Icon name="edit-find" size={22} /></button>
-    {#if !app.path.startsWith(TRASH) && app.path !== STARRED}
-      <button class="btn image flat" title="Folder menu" onclick={folderMenu}><Icon name="view-more" size={22} /></button>
+    {#if app.path !== STARRED}
+      <nav class="mcrumbs" bind:this={mcrumbsEl}>
+        {#each crumbs as c, i (c)}
+          {#if i > 0}<Icon name="pan-end" size={16} />{/if}
+          <button class="mcrumb" class:current={c === app.path} onclick={() => c !== app.path && app.navigate(c)}>
+            {#if i === 0}<Icon name={c === TRASH ? "user-trash" : "user-home"} size={22} />{/if}
+            {#if i === 0 && c === HOME}<span>Home</span>{:else if i > 0}<span>{displayName(c)}</span>{/if}
+          </button>
+        {/each}
+      </nav>
     {/if}
   </header>
 {:else}
@@ -438,54 +485,81 @@
     font-size: 20px;
     font-weight: 600;
   }
-  /* Material-style search bar on the tabs' root pages. */
-  .headerbar.root {
-    padding: 8px 12px;
+  /* Phone header: large title row and breadcrumb pill. */
+  .mtop {
+    padding: 12px 8px 8px 24px;
+    background: var(--view-bg);
+    outline: none;
   }
-  .searchbar {
-    flex: 1;
-    min-width: 0;
+  .mtop-row {
     display: flex;
     align-items: center;
-    height: 52px;
-    padding: 0 6px 0 4px;
-    border-radius: 9999px;
-    background: var(--btn-bg);
+    gap: 2px;
+    min-height: 56px;
   }
-  .sb-field {
+  .mtitle {
     flex: 1;
     min-width: 0;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    height: 100%;
-    padding: 0 12px;
-    border: 0;
-    background: none;
-    color: var(--fg-dim);
-    font: inherit;
-    font-size: 16px;
-    text-align: left;
-  }
-  .sb-field span {
+    margin: 0;
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .avatar {
+  .mcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 52px;
+    margin: 10px 16px 4px 0;
+    padding: 0 12px;
+    border-radius: 9999px;
+    background: var(--btn-bg);
+    color: var(--fg-dim);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .mcrumbs > :global(.icon) {
+    opacity: 0.7;
+  }
+  .mcrumb {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
     flex: none;
-    display: grid;
-    place-items: center;
-    width: 36px;
-    height: 36px;
-    margin-left: 4px;
+    height: 40px;
+    padding: 0 6px;
     border: 0;
-    border-radius: 50%;
-    background: color-mix(in srgb, var(--accent) 35%, var(--view-bg));
-    color: var(--fg);
+    border-radius: 9999px;
+    background: none;
+    color: inherit;
     font: inherit;
-    font-weight: bold;
-    font-size: 16px;
+    font-size: 17px;
+    white-space: nowrap;
+  }
+  .mcrumb:active {
+    background: var(--hover);
+  }
+  .mcrumb.current {
+    color: var(--accent-text);
+    font-weight: 600;
+  }
+  .mcrumb.current > :global(.icon) {
+    color: var(--fg-dim);
+  }
+  .badge-host {
+    position: relative;
+  }
+  .badge {
+    position: absolute;
+    top: 9px;
+    right: 9px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
   }
   .selecting {
     background: color-mix(in srgb, var(--accent) 18%, var(--header-bg));

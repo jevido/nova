@@ -2,7 +2,7 @@
   import { untrack } from "svelte";
   import type { Entry } from "../../bindings/nova/services/models";
   import { app, displayName, HOME, STARRED, TRASH, ZOOM_SIZES, LIST_ZOOM_SIZES, parentOf, type MenuItem } from "../lib/store.svelte";
-  import { formatDate, formatSize, pluralize, stemLength } from "../lib/format";
+  import { formatAgo, formatDate, formatSize, pluralize, stemLength } from "../lib/format";
   import { pressItems } from "../lib/dnd";
   import { itemMenu } from "../lib/menus";
   import FileIcon from "./FileIcon.svelte";
@@ -15,7 +15,7 @@
   let pressed: { path: string; x: number; y: number; wasSelected: boolean } | null = null;
   let showSpinner = $state(false);
 
-  const grid = $derived(app.prefs.view !== "list");
+  const grid = $derived(app.mobile ? app.mobileGrid : app.prefs.view !== "list");
   const iconSize = $derived(ZOOM_SIZES[app.prefs.zoom] ?? 64);
   const rowIcon = $derived(LIST_ZOOM_SIZES[app.prefs.zoom] ?? 24);
   const entries = $derived(app.entries);
@@ -233,9 +233,9 @@
   }
 
   function subtitle(e: Entry): string {
-    const when = formatDate(app.inTrash && e.deletedAt ? e.deletedAt : e.modified);
-    const where = isSearch ? (parentOf(e.path).replace(/^\/me/, "") || "/") + " · " : "";
-    return where + (e.isDir ? when : `${formatSize(e.size)} · ${when}`);
+    const when = app.inTrash && e.deletedAt ? `Deleted ${formatAgo(e.deletedAt)}` : `Modified ${formatAgo(e.modified)}`;
+    const where = isSearch ? (parentOf(e.path).replace(/^\/me/, "") || "/") + " • " : "";
+    return where + (e.isDir ? when : `${formatSize(e.size)} • ${when}`);
   }
 
   function bgMenu(e: MouseEvent) {
@@ -400,7 +400,7 @@
       </div>
     {:else if !entries.length && !app.loading && !app.searching}
       <div class="placeholder">
-        {#if isSearch}
+        {#if app.results !== null}
           <Icon name="system-search" size={96} />
           <h2>No Results Found</h2>
           {#if app.results !== null && app.path !== HOME}
@@ -412,7 +412,7 @@
         {:else if app.path === STARRED}
           <Icon name="starred" size={96} />
           <h2>No Starred Files</h2>
-          <p class="dim">Use the Star menu item to keep track of files you want to find again.</p>
+          <p class="dim">{app.mobile ? "Tap the star on a file to find it here again." : "Use the Star menu item to keep track of files you want to find again."}</p>
         {:else if app.path === TRASH}
           <Icon name="user-trash" size={96} />
           <h2>Trash is Empty</h2>
@@ -472,7 +472,7 @@
             oncontextmenu={(ev) => openItemMenu(ev, e)}
           >
             <span class="micon">
-              <FileIcon entry={e} size={40} />
+              <FileIcon entry={e} size={44} />
               {#if on}<span class="check"><Icon name="object-select" size={14} /></span>{/if}
             </span>
             <span class="mtext">
@@ -480,7 +480,7 @@
               <span class="sub">{subtitle(e)}</span>
             </span>
             {#if !app.selected.size}
-              <button class="btn image flat more" title="More" onclick={(ev) => rowMenu(ev, e)}><Icon name="view-more" /></button>
+              <button class="btn image flat more" title="More" onclick={(ev) => rowMenu(ev, e)}><Icon name="view-more" size={20} /></button>
             {/if}
           </div>
         {/each}
@@ -753,15 +753,27 @@
 
   /* ---------- phone list: two-line rows ---------- */
   .mrows {
-    padding: 4px 0 96px;
+    padding: 4px 0 104px;
   }
   .mrow {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 14px;
-    min-height: 64px;
-    padding: 6px 4px 6px 16px;
+    gap: 18px;
+    min-height: 76px;
+    padding: 10px 8px 10px 24px;
     outline: none;
+  }
+  /* Hairlines between rows start where the text does. */
+  .mrow + .mrow::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 86px;
+    right: 16px;
+    height: 1px;
+    background: var(--border);
+    opacity: 0.7;
   }
   .mrow:active {
     background: var(--hover);
@@ -781,10 +793,9 @@
     justify-content: center;
     flex: none;
     border-radius: 8px;
-    overflow: hidden;
   }
   .micon :global(.thumb) {
-    border-radius: 6px;
+    border-radius: 8px;
   }
   .check {
     position: absolute;
@@ -811,16 +822,17 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
   }
   .mtext .name {
-    font-size: 16px;
+    font-size: 17px;
+    font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   .mtext .sub {
-    font-size: 13px;
+    font-size: 14px;
     color: var(--fg-dim);
     overflow: hidden;
     text-overflow: ellipsis;

@@ -40,30 +40,30 @@
       <button class="btn suggested" onclick={() => app.paste()}>{app.clipboard.mode === "cut" ? "Move Here" : "Paste Here"}</button>
     </div>
   {:else if app.canWrite && !selecting && !app.searchOpen && !app.drawerOpen}
-    <button class="fab" title="New" onclick={addMenu}><Icon name="list-add" size={24} /></button>
+    <button class="fab" title="New" onclick={addMenu}><Icon name="list-add" size={28} /></button>
   {/if}
 
   {#if selecting}
     <nav class="tabs">
       {#if app.inTrash}
-        <button class="tab" onclick={() => app.restore(sel)}><span class="pill"><Icon name="edit-undo" size={22} /></span><span>Restore</span></button>
-        <button class="tab" onclick={() => app.deleteForever(sel)}><span class="pill"><Icon name="edit-delete" size={22} /></span><span>Delete</span></button>
+        <button class="tab" onclick={() => app.restore(sel)}><span class="pill"><Icon name="edit-undo" size={24} /></span><span>Restore</span></button>
+        <button class="tab" onclick={() => app.deleteForever(sel)}><span class="pill"><Icon name="edit-delete" size={24} /></span><span>Delete</span></button>
       {:else}
-        <button class="tab" onclick={() => app.download(sel)}><span class="pill"><Icon name="folder-download" size={22} /></span><span>Download</span></button>
-        <button class="tab" onclick={() => (app.copy(true), app.clearSelection())}><span class="pill"><Icon name="edit-cut" size={22} /></span><span>Move</span></button>
-        <button class="tab" onclick={() => (app.copy(false), app.clearSelection())}><span class="pill"><Icon name="edit-copy" size={22} /></span><span>Copy</span></button>
-        <button class="tab" onclick={() => app.trash(sel)}><span class="pill"><Icon name="user-trash" size={22} /></span><span>Trash</span></button>
+        <button class="tab" onclick={() => app.download(sel)}><span class="pill"><Icon name="folder-download" size={24} /></span><span>Download</span></button>
+        <button class="tab" onclick={() => (app.copy(true), app.clearSelection())}><span class="pill"><Icon name="edit-cut" size={24} /></span><span>Move</span></button>
+        <button class="tab" onclick={() => (app.copy(false), app.clearSelection())}><span class="pill"><Icon name="edit-copy" size={24} /></span><span>Copy</span></button>
+        <button class="tab" onclick={() => app.trash(sel)}><span class="pill"><Icon name="user-trash" size={24} /></span><span>Trash</span></button>
       {/if}
-      <button class="tab" onclick={moreMenu}><span class="pill"><Icon name="view-more" size={22} /></span><span>More</span></button>
+      <button class="tab" onclick={moreMenu}><span class="pill"><Icon name="view-more" size={24} /></span><span>More</span></button>
     </nav>
   {:else}
     <nav class="tabs">
-      <button class="tab" class:on={tab === "files"} onclick={() => go(HOME)}><span class="pill"><Icon name="user-home" size={22} /></span><span>Files</span></button>
-      <button class="tab" class:on={tab === "starred"} onclick={() => go(STARRED)}><span class="pill"><Icon name="starred" size={22} /></span><span>Starred</span></button>
+      <button class="tab" class:on={tab === "files"} onclick={() => go(HOME)}><span class="pill"><Icon name="user-home" size={24} /></span><span>Home</span></button>
+      <button class="tab" class:on={tab === "starred"} onclick={() => go(STARRED)}><span class="pill"><Icon name="starred" size={24} /></span><span>Starred</span></button>
       <button class="tab" class:on={tab === "trash"} onclick={() => go(TRASH)}>
-        <span class="pill"><Icon name={app.trashCount ? "user-trash-full" : "user-trash"} size={22} /></span><span>Trash</span>
+        <span class="pill"><Icon name={app.trashCount ? "user-trash-full" : "user-trash"} size={24} /></span><span>Trash</span>
       </button>
-      <button class="tab" class:on={tab === "more"} onclick={() => (app.drawerOpen = !app.drawerOpen)}><span class="pill"><Icon name="open-menu" size={22} /></span><span>More</span></button>
+      <button class="tab" class:on={tab === "more"} onclick={() => (app.drawerOpen = !app.drawerOpen)}><span class="pill"><Icon name="open-menu" size={24} /></span><span>More</span></button>
     </nav>
   {/if}
 </footer>
@@ -72,13 +72,13 @@
   .mobilebar {
     position: relative;
     z-index: 22;
-    background: var(--header-bg);
-    box-shadow: 0 -1px var(--shade);
+    background: color-mix(in srgb, var(--fg) 3%, var(--view-bg));
+    box-shadow: 0 -1px var(--border);
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
   .tabs {
     display: flex;
-    height: 64px;
+    height: 76px;
   }
   .tab {
     flex: 1;
@@ -87,43 +87,41 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 6px;
     border: 0;
     background: none;
     color: var(--fg-dim);
     font: inherit;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 500;
   }
   .pill {
     display: flex;
-    padding: 4px 18px;
+    padding: 4px 16px;
     border-radius: 9999px;
     transition: background 120ms ease-out;
   }
   .tab.on {
-    color: var(--fg);
-  }
-  .tab.on .pill {
-    background: var(--selected);
+    color: var(--accent-text);
+    font-weight: 600;
   }
   .tab:active .pill {
     background: var(--hover);
   }
   .fab {
     position: absolute;
-    right: 16px;
-    bottom: calc(100% + 16px);
+    right: 20px;
+    bottom: calc(100% + 20px);
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 56px;
-    height: 56px;
+    width: 64px;
+    height: 64px;
     border: 0;
-    border-radius: 16px;
+    border-radius: 20px;
     background: var(--accent);
     color: var(--accent-fg);
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
   }
   .fab:active {
     filter: brightness(1.1);

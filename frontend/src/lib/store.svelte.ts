@@ -97,6 +97,8 @@ class AppState {
   prefs = $state<Prefs>({ ...defaultPrefs });
   /** Phone build: touch interaction, drawer sidebar, no window controls. */
   mobile = $state(false);
+  /** Phones list files by default; the grid is a per-device choice. */
+  mobileGrid = $state(false);
   /** How the desktop looks (scheme, accent, font, colour theme). */
   system: SystemTheme | null = null;
   drawerOpen = $state(false);
@@ -189,6 +191,11 @@ class AppState {
       new URLSearchParams(location.search).has("mobile") ||
       /Android|iPhone|iPad/i.test(navigator.userAgent);
     document.documentElement.dataset.mobile = String(this.mobile);
+    try {
+      this.mobileGrid = localStorage.getItem("mobileView") === "grid";
+    } catch {
+      /* storage may be unavailable */
+    }
     // Android's back gesture asks us first (see MainActivity.java).
     (window as unknown as { __novaBack: () => boolean }).__novaBack = () => this.handleBack();
     try {
@@ -1048,6 +1055,15 @@ class AppState {
     if (changed) {
       this.prefs.starred = next;
       this.savePrefs();
+    }
+  }
+
+  setMobileGrid(on: boolean) {
+    this.mobileGrid = on;
+    try {
+      localStorage.setItem("mobileView", on ? "grid" : "list");
+    } catch {
+      /* ignore */
     }
   }
 

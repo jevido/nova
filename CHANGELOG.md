@@ -8,6 +8,23 @@ Format: `## <version> — <date>`, an optional one-line summary, then
 `- [icon-name] **Title** — what it does`; the icon is optional and is a
 symbolic icon name.
 
+## 0.5.3 — 2026-09-28
+
+A new look for Nova on your phone.
+
+### New
+
+- [starred] **Star from anywhere on your phone** — Star a file while you look at it, or star everything you've selected.
+
+### Improved
+
+- [view-list] **Redesigned phone app** — A large title, a breadcrumb bar that shows where you are, and a clear list of files with their size and age. Switch to a grid from the ⋮ menu.
+- [image-x-generic] **Full-screen viewer on phones** — Photos and videos fill the screen. Swipe for the next file, tap to hide the buttons, and star, share, download or trash from the bar at the bottom.
+
+### Fixed
+
+- **Empty Starred page** — It now says you have no starred files instead of "No Results Found".
+
 ## 0.5.2 — 2026-09-28
 
 ### Improved

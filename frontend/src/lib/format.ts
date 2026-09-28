@@ -48,6 +48,20 @@ export function formatDate(iso: string | null | undefined): string {
   return full.format(d);
 }
 
+/** Phone-style age: "Just now", "3 hours ago", "2 days ago", "1 week ago", else "10 Mar 2024". */
+export function formatAgo(iso: string | null | undefined): string {
+  const d = validDate(iso);
+  if (!d) return "—";
+  const s = (Date.now() - d.getTime()) / 1000;
+  const ago = (n: number, unit: string) => `${n} ${unit}${n === 1 ? "" : "s"} ago`;
+  if (s < 60) return "Just now";
+  if (s < 3600) return ago(Math.floor(s / 60), "minute");
+  if (s < 86400) return ago(Math.floor(s / 3600), "hour");
+  if (s < 7 * 86400) return ago(Math.floor(s / 86400), "day");
+  if (s < 30 * 86400) return ago(Math.floor(s / (7 * 86400)), "week");
+  return full.format(d);
+}
+
 export function formatDateLong(iso: string | null | undefined): string {
   const d = validDate(iso);
   return d ? long.format(d) : "Unknown";

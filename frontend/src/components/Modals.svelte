@@ -3,7 +3,8 @@
   import * as Files from "../../bindings/nova/services/filesservice";
   import * as Updates from "../../bindings/nova/services/updateservice";
   import type { Entry, FolderSize } from "../../bindings/nova/services/models";
-  import { app, parentOf, TRASH, type Modal } from "../lib/store.svelte";
+  import { app, parentOf, STARRED, TRASH, type Modal } from "../lib/store.svelte";
+  import { itemMenu } from "../lib/menus";
   import { formatDateLong, formatSize, pluralize, stemLength } from "../lib/format";
   import { fileIconUrl, isAudio, isImage, isText, isVideo, rawUrl } from "../lib/icons";
   import FileIcon from "./FileIcon.svelte";
@@ -89,6 +90,27 @@
       app.selectPaths([next.path]);
       app.modal = { kind: "preview", entry: next };
     }
+  }
+
+  // Phone viewer: swipe sideways for the next file, tap to hide the bars.
+  let bare = $state(false);
+  let touch: { x: number; y: number } | null = null;
+  $effect(() => {
+    if (app.modal?.kind !== "preview") bare = false;
+  });
+  function touchStart(e: TouchEvent) {
+    touch = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+  }
+  function touchEnd(e: TouchEvent) {
+    if (!touch) return;
+    const dx = e.changedTouches[0].clientX - touch.x;
+    const dy = e.changedTouches[0].clientY - touch.y;
+    touch = null;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) previewStep(dx < 0 ? 1 : -1);
+  }
+  function previewMore(e: MouseEvent, entry: Entry) {
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    app.openMenu(r.left, r.top, itemMenu([entry], app.results !== null || app.path === STARRED));
   }
 
   function onKey(e: KeyboardEvent) {
@@ -231,11 +253,37 @@
   </div>
 {/snippet}
 
+{#snippet previewBody(e: Entry)}
+  {#if isImage(e)}
+    <img src={rawUrl(e.path)} alt={e.name} />
+  {:else if isVideo(e)}
+    <!-- svelte-ignore a11y_media_has_caption -->
+    <video src={rawUrl(e.path)} controls autoplay></video>
+  {:else if isAudio(e)}
+    <div class="pv-audio">
+      <img src={fileIconUrl(e)} alt="" width="128" height="128" />
+      <audio src={rawUrl(e.path)} controls autoplay></audio>
+    </div>
+  {:else if isText(e)}
+    <pre class="pv-text">{text ?? "Loading…"}</pre>
+  {:else}
+    <div class="pv-none">
+      <img src={fileIconUrl(e)} alt="" width="128" height="128" />
+      <div>{kindLabel(e)}</div>
+      {#if app.mobile}
+        <button class="btn" onclick={() => app.download([e])}>Download</button>
+      {:else}
+        <button class="btn" onclick={() => (close(), app.open(e))}>Open With Default Application</button>
+      {/if}
+    </div>
+  {/if}
+{/snippet}
+
 {#if app.modal}
   {@const m = app.modal}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <div class="backdrop" class:dark={m.kind === "preview"} onmousedown={(e) => e.target === e.currentTarget && close(false)}>
+  <div class="backdrop" class:dark={m.kind === "preview"} class:full={m.kind === "preview" && app.mobile} onmousedown={(e) => e.target === e.currentTarget && close(false)}>
     {#if m.kind === "confirm"}
       <div class="dialog message" bind:this={dialogEl} role="alertdialog" aria-modal="true">
         <div class="msg-body">
@@ -281,6 +329,42 @@
         </div>
         <ShareDialog entry={m.entry} />
       </div>
+    {:else if m.kind === "preview" && app.mobile}
+      {@const e = m.entry}
+      {@const starred = app.isStarred(e.path)}
+      <div class="mpv" class:bare role="dialog" aria-modal="true" aria-label="Preview {e.name}">
+        <header class="mpv-top">
+          <button class="mpv-btn" title="Back" onclick={() => close()}><Icon name="go-previous" size={22} /></button>
+          <div class="mpv-title">
+            <div class="mpv-name">{e.name}</div>
+            <div class="mpv-sub">{formatSize(e.size)}</div>
+          </div>
+        </header>
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="mpv-content"
+          ontouchstart={touchStart}
+          ontouchend={touchEnd}
+          onclick={(ev) => ev.target instanceof HTMLImageElement && isImage(e) && (bare = !bare)}
+        >
+          {@render previewBody(e)}
+        </div>
+        <footer class="mpv-actions">
+          {#if app.inTrash}
+            <button class="mpv-act" onclick={() => (close(), app.restore([e]))}><Icon name="edit-undo" size={22} /><span>Restore</span></button>
+            <button class="mpv-act" onclick={() => (close(), app.deleteForever([e]))}><Icon name="edit-delete" size={22} /><span>Delete</span></button>
+          {:else}
+            <button class="mpv-act" class:on={starred} onclick={() => app.toggleStar([e])}>
+              <Icon name={starred ? "starred" : "non-starred"} size={22} /><span>{starred ? "Starred" : "Star"}</span>
+            </button>
+            <button class="mpv-act" onclick={() => app.openShare(e)}><Icon name="send-to" size={22} /><span>Share</span></button>
+            <button class="mpv-act" onclick={() => app.download([e])}><Icon name="folder-download" size={22} /><span>Download</span></button>
+            <button class="mpv-act" onclick={() => (close(), app.trash([e]))}><Icon name="user-trash" size={22} /><span>Trash</span></button>
+          {/if}
+          <button class="mpv-act" onclick={(ev) => previewMore(ev, e)}><Icon name="view-more" size={22} /><span>More</span></button>
+        </footer>
+      </div>
     {:else if m.kind === "preview"}
       {@const e = m.entry}
       <div class="preview" role="dialog" aria-modal="true" aria-label="Preview {e.name}">
@@ -295,29 +379,7 @@
           <button class="pv-btn" title="Close" onclick={() => close()}><Icon name="window-close" /></button>
         </div>
         <div class="pv-content">
-          {#if isImage(e)}
-            <img src={rawUrl(e.path)} alt={e.name} />
-          {:else if isVideo(e)}
-            <!-- svelte-ignore a11y_media_has_caption -->
-            <video src={rawUrl(e.path)} controls autoplay></video>
-          {:else if isAudio(e)}
-            <div class="pv-audio">
-              <img src={fileIconUrl(e)} alt="" width="128" height="128" />
-              <audio src={rawUrl(e.path)} controls autoplay></audio>
-            </div>
-          {:else if isText(e)}
-            <pre class="pv-text">{text ?? "Loading…"}</pre>
-          {:else}
-            <div class="pv-none">
-              <img src={fileIconUrl(e)} alt="" width="128" height="128" />
-              <div>{kindLabel(e)}</div>
-              {#if app.mobile}
-                <button class="btn" onclick={() => app.download([e])}>Download</button>
-              {:else}
-                <button class="btn" onclick={() => (close(), app.open(e))}>Open With Default Application</button>
-              {/if}
-            </div>
-          {/if}
+          {@render previewBody(e)}
         </div>
       </div>
     {:else if m.kind === "shortcuts"}
@@ -625,6 +687,112 @@
     flex-direction: column;
     align-items: center;
     gap: 14px;
+  }
+
+  /* Phone viewer: full screen, black, bars that get out of the way. */
+  .backdrop.full {
+    background: #000;
+  }
+  .mpv {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    padding: env(safe-area-inset-top, 0) 0 env(safe-area-inset-bottom, 0);
+    background: #000;
+    color: #fff;
+  }
+  .mpv-top,
+  .mpv-actions {
+    position: relative;
+    z-index: 1;
+    transition: opacity 150ms ease-out;
+  }
+  .mpv.bare .mpv-top,
+  .mpv.bare .mpv-actions {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .mpv-top {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 64px;
+    padding: 8px 12px 8px 4px;
+  }
+  .mpv-btn {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 48px;
+    height: 48px;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    color: inherit;
+  }
+  .mpv-btn:active,
+  .mpv-act:active {
+    background: rgba(255, 255, 255, 0.12);
+  }
+  .mpv-title {
+    flex: 1;
+    min-width: 0;
+  }
+  .mpv-name {
+    font-size: 17px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .mpv-sub {
+    margin-top: 2px;
+    font-size: 13px;
+    opacity: 0.65;
+  }
+  .mpv-content {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .mpv-content img,
+  .mpv-content video {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+  .mpv-content .pv-text {
+    height: 100%;
+    background: #111;
+  }
+  .mpv-actions {
+    display: flex;
+    min-height: 72px;
+    padding: 4px 4px 8px;
+  }
+  .mpv-act {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    border: 0;
+    border-radius: 16px;
+    background: none;
+    color: rgba(255, 255, 255, 0.85);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .mpv-act.on {
+    color: #f6d32d;
   }
 
   .shortcuts {
