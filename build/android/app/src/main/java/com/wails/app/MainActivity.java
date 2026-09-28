@@ -409,7 +409,11 @@ public class MainActivity extends AppCompatActivity {
                         new java.util.HashMap<>(), new java.io.ByteArrayInputStream(new byte[0]));
             }
             String name = file.getName().toLowerCase();
-            String mime = name.endsWith(".mp4") ? "video/mp4"
+            // Files Nova's viewer fetched into cache/view/ say what they are.
+            String type = request.getUrl().getQueryParameter("type");
+            boolean media = type != null && (type.startsWith("image/") || type.startsWith("video/") || type.startsWith("audio/"));
+            String mime = media ? type
+                    : name.endsWith(".mp4") ? "video/mp4"
                     : name.endsWith(".mov") ? "video/quicktime"
                     : name.endsWith(".jpg") || name.endsWith(".jpeg") ? "image/jpeg"
                     : name.endsWith(".png") ? "image/png" : "application/octet-stream";

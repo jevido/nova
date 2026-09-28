@@ -71,3 +71,30 @@ func TestRecentAndShared(t *testing.T) {
 		t.Fatalf("shared = %v, want %s", got, want)
 	}
 }
+
+func TestCacheForViewReusesDownload(t *testing.T) {
+	hits := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.RawQuery == "stat" {
+			_ = json.NewEncoder(w).Encode(nova.Listing{Path: []nova.Node{{Path: "/me/a.JPG", Name: "a.JPG", Type: "file", FileSize: 5, SHA256: "x"}}})
+			return
+		}
+		hits++
+		_, _ = w.Write([]byte("hello"))
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	s := NewFilesService(nova.NewClient(srv.URL, "key"))
+	for i := 0; i < 2; i++ {
+		rel, err := s.CacheForView("/me/a.JPG")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.HasPrefix(rel, "view/") || !strings.HasSuffix(rel, ".jpg") {
+			t.Fatalf("rel = %q", rel)
+		}
+	}
+	if hits != 1 {
+		t.Fatalf("downloaded %d times, want 1", hits)
+	}
+}

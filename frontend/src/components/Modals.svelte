@@ -96,11 +96,29 @@
   let bare = $state(false);
   let fullLoaded = $state(false);
   let fullFailed = $state(false);
+  let thumbFailed = $state(false);
+  // Android: media is fetched into the app cache and served from disk (with
+  // seeking) rather than squeezed through the WebView bridge.
+  const onAndroid = !!(window as unknown as { NovaAndroid?: unknown }).NovaAndroid;
+  let mediaSrc = $state<string | null>(null);
   $effect(() => {
     const m = app.modal;
-    void (m?.kind === "preview" && m.entry.path);
     fullLoaded = false;
     fullFailed = false;
+    thumbFailed = false;
+    mediaSrc = null;
+    if (m?.kind !== "preview") return;
+    const e = m.entry;
+    if (!(isImage(e) || isVideo(e) || isAudio(e))) return;
+    if (!onAndroid) {
+      mediaSrc = rawUrl(e.path, e.mime);
+      return;
+    }
+    let live = true;
+    Files.CacheForView(e.path)
+      .then((rel) => live && (mediaSrc = `/__capture__/${rel.split("/").map(encodeURIComponent).join("/")}?type=${encodeURIComponent(e.mime)}`))
+      .catch(() => live && (fullFailed = true));
+    return () => (live = false);
   });
   let showInfo = $state(false);
   let touch: { x: number; y: number } | null = null;
@@ -270,14 +288,17 @@
     {#key e.path}
       <!-- The thumbnail shows at once; the full image replaces it once loaded. -->
       <span class="pv-img">
-        {#if hasThumbnail(e) && !fullLoaded}<img class="pv-thumb" src={thumbUrl(e, 128)} alt="" />{/if}
+        {#if hasThumbnail(e) && !fullLoaded && !thumbFailed}<img class="pv-thumb" src={thumbUrl(e, 128)} alt="" onerror={() => (thumbFailed = true)} />{/if}
         {#if fullFailed}
-          <span class="pv-failed">Couldn't load the full image.</span>
-        {:else}
+          <span class="pv-failed">Couldn't load the image.</span>
+        {:else if !mediaSrc || !fullLoaded}
+          <span class="spinner pv-spin"></span>
+        {/if}
+        {#if mediaSrc && !fullFailed}
           <img
             class="pv-full"
             class:ready={fullLoaded}
-            src={rawUrl(e.path, e.mime)}
+            src={mediaSrc}
             alt={e.name}
             onload={() => (fullLoaded = true)}
             onerror={() => (fullFailed = true)}
@@ -287,11 +308,11 @@
     {/key}
   {:else if isVideo(e)}
     <!-- svelte-ignore a11y_media_has_caption -->
-    <video src={rawUrl(e.path, e.mime)} controls autoplay></video>
+    {#if mediaSrc}<video src={mediaSrc} controls autoplay></video>{:else if fullFailed}<span class="pv-failed">Couldn't load the video.</span>{:else}<span class="spinner"></span>{/if}
   {:else if isAudio(e)}
     <div class="pv-audio">
       <img src={fileIconUrl(e)} alt="" width="128" height="128" />
-      <audio src={rawUrl(e.path, e.mime)} controls autoplay></audio>
+      {#if mediaSrc}<audio src={mediaSrc} controls autoplay></audio>{:else if !fullFailed}<span class="spinner"></span>{/if}
     </div>
   {:else if isText(e)}
     <pre class="pv-text">{text ?? "Loading…"}</pre>
@@ -746,6 +767,9 @@
   .pv-thumb {
     width: 100%;
     height: 100%;
+  }
+  .pv-spin {
+    position: absolute;
   }
   .pv-failed {
     position: absolute;

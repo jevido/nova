@@ -3,12 +3,16 @@ package services
 import (
 	"bytes"
 	"context"
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -340,6 +344,77 @@ func (s *FilesService) Shared(fresh bool) ([]Entry, error) {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Modified.After(out[j].Modified) })
 	return out, nil
+}
+
+// viewCacheAge is how long files fetched for the phone viewer are kept.
+const viewCacheAge = 24 * time.Hour
+
+// CacheForView downloads a file into the app cache for the phone's viewer and
+// returns its path relative to the cache ("view/…"). Android serves that
+// file straight from disk, with seeking, instead of passing the whole file
+// through the WebView bridge. A file already fetched is reused.
+func (s *FilesService) CacheForView(p string) (string, error) {
+	p, err := checkPath(p)
+	if err != nil {
+		return "", err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+	l, err := s.client.Stat(ctx, p)
+	if err != nil {
+		return "", err
+	}
+	if l.BaseIndex < 0 || l.BaseIndex >= len(l.Path) || l.Path[l.BaseIndex].IsDir() {
+		return "", errors.New("only files can be viewed")
+	}
+	n := l.Path[l.BaseIndex]
+	h := sha1.Sum([]byte(p + "\x00" + n.SHA256 + "\x00" + n.Modified.String()))
+	rel := path.Join("view", hex.EncodeToString(h[:])+strings.ToLower(path.Ext(n.Name)))
+	dir := filepath.Join(cacheDir(), "view")
+	local := filepath.Join(cacheDir(), filepath.FromSlash(rel))
+	if st, err := os.Stat(local); err == nil && st.Size() == n.FileSize {
+		return rel, nil
+	}
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return "", err
+	}
+	pruneOld(dir, viewCacheAge)
+	res, err := s.client.Do(ctx, http.MethodGet, s.client.FileURL(p, ""), nil, nil)
+	if err != nil {
+		return "", err
+	}
+	defer res.Body.Close()
+	tmp, err := os.CreateTemp(dir, ".part-*")
+	if err != nil {
+		return "", err
+	}
+	if _, err := io.Copy(tmp, res.Body); err != nil {
+		tmp.Close()
+		os.Remove(tmp.Name())
+		return "", err
+	}
+	if err := tmp.Close(); err != nil {
+		os.Remove(tmp.Name())
+		return "", err
+	}
+	if err := os.Rename(tmp.Name(), local); err != nil {
+		os.Remove(tmp.Name())
+		return "", err
+	}
+	return rel, nil
+}
+
+// pruneOld removes files in dir that weren't touched within age.
+func pruneOld(dir string, age time.Duration) {
+	ents, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	for _, e := range ents {
+		if info, err := e.Info(); err == nil && time.Since(info.ModTime()) > age {
+			_ = os.Remove(filepath.Join(dir, e.Name()))
+		}
+	}
 }
 
 // CreateFolder creates dir/name, returning the new path.

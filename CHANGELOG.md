@@ -8,6 +8,16 @@ Format: `## <version> — <date>`, an optional one-line summary, then
 `- [icon-name] **Title** — what it does`; the icon is optional and is a
 symbolic icon name.
 
+## 0.6.0 — 2026-09-28
+
+### New
+
+- [media-playback-start] **Seek in videos on your phone** — Jump anywhere in a video without waiting for all of it to load.
+
+### Fixed
+
+- **Photos in the phone viewer** — Photos and videos load from a copy on your phone instead of failing with a broken picture. Photos you've opened before open instantly.
+
 ## 0.5.5 — 2026-09-28
 
 ### Improved

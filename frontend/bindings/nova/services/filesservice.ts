@@ -15,6 +15,16 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 import * as $models from "./models.js";
 
 /**
+ * CacheForView downloads a file into the app cache for the phone's viewer and
+ * returns its path relative to the cache ("view/…"). Android serves that
+ * file straight from disk, with seeking, instead of passing the whole file
+ * through the WebView bridge. A file already fetched is reused.
+ */
+export function CacheForView(p: string): $CancellablePromise<string> {
+    return $Call.ByID(495763454, p);
+}
+
+/**
  * CreateFolder creates dir/name, returning the new path.
  */
 export function CreateFolder(dir: string, name: string): $CancellablePromise<string> {
