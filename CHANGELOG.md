@@ -8,6 +8,21 @@ Format: `## <version> — <date>`, an optional one-line summary, then
 `- [icon-name] **Title** — what it does`; the icon is optional and is a
 symbolic icon name.
 
+## 0.5.4 — 2026-09-28
+
+### New
+
+- [document-open-recent] **Recent** — Your most recently changed files, newest first, in the sidebar and on your phone.
+- [folder-publicshare] **Shared** — Everything you've shared with a link or with people, in one place.
+- [dialog-information] **File details on your phone** — Tap ⓘ in the viewer for the type, exact size, dates, owner, sharing and checksum.
+- [folder] **Type a location on your phone** — Tap the current folder in the bar at the top and type where you want to go.
+
+### Improved
+
+- **The main menu on your phone** — ⋮ at the top right has the same menu as on the desktop, with the style switcher and What's New.
+- **Simpler bookmark menu** — Right-clicking a bookmark shows the same menu as the folder itself. Dividers are still added from an empty spot in the sidebar.
+- **Tidier Settings** — The page that created recommended folders is gone.
+
 ## 0.5.3 — 2026-09-28
 
 A new look for Nova on your phone.

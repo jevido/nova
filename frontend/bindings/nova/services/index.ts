@@ -26,7 +26,6 @@ export type {
     Entry,
     Folder,
     FolderSize,
-    FolderStatus,
     OpResult,
     Person,
     Session,

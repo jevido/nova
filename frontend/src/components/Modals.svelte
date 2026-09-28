@@ -3,9 +3,9 @@
   import * as Files from "../../bindings/nova/services/filesservice";
   import * as Updates from "../../bindings/nova/services/updateservice";
   import type { Entry, FolderSize } from "../../bindings/nova/services/models";
-  import { app, parentOf, STARRED, TRASH, type Modal } from "../lib/store.svelte";
+  import { app, parentOf, TRASH, type Modal, isVirtual } from "../lib/store.svelte";
   import { itemMenu } from "../lib/menus";
-  import { formatDateLong, formatSize, pluralize, stemLength } from "../lib/format";
+  import { formatAgo, formatDateLong, formatSize, pluralize, stemLength } from "../lib/format";
   import { fileIconUrl, isAudio, isImage, isText, isVideo, rawUrl } from "../lib/icons";
   import FileIcon from "./FileIcon.svelte";
   import Icon from "./Icon.svelte";
@@ -94,9 +94,13 @@
 
   // Phone viewer: swipe sideways for the next file, tap to hide the bars.
   let bare = $state(false);
+  let showInfo = $state(false);
   let touch: { x: number; y: number } | null = null;
   $effect(() => {
-    if (app.modal?.kind !== "preview") bare = false;
+    const m = app.modal;
+    if (m?.kind !== "preview") bare = false;
+    // Files Nova can't show open with their details instead.
+    showInfo = m?.kind === "preview" && !(isImage(m.entry) || isVideo(m.entry) || isAudio(m.entry) || isText(m.entry));
   });
   function touchStart(e: TouchEvent) {
     touch = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
@@ -110,7 +114,7 @@
   }
   function previewMore(e: MouseEvent, entry: Entry) {
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    app.openMenu(r.left, r.top, itemMenu([entry], app.results !== null || app.path === STARRED));
+    app.openMenu(r.left, r.top, itemMenu([entry], app.results !== null || isVirtual(app.path)));
   }
 
   function onKey(e: KeyboardEvent) {
@@ -337,8 +341,9 @@
           <button class="mpv-btn" title="Back" onclick={() => close()}><Icon name="go-previous" size={22} /></button>
           <div class="mpv-title">
             <div class="mpv-name">{e.name}</div>
-            <div class="mpv-sub">{formatSize(e.size)}</div>
+            <div class="mpv-sub">{formatSize(e.size)} • {kindLabel(e)} • {formatAgo(e.modified)}</div>
           </div>
+          <button class="mpv-btn" class:on={showInfo} title="Details" onclick={() => (showInfo = !showInfo)}><Icon name="dialog-information" size={22} /></button>
         </header>
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -349,6 +354,44 @@
           onclick={(ev) => ev.target instanceof HTMLImageElement && isImage(e) && (bare = !bare)}
         >
           {@render previewBody(e)}
+          {#if showInfo}
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div class="mpv-info" ontouchstart={(ev) => ev.stopPropagation()} ontouchend={(ev) => ev.stopPropagation()} onclick={(ev) => ev.stopPropagation()}>
+              <dl>
+                <dt>Type</dt>
+                <dd>{kindLabel(e)}{e.mime && e.mime !== kindLabel(e) ? ` (${e.mime})` : ""}</dd>
+                <dt>Size</dt>
+                <dd>{formatSize(e.size)} ({e.size.toLocaleString()} bytes)</dd>
+                <dt>Location</dt>
+                <dd class="selectable">{parentOf(e.path).replace(/^\/me/, "") || "/"}</dd>
+                {#if e.origPath}
+                  <dt>Original Location</dt>
+                  <dd class="selectable">{parentOf(e.origPath).replace(/^\/me/, "") || "/"}</dd>
+                {/if}
+                <dt>Modified</dt>
+                <dd>{formatDateLong(e.modified)}</dd>
+                <dt>Created</dt>
+                <dd>{formatDateLong(e.created)}</dd>
+                {#if e.owner}
+                  <dt>Owner</dt>
+                  <dd>{e.owner}</dd>
+                {/if}
+                {#if e.mode}
+                  <dt>Permissions</dt>
+                  <dd class="mono">{e.mode}</dd>
+                {/if}
+                {#if !e.path.startsWith(TRASH)}
+                  <dt>Sharing</dt>
+                  <dd>{e.public ? "Anyone with the link" : e.shared ? "Specific people" : "Not shared"}</dd>
+                {/if}
+                {#if e.sha256}
+                  <dt>SHA-256</dt>
+                  <dd class="mono selectable small">{e.sha256}</dd>
+                {/if}
+              </dl>
+            </div>
+          {/if}
         </div>
         <footer class="mpv-actions">
           {#if app.inTrash}
@@ -752,7 +795,55 @@
     font-size: 13px;
     opacity: 0.65;
   }
+  .mpv-btn.on {
+    background: rgba(255, 255, 255, 0.16);
+  }
+  .mpv-info {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 8px;
+    max-height: 70%;
+    overflow: auto;
+    padding: 6px 18px;
+    border-radius: 20px;
+    background: rgba(32, 32, 34, 0.96);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+    animation: sheet-up 160ms ease-out;
+  }
+  @keyframes sheet-up {
+    from {
+      transform: translateY(12px);
+      opacity: 0;
+    }
+  }
+  .mpv-info dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px 16px;
+    margin: 12px 0;
+    font-size: 15px;
+  }
+  .mpv-info dt {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  .mpv-info dd {
+    margin: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .mpv-info .mono {
+    font-family: var(--mono);
+  }
+  .mpv-info .small {
+    font-size: 12px;
+  }
+  .mpv-info .selectable {
+    user-select: text;
+    -webkit-user-select: text;
+  }
   .mpv-content {
+    position: relative;
     flex: 1;
     min-height: 0;
     display: flex;

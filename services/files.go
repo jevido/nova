@@ -65,6 +65,12 @@ func toEntry(n nova.Node) Entry {
 type FilesService struct {
 	client  *nova.Client
 	trashMu sync.Mutex
+
+	// The last full walk of the home folder, reused briefly by Recent and
+	// Shared so switching between them doesn't walk everything twice.
+	walkMu   sync.Mutex
+	walked   []Entry
+	walkedAt time.Time
 }
 
 func NewFilesService(client *nova.Client) *FilesService { return &FilesService{client: client} }
@@ -216,6 +222,124 @@ func (s *FilesService) Measure(p string) (*FolderSize, error) {
 		return nil
 	}
 	return out, walk(p, 0)
+}
+
+// The API has no listing of recent or shared items, so Nova walks the home
+// folder (one request per folder, a few at a time) and filters the result.
+const (
+	walkMaxFolders = 5000
+	walkTTL        = 30 * time.Second
+	recentLimit    = 50
+)
+
+// walkAll returns every entry below home except the trash, reusing a walk
+// from the last walkTTL.
+func (s *FilesService) walkAll(fresh bool) ([]Entry, error) {
+	s.walkMu.Lock()
+	defer s.walkMu.Unlock()
+	if !fresh && s.walked != nil && time.Since(s.walkedAt) < walkTTL {
+		return s.walked, nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	var (
+		mu      sync.Mutex
+		out     []Entry
+		wg      sync.WaitGroup
+		sem     = make(chan struct{}, 8)
+		folders int
+		first   error
+	)
+	var visit func(dir string)
+	visit = func(dir string) {
+		defer wg.Done()
+		sem <- struct{}{}
+		l, err := s.client.Stat(ctx, dir)
+		<-sem
+		mu.Lock()
+		defer mu.Unlock()
+		if err != nil {
+			if first == nil {
+				first = err
+			}
+			return
+		}
+		for _, n := range l.Children {
+			e := toEntry(n)
+			if e.Path == TrashDir {
+				continue
+			}
+			out = append(out, e)
+			if e.IsDir && folders < walkMaxFolders {
+				folders++
+				wg.Add(1)
+				go visit(e.Path)
+			}
+		}
+	}
+	wg.Add(1)
+	go visit(HomeDir)
+	wg.Wait()
+	if out == nil && first != nil {
+		return nil, first
+	}
+	s.walked, s.walkedAt = out, time.Now()
+	return out, nil
+}
+
+// Recent returns the most recently modified files, newest first.
+func (s *FilesService) Recent(fresh bool) ([]Entry, error) {
+	all, err := s.walkAll(fresh)
+	if err != nil {
+		return nil, err
+	}
+	files := make([]Entry, 0, len(all))
+	for _, e := range all {
+		// Hidden files and anything in a hidden folder (such as Nova's own
+		// .nova settings) aren't something you'd look for here.
+		if !e.IsDir && !strings.Contains(e.Path, "/.") {
+			files = append(files, e)
+		}
+	}
+	sort.Slice(files, func(i, j int) bool { return files[i].Modified.After(files[j].Modified) })
+	if len(files) > recentLimit {
+		files = files[:recentLimit]
+	}
+	return files, nil
+}
+
+// Shared returns the items that anyone with the link or named people can
+// reach. Items inside a shared folder are left out; the folder stands for them.
+func (s *FilesService) Shared(fresh bool) ([]Entry, error) {
+	all, err := s.walkAll(fresh)
+	if err != nil {
+		return nil, err
+	}
+	sharedDirs := map[string]bool{}
+	for _, e := range all {
+		if e.Shared && e.IsDir {
+			sharedDirs[e.Path] = true
+		}
+	}
+	out := []Entry{}
+	for _, e := range all {
+		if !e.Shared {
+			continue
+		}
+		inside := false
+		for d := nova.Parent(e.Path); d != HomeDir && d != "/" && d != "."; d = nova.Parent(d) {
+			if sharedDirs[d] {
+				inside = true
+				break
+			}
+		}
+		if !inside {
+			out = append(out, e)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Modified.After(out[j].Modified) })
+	return out, nil
 }
 
 // CreateFolder creates dir/name, returning the new path.

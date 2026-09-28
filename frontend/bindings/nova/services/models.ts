@@ -61,15 +61,6 @@ export interface FolderSize {
 }
 
 /**
- * FolderStatus says whether a recommended folder exists already.
- */
-export interface FolderStatus {
-    "name": string;
-    "path": string;
-    "exists": boolean;
-}
-
-/**
  * OpResult reports partial failure of a batch operation.
  */
 export interface OpResult {

@@ -3,18 +3,27 @@
   import Icon from "./Icon.svelte";
   import Popover from "./Popover.svelte";
 
-  // The primary menu. Nautilus keeps it in the sidebar's header bar.
+  // The primary menu. Nautilus keeps it in the sidebar's header bar; phones
+  // have it behind ⋮ at the top right, with the page's view options on top.
+  let { phone = false }: { phone?: boolean } = $props();
   let btn = $state<HTMLButtonElement>();
   let open = $state(false);
 </script>
 
 <button class="btn image flat badge-host" data-main-menu bind:this={btn} class:checked={open} title="Main Menu (F10)" onclick={() => (open = !open)}>
-  <Icon name="open-menu" />
+  <Icon name={phone ? "view-more" : "open-menu"} size={phone ? 24 : 16} />
   {#if app.update?.state === "ready" || app.update?.state === "manual"}<span class="badge" title="Update available"></span>{/if}
 </button>
 
 <Popover anchor={btn} bind:open align="end">
   <div class="appmenu" role="presentation" onclick={() => (open = false)}>
+    {#if phone}
+      <button class="modelbutton" onclick={() => app.setMobileGrid(!app.mobileGrid)}>{app.mobileGrid ? "Show as List" : "Show as Grid"}</button>
+      {#if app.inTrash}
+        <button class="modelbutton" disabled={!app.trashCount} onclick={() => app.emptyTrash()}>Empty Trash…</button>
+      {/if}
+      <div class="psep"></div>
+    {/if}
     {#if !app.mobile}
       <button class="modelbutton" onclick={() => app.newWindow()}>New Window<span class="accel">Ctrl+N</span></button>
       <button class="modelbutton" onclick={() => ((app.prefs.sidebarOpen = !app.prefs.sidebarOpen), app.savePrefs())}>
@@ -101,6 +110,10 @@
   }
   .swatch:focus-visible {
     box-shadow: 0 0 0 2px var(--focus);
+  }
+  /* No keyboard on a phone, so no shortcuts either. */
+  :global(:root[data-mobile="true"]) .appmenu .accel {
+    display: none;
   }
   .badge-host {
     position: relative;

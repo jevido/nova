@@ -1,14 +1,14 @@
 <script lang="ts">
   import { Browser } from "@wailsio/runtime";
   import * as Account from "../../bindings/nova/services/accountservice";
-  import type { FolderStatus, UsageSeries } from "../../bindings/nova/services/models";
-  import { app, HOME } from "../lib/store.svelte";
-  import { formatSize, pluralize } from "../lib/format";
+  import type { UsageSeries } from "../../bindings/nova/services/models";
+  import { app } from "../lib/store.svelte";
+  import { formatSize } from "../lib/format";
   import Icon from "./Icon.svelte";
   import UsageChart from "./UsageChart.svelte";
 
   // An AdwPreferencesDialog-style page: account, usage graphs, folder setup.
-  type Page = "account" | "usage" | "folders";
+  type Page = "account" | "usage";
   let page = $state<Page>("account");
   let dialogEl = $state<HTMLDivElement>();
 
@@ -82,41 +82,6 @@
 
   const count = (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : String(Math.round(v)));
 
-  // ---------- folders ----------
-  let folders = $state<FolderStatus[] | null>(null);
-  let foldersError = $state("");
-  let addToSidebar = $state(true);
-  let creating = $state(false);
-  const missing = $derived((folders ?? []).filter((f) => !f.exists));
-
-  async function loadFolders() {
-    foldersError = "";
-    try {
-      folders = await Account.RecommendedFolders();
-    } catch (err) {
-      foldersError = err instanceof Error ? err.message : String(err);
-    }
-  }
-
-  $effect(() => {
-    if (app.settingsOpen && page === "folders") loadFolders();
-  });
-
-  async function createFolders() {
-    creating = true;
-    try {
-      const made = (await Account.CreateRecommendedFolders()) ?? [];
-      if (addToSidebar && made.length) app.addBookmarks(made);
-      app.toast(made.length ? `Created ${pluralize(made.length, "folder", "folders")}` : "All folders already exist");
-      if (app.path === HOME) app.reload(true);
-    } catch (err) {
-      app.toast(err instanceof Error ? err.message : String(err), { error: true });
-    } finally {
-      creating = false;
-      loadFolders();
-    }
-  }
-
   // ---------- updates ----------
   const updateText = $derived.by(() => {
     const u = app.update;
@@ -148,7 +113,7 @@
       <header class="head">
         <span class="spacer"></span>
         <div class="switcher" role="tablist">
-          {#each [["account", "Account", "avatar-default"], ["usage", "Usage", "power-profile-performance"], ["folders", "Folders", "folder"]] as [id, label, icon] (id)}
+          {#each [["account", "Account", "avatar-default"], ["usage", "Usage", "power-profile-performance"]] as [id, label, icon] (id)}
             <button role="tab" aria-selected={page === id} class:on={page === id} onclick={() => (page = id as Page)}>
               <Icon name={icon} /><span>{label}</span>
             </button>
@@ -258,45 +223,6 @@
               </div>
               {#if downloads}<UsageChart label="Downloads" timestamps={downloads.timestamps ?? []} amounts={downloads.amounts ?? []} format={count} bucket={range.interval} />{/if}
             </section>
-          {/if}
-        {:else}
-          <p class="intro">
-            Start with a tidy home folder. Nova creates the folders below that you don't have yet. It never removes, renames or
-            moves anything.
-          </p>
-          {#if foldersError}
-            <div class="status dim">Could not read your home folder: {foldersError}</div>
-          {:else if !folders}
-            <div class="status"><span class="spinner"></span></div>
-          {:else}
-            <div class="boxed">
-              {#each folders as f (f.name)}
-                <div class="row">
-                  <Icon name={f.exists ? "folder" : "folder-new"} size={20} />
-                  <div class="row-text"><div>{f.name}</div></div>
-                  {#if f.exists}
-                    <span class="state ok"><Icon name="object-select" />Already there</span>
-                  {:else}
-                    <span class="state dim">Will be created</span>
-                  {/if}
-                </div>
-              {/each}
-            </div>
-            <div class="boxed">
-              <label class="row">
-                <div class="row-text">
-                  <div>Add to sidebar</div>
-                  <div class="dim sub">Bookmark the new folders</div>
-                </div>
-                <button class="switch" class:on={addToSidebar} role="switch" aria-checked={addToSidebar} aria-label="Add to sidebar" onclick={() => (addToSidebar = !addToSidebar)}><span></span></button>
-              </label>
-            </div>
-            <div class="actions">
-              <button class="btn suggested pill" disabled={!missing.length || creating} onclick={createFolders}>
-                {#if creating}<span class="spinner"></span>{/if}
-                {missing.length ? `Create ${pluralize(missing.length, "Folder", "Folders")}` : "All Set"}
-              </button>
-            </div>
           {/if}
         {/if}
       </div>
@@ -565,57 +491,5 @@
     display: flex;
     justify-content: center;
     padding: 32px 0;
-  }
-  .intro {
-    margin: 6px 2px 16px;
-    color: var(--fg-dim);
-  }
-  .state {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.87em;
-  }
-  .state.ok {
-    color: var(--success);
-  }
-  .actions {
-    display: flex;
-    justify-content: center;
-    margin-top: 24px;
-  }
-  /* GtkSwitch */
-  .switch {
-    position: relative;
-    flex: none;
-    width: 48px;
-    height: 26px;
-    border-radius: 14px;
-    border: 0;
-    padding: 0;
-    background: color-mix(in srgb, var(--fg) 20%, transparent);
-    outline: none;
-    transition: background 150ms;
-  }
-  .switch:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-  }
-  .switch span {
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #fff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition: left 150ms;
-  }
-  .switch.on {
-    background: var(--accent);
-  }
-  .switch.on span {
-    left: 25px;
   }
 </style>

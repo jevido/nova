@@ -1,7 +1,7 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import type { Entry } from "../../bindings/nova/services/models";
-  import { app, displayName, HOME, STARRED, TRASH, ZOOM_SIZES, LIST_ZOOM_SIZES, parentOf, type MenuItem } from "../lib/store.svelte";
+  import { app, displayName, HOME, STARRED, TRASH, ZOOM_SIZES, LIST_ZOOM_SIZES, parentOf, type MenuItem, isVirtual, RECENT, SHARED } from "../lib/store.svelte";
   import { formatAgo, formatDate, formatSize, pluralize, stemLength } from "../lib/format";
   import { pressItems } from "../lib/dnd";
   import { itemMenu } from "../lib/menus";
@@ -20,7 +20,7 @@
   const rowIcon = $derived(LIST_ZOOM_SIZES[app.prefs.zoom] ?? 24);
   const entries = $derived(app.entries);
   // Search results and Starred both mix folders, so they show a Location column.
-  const isSearch = $derived(app.results !== null || app.path === STARRED);
+  const isSearch = $derived(app.results !== null || isVirtual(app.path));
 
   $effect(() => {
     if (!app.loading) {
@@ -409,6 +409,14 @@
           {:else}
             <p class="dim">Try a different search.</p>
           {/if}
+        {:else if app.path === RECENT}
+          <Icon name="document-open-recent" size={96} />
+          <h2>No Recent Files</h2>
+          <p class="dim">Files you add or change show up here.</p>
+        {:else if app.path === SHARED}
+          <Icon name="folder-publicshare" size={96} />
+          <h2>Nothing Shared</h2>
+          <p class="dim">Files and folders you share with a link or with people show up here.</p>
         {:else if app.path === STARRED}
           <Icon name="starred" size={96} />
           <h2>No Starred Files</h2>

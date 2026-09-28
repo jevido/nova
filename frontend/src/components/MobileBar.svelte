@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { app, HOME, STARRED, TRASH } from "../lib/store.svelte";
+  import { app, HOME, RECENT, SHARED, STARRED, TRASH, isVirtual } from "../lib/store.svelte";
   import { itemMenu } from "../lib/menus";
   import { pluralize } from "../lib/format";
   import Icon from "./Icon.svelte";
@@ -8,8 +8,15 @@
   // selected items while selecting. The + button and paste bar float above it.
   const sel = $derived(app.selection);
   const selecting = $derived(app.selected.size > 0);
-  const mixed = $derived(app.results !== null || app.path === STARRED);
-  const tab = $derived(app.drawerOpen ? "more" : app.inTrash ? "trash" : app.path === STARRED ? "starred" : "files");
+  const mixed = $derived(app.results !== null || isVirtual(app.path));
+  const tab = $derived(app.inTrash ? TRASH : isVirtual(app.path) ? app.path : HOME);
+  const tabs: [string, string, string][] = [
+    [HOME, "Home", "user-home"],
+    [RECENT, "Recent", "document-open-recent"],
+    [STARRED, "Starred", "starred"],
+    [SHARED, "Shared", "folder-publicshare"],
+    [TRASH, "Trash", "user-trash"],
+  ];
 
   function go(path: string) {
     app.drawerOpen = false;
@@ -39,7 +46,7 @@
       <button class="btn flat" onclick={() => app.setClipboard(null)}>Cancel</button>
       <button class="btn suggested" onclick={() => app.paste()}>{app.clipboard.mode === "cut" ? "Move Here" : "Paste Here"}</button>
     </div>
-  {:else if app.canWrite && !selecting && !app.searchOpen && !app.drawerOpen}
+  {:else if app.canWrite && !selecting && !app.searchOpen}
     <button class="fab" title="New" onclick={addMenu}><Icon name="list-add" size={28} /></button>
   {/if}
 
@@ -58,12 +65,11 @@
     </nav>
   {:else}
     <nav class="tabs">
-      <button class="tab" class:on={tab === "files"} onclick={() => go(HOME)}><span class="pill"><Icon name="user-home" size={24} /></span><span>Home</span></button>
-      <button class="tab" class:on={tab === "starred"} onclick={() => go(STARRED)}><span class="pill"><Icon name="starred" size={24} /></span><span>Starred</span></button>
-      <button class="tab" class:on={tab === "trash"} onclick={() => go(TRASH)}>
-        <span class="pill"><Icon name={app.trashCount ? "user-trash-full" : "user-trash"} size={24} /></span><span>Trash</span>
-      </button>
-      <button class="tab" class:on={tab === "more"} onclick={() => (app.drawerOpen = !app.drawerOpen)}><span class="pill"><Icon name="open-menu" size={24} /></span><span>More</span></button>
+      {#each tabs as [path, label, icon] (path)}
+        <button class="tab" class:on={tab === path} onclick={() => go(path)}>
+          <span class="pill"><Icon name={path === TRASH && app.trashCount ? "user-trash-full" : icon} size={24} /></span><span>{label}</span>
+        </button>
+      {/each}
     </nav>
   {/if}
 </footer>

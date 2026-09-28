@@ -20,21 +20,6 @@ import * as config$0 from "../internal/config/models.js";
 import * as $models from "./models.js";
 
 /**
- * CreateRecommendedFolders creates the recommended folders that don't exist
- * yet and returns the paths it created. It never deletes or renames anything.
- */
-export function CreateRecommendedFolders(): $CancellablePromise<string[] | null> {
-    return $Call.ByID(2810994358);
-}
-
-/**
- * RecommendedFolders lists the recommended folders and which already exist.
- */
-export function RecommendedFolders(): $CancellablePromise<$models.FolderStatus[] | null> {
-    return $Call.ByID(1187177002);
-}
-
-/**
  * SaveBookmarks stores the sidebar bookmarks locally and on the server.
  * Server entries the sidebar can't show are kept as they are.
  */

@@ -51,6 +51,13 @@ export function Move(paths: string[] | null, destDir: string): $CancellablePromi
 }
 
 /**
+ * Recent returns the most recently modified files, newest first.
+ */
+export function Recent(fresh: boolean): $CancellablePromise<$models.Entry[] | null> {
+    return $Call.ByID(2862733549, fresh);
+}
+
+/**
  * Rename renames p within its directory.
  */
 export function Rename(p: string, newName: string): $CancellablePromise<string> {
@@ -92,6 +99,14 @@ export function SetPeople(p: string, people: $models.Person[] | null): $Cancella
  */
 export function ShareLink(p: string): $CancellablePromise<string> {
     return $Call.ByID(3300472449, p);
+}
+
+/**
+ * Shared returns the items that anyone with the link or named people can
+ * reach. Items inside a shared folder are left out; the folder stands for them.
+ */
+export function Shared(fresh: boolean): $CancellablePromise<$models.Entry[] | null> {
+    return $Call.ByID(690633371, fresh);
 }
 
 /**

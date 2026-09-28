@@ -79,10 +79,6 @@ type remoteBookmark struct {
 	Label string `json:"label"`
 }
 
-// RecommendedFolders is the folder layout offered in Settings. Creating them
-// never touches anything that already exists.
-var RecommendedFolders = []string{"Documents", "Downloads", "Music", "Pictures", "Videos", "Projects", "Backups"}
-
 // AccountService backs the settings page: usage statistics, synced bookmarks
 // and the recommended folder layout.
 type AccountService struct {
@@ -266,54 +262,4 @@ func (a *AccountService) writeRemote(ctx context.Context, list []config.Bookmark
 		return err
 	}
 	return a.client.Upload(ctx, BookmarksFile, bytes.NewReader(body), int64(len(body)), "application/json")
-}
-
-// FolderStatus says whether a recommended folder exists already.
-type FolderStatus struct {
-	Name   string `json:"name"`
-	Path   string `json:"path"`
-	Exists bool   `json:"exists"`
-}
-
-// RecommendedFolders lists the recommended folders and which already exist.
-func (a *AccountService) RecommendedFolders() ([]FolderStatus, error) {
-	ctx, cancel := ctxTimeout()
-	defer cancel()
-	l, err := a.client.Stat(ctx, HomeDir)
-	if err != nil {
-		return nil, err
-	}
-	taken := map[string]bool{}
-	for _, c := range l.Children {
-		taken[strings.ToLower(c.Name)] = true
-	}
-	out := make([]FolderStatus, len(RecommendedFolders))
-	for i, n := range RecommendedFolders {
-		out[i] = FolderStatus{Name: n, Path: nova.Join(HomeDir, n), Exists: taken[strings.ToLower(n)]}
-	}
-	return out, nil
-}
-
-// CreateRecommendedFolders creates the recommended folders that don't exist
-// yet and returns the paths it created. It never deletes or renames anything.
-func (a *AccountService) CreateRecommendedFolders() ([]string, error) {
-	status, err := a.RecommendedFolders()
-	if err != nil {
-		return nil, err
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-	created := []string{}
-	for _, f := range status {
-		if f.Exists {
-			continue
-		}
-		// Mkdir (not MkdirAll) fails instead of touching a folder that
-		// appeared in the meantime.
-		if err := a.client.Mkdir(ctx, f.Path); err != nil {
-			return created, fmt.Errorf("could not create %s: %w", f.Name, err)
-		}
-		created = append(created, f.Path)
-	}
-	return created, nil
 }

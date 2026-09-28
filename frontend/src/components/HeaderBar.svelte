@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Window } from "@wailsio/runtime";
-  import { app, HOME, STARRED, TRASH, displayName, type MenuItem } from "../lib/store.svelte";
+  import { app, HOME, STARRED, RECENT, SHARED, TRASH, displayName, isVirtual } from "../lib/store.svelte";
   import { formatDuration, formatRate, formatSize } from "../lib/format";
   import Icon from "./Icon.svelte";
   import MainMenu from "./MainMenu.svelte";
@@ -14,7 +14,7 @@
   let locValue = $state("");
 
   const crumbs = $derived.by(() => {
-    if (app.path === STARRED) return [STARRED];
+    if (isVirtual(app.path)) return [app.path];
     let list = (app.folder?.crumbs ?? []).map((c) => c.path);
     if (!list.length || list[list.length - 1] !== app.path) {
       // Build from the path while the listing loads.
@@ -32,7 +32,7 @@
 
   $effect(() => {
     if (app.editingLocation) {
-      locValue = relPath(app.path) + (app.path === HOME ? "" : "/");
+      locValue = isVirtual(app.path) ? "/" : relPath(app.path) + (app.path === HOME ? "" : "/");
       queueMicrotask(() => {
         locInput?.focus();
         locInput?.select();
@@ -62,7 +62,7 @@
   }: { compact?: boolean; sidebarShown?: boolean; onToggleSidebar: () => void } = $props();
 
   // Phones show the folder's name with an up arrow instead of a path bar.
-  const canUp = $derived(app.path !== HOME && app.path !== STARRED && app.path !== TRASH);
+  const canUp = $derived(app.path !== HOME && !isVirtual(app.path) && app.path !== TRASH);
 
   const windowsHost = /Windows/i.test(navigator.userAgent);
   const active = $derived(app.activeTransfers);
@@ -79,40 +79,6 @@
     queueMicrotask(() => mcrumbsEl && (mcrumbsEl.scrollLeft = mcrumbsEl.scrollWidth));
   });
 
-  /** The phone's ⋮ menu: this folder's actions, the view, and the app. */
-  function pageMenu(e: MouseEvent) {
-    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const inFiles = !app.inTrash && app.path !== STARRED;
-    const items: MenuItem[] = [
-      ...(inFiles
-        ? [
-            { label: "New Folder…", disabled: !app.canWrite, run: () => app.newFolder() },
-            { label: "Upload Files…", disabled: !app.canWrite, run: () => app.pickUpload(false) },
-            {
-              label: app.isBookmarked() ? "Remove from Bookmarks" : "Add to Bookmarks",
-              disabled: app.path === HOME,
-              run: () => app.toggleBookmark(),
-            },
-            { sep: true as const },
-          ]
-        : []),
-      ...(app.inTrash ? [{ label: "Empty Trash…", disabled: !app.trashCount, run: () => app.emptyTrash() }, { sep: true as const }] : []),
-      { label: app.mobileGrid ? "Show as List" : "Show as Grid", run: () => app.setMobileGrid(!app.mobileGrid) },
-      { label: "Select All", disabled: !app.entries.length, run: () => app.selectAll() },
-      { label: "Reload", run: () => app.reload() },
-      { sep: true },
-      ...(app.update?.state === "ready"
-        ? [{ label: `Install Nova ${app.update.latestVersion}`, run: () => app.applyUpdate() }]
-        : app.update?.state === "manual"
-          ? [{ label: `Nova ${app.update.latestVersion} Available…`, run: () => (app.settingsOpen = true) }]
-          : []),
-      { label: "Account and Settings", run: () => (app.settingsOpen = true) },
-      { label: "What's New", run: () => (app.modal = { kind: "whatsnew", versions: [] }) },
-      { label: "About Nova", run: () => (app.modal = { kind: "about" }) },
-    ];
-    app.openMenu(r.right, r.bottom + 6, items);
-  }
-
   function folderMenu(e: MouseEvent) {
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const here = app.folder?.crumbs?.[app.folder.crumbs.length - 1];
@@ -124,7 +90,7 @@
       {
         label: app.isBookmarked() ? "Remove from Bookmarks" : "Add to Bookmarks",
         accel: "Ctrl+D",
-        disabled: app.path === HOME || app.path === STARRED || app.inTrash,
+        disabled: app.path === HOME || isVirtual(app.path) || app.inTrash,
         run: () => app.toggleBookmark(),
       },
       { label: "Copy Location", run: () => app.copyPath({ path: app.path } as never) },
@@ -153,23 +119,43 @@
   <!-- Phones: a large page title, then a breadcrumb pill for where you are. -->
   <header class="mtop" role="toolbar" tabindex="-1">
     <div class="mtop-row">
-      <h1 class="mtitle">{app.path === STARRED ? "Starred" : app.inTrash ? "Trash" : "Files"}</h1>
+      <h1 class="mtitle">{isVirtual(app.path) ? displayName(app.path) : app.inTrash ? "Trash" : "Files"}</h1>
       {@render opsButton()}
       <button class="btn image flat" title="Search" onclick={() => app.openSearch()}><Icon name="edit-find" size={24} /></button>
-      <button class="btn image flat badge-host" title="Menu" onclick={pageMenu}>
-        <Icon name="view-more" size={24} />
-        {#if app.update?.state === "ready" || app.update?.state === "manual"}<span class="badge"></span>{/if}
-      </button>
+<MainMenu phone />
     </div>
-    {#if app.path !== STARRED}
-      <nav class="mcrumbs" bind:this={mcrumbsEl}>
+    {#if app.editingLocation}
+      <div class="mcrumbs editing">
+        <Icon name="folder" size={22} />
+        <input
+          bind:this={locInput}
+          class="mloc"
+          bind:value={locValue}
+          spellcheck="false"
+          autocapitalize="off"
+          autocomplete="off"
+          enterkeyhint="go"
+          aria-label="Location"
+          onkeydown={(e) => {
+            if (e.key === "Enter") submitLocation();
+            else if (e.key === "Escape") app.editingLocation = false;
+          }}
+          onblur={() => (app.editingLocation = false)}
+        />
+      </div>
+    {:else}
+      <!-- Tap the current folder or the empty part of the bar to type a location. -->
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+      <nav class="mcrumbs" bind:this={mcrumbsEl} onclick={(e) => e.target === e.currentTarget && (app.editingLocation = true)}>
         {#each crumbs as c, i (c)}
           {#if i > 0}<Icon name="pan-end" size={16} />{/if}
-          <button class="mcrumb" class:current={c === app.path} onclick={() => c !== app.path && app.navigate(c)}>
-            {#if i === 0}<Icon name={c === TRASH ? "user-trash" : "user-home"} size={22} />{/if}
-            {#if i === 0 && c === HOME}<span>Home</span>{:else if i > 0}<span>{displayName(c)}</span>{/if}
+          <button class="mcrumb" class:current={c === app.path} onclick={() => (c === app.path ? (app.editingLocation = true) : app.navigate(c))}>
+            {#if i === 0}<Icon name={c === TRASH ? "user-trash" : c === STARRED ? "starred" : c === RECENT ? "document-open-recent" : c === SHARED ? "folder-publicshare" : "user-home"} size={22} />{/if}
+            {#if i === 0 && c === HOME}<span>Home</span>{:else if i > 0 || isVirtual(c)}<span>{displayName(c)}</span>{/if}
           </button>
         {/each}
+        <span class="mcrumbs-rest"></span>
       </nav>
     {/if}
   </header>
@@ -244,26 +230,26 @@
               class:current={c === app.path}
               data-path={c}
               title={relPath(c)}
-              data-drop-path={c === STARRED ? undefined : c}
+              data-drop-path={isVirtual(c) ? undefined : c}
               onclick={() => (c === app.path ? (app.editingLocation = true) : app.navigate(c))}
               onmousedown={(e) => e.button === 1 && e.preventDefault()}
-              onauxclick={(e) => e.button === 1 && c !== STARRED && !app.mobile && app.newWindow(c)}
+              onauxclick={(e) => e.button === 1 && !isVirtual(c) && !app.mobile && app.newWindow(c)}
               oncontextmenu={(e) => {
                 e.preventDefault();
                 app.openMenu(e.clientX, e.clientY, [
                   { label: "Open", run: () => app.navigate(c) },
-                  { label: app.isBookmarked(c) ? "Remove from Bookmarks" : "Add to Bookmarks", disabled: c === HOME || c === TRASH || c === STARRED, run: () => app.toggleBookmark(c) },
+                  { label: app.isBookmarked(c) ? "Remove from Bookmarks" : "Add to Bookmarks", disabled: c === HOME || c === TRASH || isVirtual(c), run: () => app.toggleBookmark(c) },
                   { label: "Copy Location", run: () => app.copyPath({ path: c } as never) },
                 ]);
               }}
               class:drop={app.dropTarget === c}
             >
-              {#if i === 0}<Icon name={c === TRASH ? "user-trash" : c === STARRED ? "starred" : "user-home"} />{/if}
+              {#if i === 0}<Icon name={c === TRASH ? "user-trash" : c === STARRED ? "starred" : c === RECENT ? "document-open-recent" : c === SHARED ? "folder-publicshare" : "user-home"} />{/if}
               {#if i === 0 && c === HOME}<span>Home</span>{:else if i > 0 || c !== HOME}<span>{displayName(c)}</span>{/if}
             </button>
           {/each}
         </div>
-        {#if !app.path.startsWith(TRASH) && app.path !== STARRED}
+        {#if !app.path.startsWith(TRASH) && !isVirtual(app.path)}
           <button class="btn image flat more" title="Folder menu" onclick={folderMenu}><Icon name="view-more" /></button>
         {/if}
       </nav>
@@ -524,6 +510,28 @@
   .mcrumbs > :global(.icon) {
     opacity: 0.7;
   }
+  .mcrumbs-rest {
+    flex: 1;
+    min-width: 24px;
+    align-self: stretch;
+    pointer-events: none;
+  }
+  .mcrumbs.editing {
+    gap: 12px;
+    padding: 0 18px;
+    box-shadow: inset 0 0 0 2px var(--accent);
+  }
+  .mloc {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    border: 0;
+    background: none;
+    color: var(--fg);
+    font: inherit;
+    font-size: 17px;
+    outline: none;
+  }
   .mcrumb {
     display: inline-flex;
     align-items: center;
@@ -548,18 +556,6 @@
   }
   .mcrumb.current > :global(.icon) {
     color: var(--fg-dim);
-  }
-  .badge-host {
-    position: relative;
-  }
-  .badge {
-    position: absolute;
-    top: 9px;
-    right: 9px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--accent);
   }
   .selecting {
     background: color-mix(in srgb, var(--accent) 18%, var(--header-bg));

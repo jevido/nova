@@ -25,6 +25,14 @@ export const HOME = "/me";
 export const TRASH = "/me/.Trash";
 /** Virtual location listing starred items, like starred:/// in Nautilus. */
 export const STARRED = "starred:";
+/** Virtual locations listing the newest files and the shared items. */
+export const RECENT = "recent:";
+export const SHARED = "shared:";
+
+/** Starred, Recent and Shared: lists gathered from all over, not folders. */
+export function isVirtual(p: string): boolean {
+  return p === STARRED || p === RECENT || p === SHARED;
+}
 
 export type SortKey = "name" | "size" | "modified" | "type";
 export type Toast = { id: number; text: string; action?: { label: string; run: () => void }; error?: boolean };
@@ -73,6 +81,8 @@ export function displayName(p: string, username?: string): string {
   if (p === HOME) return "Home";
   if (p === TRASH) return "Trash";
   if (p === STARRED) return "Starred";
+  if (p === RECENT) return "Recent";
+  if (p === SHARED) return "Shared";
   return baseName(p) || username || "Home";
 }
 
@@ -154,6 +164,8 @@ class AppState {
     const src = this.results ?? this.folder?.children ?? [];
     const hidden = this.prefs.showHidden;
     const list = hidden ? [...src] : src.filter((e) => !e.name.startsWith("."));
+    // Recent keeps its newest-first order; that order is its point.
+    if (this.path === RECENT && this.results === null) return list;
     const dir = this.prefs.sortDesc ? -1 : 1;
     const key = this.prefs.sortBy as SortKey;
     const coll = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
@@ -401,9 +413,13 @@ class AppState {
 
   // =============== navigation ===============
 
-  private async list(p: string): Promise<Folder | null> {
+  private async list(p: string, fresh = false): Promise<Folder | null> {
     if (p === STARRED) {
       const children = await Files.StatMany([...(this.prefs.starred ?? [])]);
+      return { path: p, crumbs: [], children: children ?? [], canWrite: false };
+    }
+    if (p === RECENT || p === SHARED) {
+      const children = p === RECENT ? await Files.Recent(fresh) : await Files.Shared(fresh);
       return { path: p, crumbs: [], children: children ?? [], canWrite: false };
     }
     return Files.List(p);
@@ -455,7 +471,7 @@ class AppState {
   }
 
   up() {
-    if (this.path === HOME || this.path === STARRED) return;
+    if (this.path === HOME || isVirtual(this.path)) return;
     const came = this.path;
     this.navigate(parentOf(this.path), true, this.mobile ? undefined : [came]);
   }
@@ -465,7 +481,7 @@ class AppState {
     const seq = ++this.loadSeq;
     if (!quiet) this.loading = true;
     try {
-      const f = await this.list(this.path);
+      const f = await this.list(this.path, !quiet);
       if (seq !== this.loadSeq || !f) return;
       this.folder = f;
       this.error = null;
@@ -523,7 +539,7 @@ class AppState {
     if (!q) return;
     this.searching = true;
     try {
-      const r = await Files.Search(this.path === STARRED ? HOME : this.path, q);
+      const r = await Files.Search(isVirtual(this.path) ? HOME : this.path, q);
       if (seq !== this.searchSeq) return;
       this.results = r ?? [];
       this.clearSelection();
@@ -963,7 +979,7 @@ class AppState {
   }
 
   toggleBookmark(path = this.path) {
-    if (path === HOME || path === TRASH || path === STARRED) return;
+    if (path === HOME || path === TRASH || isVirtual(path)) return;
     if (this.isBookmarked(path)) this.removeBookmark(path);
     else this.addBookmarks([path]);
   }

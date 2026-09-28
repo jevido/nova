@@ -160,26 +160,3 @@ func TestSyncBookmarksUploadsLocalWhenServerHasNone(t *testing.T) {
 		t.Fatalf("local bookmarks not uploaded: %s", fs.files[BookmarksFile])
 	}
 }
-
-func TestCreateRecommendedFoldersOnlyAddsMissing(t *testing.T) {
-	a, fs := newTestAccount(t)
-	created, err := a.CreateRecommendedFolders()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(created) != len(RecommendedFolders)-1 {
-		t.Fatalf("created %v", created)
-	}
-	for _, p := range created {
-		if p == "/me/Music" {
-			t.Fatal("recreated an existing folder")
-		}
-	}
-	if !fs.dirs["/me/Work"] || !fs.dirs["/me/Pictures"] {
-		t.Fatal("folders missing afterwards")
-	}
-	again, err := a.CreateRecommendedFolders()
-	if err != nil || len(again) != 0 {
-		t.Fatalf("second run created %v, %v", again, err)
-	}
-}

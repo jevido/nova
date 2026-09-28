@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { app, baseName, HOME, STARRED, TRASH } from "../lib/store.svelte";
+  import { app, baseName, HOME, RECENT, SHARED, STARRED, TRASH, isVirtual } from "../lib/store.svelte";
   import type { Entry } from "../../bindings/nova/services/models";
   import { formatSize } from "../lib/format";
   import { dropZone, pressBookmark, type DropZone } from "../lib/dnd";
   import Icon from "./Icon.svelte";
   import MainMenu from "./MainMenu.svelte";
+  import { itemMenu } from "../lib/menus";
 
   let { onHide }: { onHide?: () => void } = $props();
 
@@ -20,42 +21,14 @@
     return { id: "", name: path === HOME ? "Home" : baseName(path), path, isDir: true, size: 0, mime: "", modified: "", created: "", mode: "", owner: "", shared: false } as Entry;
   }
 
-  /** The same menu a folder gets in the file view, plus the bookmark's own items. */
+  /** The same menu a folder gets in the file view. */
   function bookmarkMenu(e: MouseEvent, path: string) {
     e.preventDefault();
-    const i = bookmarks.findIndex((b) => b.path === path);
-    const entry = folderEntry(path);
-    app.openMenu(e.clientX, e.clientY, [
-      { label: "Open", run: () => app.navigate(path) },
-      ...(app.mobile ? [] : [{ label: "Open in New Window", run: () => app.newWindow(path) }]),
-      { label: "New Folder Inside…", run: () => app.newFolderIn(path) },
-      { sep: true },
-      {
-        row: [
-          { label: "Cut", icon: "edit-cut", run: () => app.copy(true, [path]) },
-          { label: "Copy", icon: "edit-copy", run: () => app.copy(false, [path]) },
-          { label: "Paste Into Folder", icon: "edit-paste", disabled: !app.canPaste, run: () => app.paste(path) },
-          { label: "Rename Folder", icon: "document-edit", run: () => renameFolder(path) },
-          app.isStarred(path)
-            ? { label: "Unstar", icon: "starred", run: () => app.toggleStar([entry]) }
-            : { label: "Star", icon: "non-starred", run: () => app.toggleStar([entry]) },
-          { label: "Move to Trash", icon: "user-trash", run: () => app.trash([entry]).then(() => app.removeBookmark(path)) },
-        ],
-      },
-      { sep: true },
-      { label: app.mobile ? "Download" : "Download…", run: () => app.download([entry]) },
-      { label: "Share…", run: () => app.openShare(entry) },
-      { label: "Copy Public Link", run: () => app.copyLink(entry) },
-      { sep: true },
-      { label: "Rename Bookmark…", run: () => renameBookmark(path) },
-      { label: "Move Up", disabled: i <= 0, run: () => app.moveBookmark(path, i - 1) },
-      { label: "Move Down", disabled: i >= bookmarks.length - 1, run: () => app.moveBookmark(path, i + 2) },
-      { label: "Add Divider Below", run: () => app.addDivider(i + 1) },
-      { label: "Remove from Sidebar", run: () => app.removeBookmark(path) },
-      { sep: true },
-      { label: "Copy Location", run: () => app.copyPath(entry) },
-      { label: "Properties", run: () => (app.modal = { kind: "properties", entry }) },
-    ]);
+    app.openMenu(
+      e.clientX,
+      e.clientY,
+      itemMenu([folderEntry(path)], false, { rename: (x) => renameFolder(x.path), afterTrash: () => app.removeBookmark(path), noClipboard: true }),
+    );
   }
 
   function homeMenu(e: MouseEvent) {
@@ -91,7 +64,7 @@
     if ((e.target as HTMLElement).closest(".row, .divider")) return;
     const at = bookmarkIndexAt(e.clientY);
     const here = app.path;
-    const canBookmark = here !== HOME && here !== STARRED && !app.inTrash && !app.isBookmarked(here);
+    const canBookmark = here !== HOME && !isVirtual(here) && !app.inTrash && !app.isBookmarked(here);
     app.openMenu(e.clientX, e.clientY, [
       { label: "New Folder…", run: () => app.newFolderIn(HOME, at) },
       { label: "Add Divider", run: () => app.addDivider(at) },
@@ -104,13 +77,6 @@
     const v = await app.prompt({ title: "Rename Folder", label: "Name", value: name, confirm: "Rename" });
     // app.rename also updates the bookmark (and its label if it was the folder's name).
     if (v?.trim() && v.trim() !== name) await app.rename(path, v.trim());
-  }
-
-  async function renameBookmark(path: string) {
-    const b = bookmarks.find((x) => x.path === path);
-    if (!b) return;
-    const v = await app.prompt({ title: "Rename Bookmark", label: "Name", value: b.name, confirm: "Rename" });
-    if (v?.trim()) app.renameBookmarkTo(path, v.trim());
   }
 
   // ---------- editing the bookmarks by drag and drop, like Nautilus ----------
@@ -192,8 +158,14 @@
     >
       <Icon name="user-home" /><span>Home</span>
     </button>
+    <button class="row" class:selected={app.path === RECENT && !app.results} onclick={() => app.navigate(RECENT)}>
+      <Icon name="document-open-recent" /><span>Recent</span>
+    </button>
     <button class="row" class:selected={app.path === STARRED && !app.results} onclick={() => app.navigate(STARRED)}>
       <Icon name="starred" /><span>Starred</span>
+    </button>
+    <button class="row" class:selected={app.path === SHARED && !app.results} onclick={() => app.navigate(SHARED)}>
+      <Icon name="folder-publicshare" /><span>Shared</span>
     </button>
     <button
       class="row"
