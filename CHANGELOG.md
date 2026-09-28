@@ -8,6 +8,17 @@ Format: `## <version> — <date>`, an optional one-line summary, then
 `- [icon-name] **Title** — what it does`; the icon is optional and is a
 symbolic icon name.
 
+## 0.5.2 — 2026-09-28
+
+### Improved
+
+- [system-search] **A phone-shaped top bar** — Search sits in a rounded bar with your account next to it, and buttons are sized for your thumb.
+
+### Fixed
+
+- **Android updates** — The Android app now finds and installs new releases. If you have 0.5.1 or older, install this one by hand once.
+- **Missing icons on phones** — The Usage tab, Restore and other buttons show their icons again.
+
 ## 0.5.1 — 2026-09-28
 
 ### Fixed

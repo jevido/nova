@@ -170,7 +170,7 @@
 
 <aside class="sidebar">
   <header class="side-header">
-    {#if onHide}
+    {#if onHide && !app.mobile}
       <button class="btn image flat" title="Hide Sidebar" onclick={onHide}><Icon name="sidebar-show" /></button>
     {/if}
     <span class="side-title">Nova</span>

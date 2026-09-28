@@ -98,20 +98,32 @@
 {#if app.mobile && app.selected.size}
   <!-- Selection mode on a phone; the actions are in the bottom bar. -->
   <header class="headerbar selecting" role="toolbar" tabindex="-1">
-    <button class="btn image flat" title="Cancel" onclick={() => app.clearSelection()}><Icon name="window-close" /></button>
+    <button class="btn image flat" title="Cancel" onclick={() => app.clearSelection()}><Icon name="window-close" size={22} /></button>
     <span class="title">{app.selected.size} selected</span>
-    <button class="btn image flat" title="Select All" onclick={() => app.selectAll()}><Icon name="edit-select-all" /></button>
+    <button class="btn image flat" title="Select All" onclick={() => app.selectAll()}><Icon name="edit-select-all" size={22} /></button>
+  </header>
+{:else if app.mobile && !app.searchOpen && !canUp}
+  <!-- The tabs' own pages get a search bar with the account, like other phone apps. -->
+  <header class="headerbar root" role="toolbar" tabindex="-1">
+    <div class="searchbar">
+      <button class="sb-field" onclick={() => app.openSearch()}>
+        <Icon name="system-search" size={20} />
+        <span>{app.path === HOME ? "Search in Nova" : `Search ${displayName(app.path)}`}</span>
+      </button>
+      {@render opsButton()}
+      <button class="avatar" title="Account and settings" onclick={() => (app.settingsOpen = true)}>
+        {(app.session?.user?.username ?? "N").slice(0, 1).toUpperCase()}
+      </button>
+    </div>
   </header>
 {:else if app.mobile && !app.searchOpen}
   <header class="headerbar" role="toolbar" tabindex="-1">
-    {#if canUp}
-      <button class="btn image flat" title="Up" onclick={() => app.up()}><Icon name="go-previous" /></button>
-    {/if}
-    <span class="title" class:indent={!canUp}>{app.path === HOME ? "Home" : displayName(app.path)}</span>
+    <button class="btn image flat" title="Up" onclick={() => app.up()}><Icon name="go-previous" size={22} /></button>
+    <span class="title">{displayName(app.path)}</span>
     {@render opsButton()}
-    <button class="btn image flat" title="Search" onclick={() => app.openSearch()}><Icon name="edit-find" /></button>
+    <button class="btn image flat" title="Search" onclick={() => app.openSearch()}><Icon name="edit-find" size={22} /></button>
     {#if !app.path.startsWith(TRASH) && app.path !== STARRED}
-      <button class="btn image flat" title="Folder menu" onclick={folderMenu}><Icon name="view-more" /></button>
+      <button class="btn image flat" title="Folder menu" onclick={folderMenu}><Icon name="view-more" size={22} /></button>
     {/if}
   </header>
 {:else}
@@ -119,7 +131,7 @@
 <header class="headerbar" class:compact role="toolbar" tabindex="-1">
   <div class="start">
     {#if app.mobile}
-      <button class="btn image flat" title="Close Search" onclick={() => app.closeSearch()}><Icon name="go-previous" /></button>
+      <button class="btn image flat" title="Close Search" onclick={() => app.closeSearch()}><Icon name="go-previous" size={22} /></button>
     {:else if !sidebarShown}
       <button class="btn image flat" title="Show Sidebar" onclick={onToggleSidebar}>
         <Icon name="sidebar-show" />
@@ -259,7 +271,7 @@
           />
         </svg>
       {:else}
-        <Icon name="object-select" />
+        <Icon name="object-select" size={app.mobile ? 22 : 16} />
       {/if}
     </button>
   {/if}
@@ -417,8 +429,63 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .title.indent {
-    padding-left: 10px;
+  :global(:root[data-mobile="true"]) .headerbar .btn {
+    min-width: 48px;
+    min-height: 48px;
+    border-radius: 50%;
+  }
+  :global(:root[data-mobile="true"]) .title {
+    font-size: 20px;
+    font-weight: 600;
+  }
+  /* Material-style search bar on the tabs' root pages. */
+  .headerbar.root {
+    padding: 8px 12px;
+  }
+  .searchbar {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    height: 52px;
+    padding: 0 6px 0 4px;
+    border-radius: 9999px;
+    background: var(--btn-bg);
+  }
+  .sb-field {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    height: 100%;
+    padding: 0 12px;
+    border: 0;
+    background: none;
+    color: var(--fg-dim);
+    font: inherit;
+    font-size: 16px;
+    text-align: left;
+  }
+  .sb-field span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .avatar {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    margin-left: 4px;
+    border: 0;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--accent) 35%, var(--view-bg));
+    color: var(--fg);
+    font: inherit;
+    font-weight: bold;
+    font-size: 16px;
   }
   .selecting {
     background: color-mix(in srgb, var(--accent) 18%, var(--header-bg));
@@ -440,6 +507,24 @@
   .search input {
     flex: 1;
     padding-left: 34px;
+  }
+  /* Phones: the open search keeps the search bar's pill shape. */
+  :global(:root[data-mobile="true"]) .search input {
+    height: 48px;
+    padding-left: 44px;
+    border: 0;
+    border-radius: 9999px;
+    background: var(--btn-bg);
+    box-shadow: none;
+    outline: none;
+  }
+  :global(:root[data-mobile="true"]) .search > :global(.icon) {
+    left: 16px;
+    width: 20px !important;
+    height: 20px !important;
+  }
+  :global(:root[data-mobile="true"]) .headerbar.compact .center {
+    padding: 0 8px 0 0;
   }
   .spinner.inset {
     position: absolute;
