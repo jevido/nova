@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Window } from "@wailsio/runtime";
-  import { app, HOME, STARRED, RECENT, SHARED, TRASH, displayName, isVirtual } from "../lib/store.svelte";
+  import { app, HOME, STARRED, RECENT, SHARED, TRASH, TRASH_FILES, displayName, isVirtual } from "../lib/store.svelte";
   import { formatDuration, formatRate, formatSize } from "../lib/format";
   import Icon from "./Icon.svelte";
   import MainMenu from "./MainMenu.svelte";
@@ -22,7 +22,7 @@
       list = parts.map((_, i) => "/" + parts.slice(0, i + 1).join("/"));
     }
     // The trash is its own root, like trash:/// in Nautilus.
-    if (app.path.startsWith(TRASH)) list = list.filter((c) => c.startsWith(TRASH));
+    if (app.path.startsWith(TRASH)) list = list.filter((c) => c.startsWith(TRASH) && c !== TRASH_FILES);
     return list;
   });
 

@@ -1,11 +1,9 @@
 package services
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -21,11 +19,7 @@ import (
 	"nova/internal/nova"
 )
 
-const (
-	HomeDir   = "/me"
-	TrashDir  = "/me/.Trash"
-	trashInfo = "/me/.Trash/.trashinfo.json"
-)
+const HomeDir = "/me"
 
 // Entry is a filesystem node as the UI sees it.
 type Entry struct {
@@ -113,11 +107,10 @@ func (s *FilesService) List(p string) (*Folder, error) {
 	}
 	ctx, cancel := ctxTimeout()
 	defer cancel()
-	l, err := s.client.Stat(ctx, p)
-	if err != nil && p == TrashDir && isNotFound(err) {
-		// The trash folder is created lazily on first use.
-		return &Folder{Path: p, Crumbs: []Entry{{Name: "Trash", Path: p, IsDir: true}}, Children: []Entry{}}, nil
+	if p == TrashDir || p == trashFilesDir {
+		return s.listTrash(ctx)
 	}
+	l, err := s.client.Stat(ctx, p)
 	if err != nil {
 		return nil, err
 	}
@@ -129,8 +122,8 @@ func (s *FilesService) List(p string) (*Folder, error) {
 	for _, n := range l.Children {
 		f.Children = append(f.Children, toEntry(n))
 	}
-	if p == TrashDir {
-		s.decorateTrash(ctx, f)
+	if inTrash(p) {
+		trashCrumbs(f)
 	}
 	return f, nil
 }
@@ -565,7 +558,7 @@ func (s *FilesService) Delete(paths []string) (*OpResult, error) {
 	res := &OpResult{Done: []string{}, Errors: []string{}}
 	for _, raw := range paths {
 		p, err := checkPath(raw)
-		if err != nil || p == HomeDir || p == TrashDir {
+		if err != nil || p == HomeDir || p == TrashDir || p == trashFilesDir || p == trashInfoDir {
 			res.fail(raw, errors.New("cannot be deleted"))
 			continue
 		}
@@ -579,196 +572,6 @@ func (s *FilesService) Delete(paths []string) (*OpResult, error) {
 		s.dropTrashInfo(ctx, res.Done)
 	}
 	return res, nil
-}
-
-// ---- Trash ----
-
-type trashRecord struct {
-	OrigPath  string    `json:"orig"`
-	DeletedAt time.Time `json:"deleted"`
-}
-
-// readTrashInfo loads the trash index. A missing index is empty; any other
-// failure is an error so callers never overwrite the index with a blank one.
-func (s *FilesService) readTrashInfo(ctx context.Context) (map[string]trashRecord, error) {
-	info := map[string]trashRecord{}
-	res, err := s.client.Do(ctx, http.MethodGet, s.client.FileURL(trashInfo, ""), nil, nil)
-	if isNotFound(err) {
-		return info, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("could not read trash index: %w", err)
-	}
-	defer res.Body.Close()
-	if err := json.NewDecoder(io.LimitReader(res.Body, 8<<20)).Decode(&info); err != nil {
-		return nil, fmt.Errorf("trash index is damaged: %w", err)
-	}
-	return info, nil
-}
-
-func (s *FilesService) writeTrashInfo(ctx context.Context, info map[string]trashRecord) error {
-	b, err := json.Marshal(info)
-	if err != nil {
-		return err
-	}
-	return s.client.Upload(ctx, trashInfo, bytes.NewReader(b), int64(len(b)), "application/json")
-}
-
-func (s *FilesService) decorateTrash(ctx context.Context, f *Folder) {
-	info, _ := s.readTrashInfo(ctx) // listing still works without origins
-	kept := f.Children[:0]
-	for _, c := range f.Children {
-		if c.Path == trashInfo {
-			continue
-		}
-		if r, ok := info[c.Name]; ok {
-			c.OrigPath = r.OrigPath
-			t := r.DeletedAt
-			c.DeletedAt = &t
-		}
-		kept = append(kept, c)
-	}
-	f.Children = kept
-}
-
-func (s *FilesService) dropTrashInfo(ctx context.Context, deleted []string) {
-	s.trashMu.Lock()
-	defer s.trashMu.Unlock()
-	info, err := s.readTrashInfo(ctx)
-	if err != nil {
-		return
-	}
-	changed := false
-	for _, p := range deleted {
-		if nova.Parent(p) == TrashDir {
-			if _, ok := info[nova.Base(p)]; ok {
-				delete(info, nova.Base(p))
-				changed = true
-			}
-		}
-	}
-	if changed {
-		_ = s.writeTrashInfo(ctx, info)
-	}
-}
-
-// Trash moves paths into the trash folder and remembers where they came from.
-func (s *FilesService) Trash(paths []string) (*OpResult, error) {
-	s.trashMu.Lock()
-	defer s.trashMu.Unlock()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	if err := s.client.MkdirAll(ctx, TrashDir); err != nil {
-		return nil, err
-	}
-	taken, err := s.existingNames(ctx, TrashDir)
-	if err != nil {
-		return nil, err
-	}
-	info, err := s.readTrashInfo(ctx)
-	if err != nil {
-		return nil, err
-	}
-	res := &OpResult{Done: []string{}, Errors: []string{}}
-	for _, raw := range paths {
-		p, err := checkPath(raw)
-		if err != nil || p == HomeDir || p == TrashDir || strings.HasPrefix(p, TrashDir+"/") {
-			res.fail(raw, errors.New("cannot be moved to the trash"))
-			continue
-		}
-		name := uniqueName(nova.Base(p), taken, true)
-		target := nova.Join(TrashDir, name)
-		if err := s.client.Rename(ctx, p, target); err != nil {
-			res.fail(p, err)
-			continue
-		}
-		taken[name] = true
-		info[name] = trashRecord{OrigPath: p, DeletedAt: time.Now().UTC()}
-		res.Done = append(res.Done, p)
-	}
-	if len(res.Done) > 0 {
-		if err := s.writeTrashInfo(ctx, info); err != nil {
-			res.Errors = append(res.Errors, "could not save trash info: "+err.Error())
-		}
-	}
-	emitChanged(res.Done, TrashDir)
-	return res, nil
-}
-
-// Restore moves trashed items back to where they came from.
-func (s *FilesService) Restore(paths []string) (*OpResult, error) {
-	s.trashMu.Lock()
-	defer s.trashMu.Unlock()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	info, err := s.readTrashInfo(ctx)
-	if err != nil {
-		return nil, err
-	}
-	res := &OpResult{Done: []string{}, Errors: []string{}}
-	for _, raw := range paths {
-		p := nova.CleanPath(raw)
-		if nova.Parent(p) != TrashDir {
-			res.fail(raw, errors.New("not in the trash"))
-			continue
-		}
-		name := nova.Base(p)
-		orig, err := checkPath(info[name].OrigPath)
-		if err != nil || orig == HomeDir || strings.HasPrefix(orig, TrashDir+"/") {
-			orig = nova.Join(HomeDir, name)
-		}
-		dir := nova.Parent(orig)
-		if err := s.client.MkdirAll(ctx, dir); err != nil {
-			res.fail(p, err)
-			continue
-		}
-		taken, err := s.existingNames(ctx, dir)
-		if err != nil {
-			res.fail(p, err)
-			continue
-		}
-		target := nova.Join(dir, uniqueName(nova.Base(orig), taken, true))
-		if err := s.client.Rename(ctx, p, target); err != nil {
-			res.fail(p, err)
-			continue
-		}
-		delete(info, name)
-		res.Done = append(res.Done, target)
-	}
-	if len(res.Done) > 0 {
-		_ = s.writeTrashInfo(ctx, info)
-	}
-	return res, nil
-}
-
-// EmptyTrash permanently deletes everything in the trash.
-func (s *FilesService) EmptyTrash() error {
-	s.trashMu.Lock()
-	defer s.trashMu.Unlock()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	err := s.client.Delete(ctx, TrashDir, true)
-	if isNotFound(err) {
-		return nil
-	}
-	return err
-}
-
-// TrashCount returns the number of items in the trash.
-func (s *FilesService) TrashCount() int {
-	ctx, cancel := ctxTimeout()
-	defer cancel()
-	l, err := s.client.Stat(ctx, TrashDir)
-	if err != nil {
-		return 0
-	}
-	n := 0
-	for _, c := range l.Children {
-		if nova.CleanPath(c.Path) != trashInfo {
-			n++
-		}
-	}
-	return n
 }
 
 // ---- Search & sharing ----
@@ -794,7 +597,7 @@ func (s *FilesService) Search(dir, term string) ([]Entry, error) {
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, 8)
 	for i, p := range paths {
-		if p == trashInfo || strings.HasPrefix(p, TrashDir+"/") {
+		if inTrash(p) {
 			continue
 		}
 		wg.Add(1)
