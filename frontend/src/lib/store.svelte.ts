@@ -23,6 +23,8 @@ import { pluralize } from "./format";
 
 export const HOME = "/me";
 export const TRASH = "/me/.Trash";
+/** Where trashed items actually live (freedesktop.org Trash spec); shown as TRASH. */
+export const TRASH_FILES = TRASH + "/files";
 /** Virtual location listing starred items, like starred:/// in Nautilus. */
 export const STARRED = "starred:";
 /** Virtual locations listing the newest files and the shared items. */
@@ -473,7 +475,8 @@ class AppState {
   up() {
     if (this.path === HOME || isVirtual(this.path)) return;
     const came = this.path;
-    this.navigate(parentOf(this.path), true, this.mobile ? undefined : [came]);
+    const parent = parentOf(this.path);
+    this.navigate(parent === TRASH_FILES ? TRASH : parent, true, this.mobile ? undefined : [came]);
   }
 
   async reload(quiet = false) {
