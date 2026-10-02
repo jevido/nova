@@ -2,11 +2,13 @@ name: CI
 
 # Pushes to main and pull requests only run the tests. The Linux packages,
 # the Android APK, the Windows exe/installer and the iOS IPA are built for
-# version tags (which publish a release) and for manual runs (Actions > CI >
-# Run workflow), which keep them as artifacts.
+# version tags (which publish a release), for pushes to the next branch
+# (which replace the "next" pre-release, the test builds that
+# next.nova.jevido.app links to) and for manual runs (Actions > CI > Run
+# workflow), which keep them as artifacts.
 on:
   push:
-    branches: [main]
+    branches: [main, next]
     tags: ["v*"]
     # The website deploys itself from Coolify. Path filters don't apply to
     # tag pushes, so releases always build.
@@ -74,7 +76,7 @@ jobs:
 
   version:
     name: Version
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.v.outputs.version }}
@@ -87,6 +89,10 @@ jobs:
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             version="${GITHUB_REF#refs/tags/v}"
             stamp="$version"
+          elif [[ "$GITHUB_REF" == refs/heads/next ]]; then
+            version="0.1.0-next.${GITHUB_RUN_NUMBER}"
+            # Test builds never update themselves, to a release or otherwise.
+            stamp="dev"
           else
             version="0.1.0-dev.${GITHUB_RUN_NUMBER}"
             # Manual builds are stamped "dev" so they never replace
@@ -104,7 +110,7 @@ jobs:
   linux:
     name: Linux packages
     needs: [test, version]
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -163,7 +169,7 @@ jobs:
   android:
     name: Android APK
     needs: [test, version]
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -228,7 +234,7 @@ jobs:
   windows:
     name: Windows exe and installer
     needs: [test, version]
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.event_name == 'workflow_dispatch'
     # Wails builds Windows without cgo, so this cross-compiles on Linux;
     # makensis runs on Linux too.
     runs-on: ubuntu-24.04
@@ -282,7 +288,7 @@ jobs:
   ios:
     name: iOS IPA
     needs: [test, version]
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.event_name == 'workflow_dispatch'
     # The only macOS job: macOS minutes are expensive, keep it that way.
     runs-on: macos-15
     timeout-minutes: 30
@@ -407,3 +413,34 @@ jobs:
           # v1.2.0-rc.1 style tags become pre-releases, which the updaters skip.
           case "$TAG" in *-*) flags+=(--prerelease) ;; esac
           gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" "${flags[@]}"
+
+  next:
+    name: Next pre-release
+    if: github.ref == 'refs/heads/next'
+    needs: [linux, android, windows, ios, version]
+    runs-on: ubuntu-24.04
+    # One at a time, so two quick pushes don't race over the tag.
+    concurrency: next-release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum * > checksums.txt && cat checksums.txt
+
+      - name: Replace the next pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          # A pre-release is never "latest", so releases/latest links, the
+          # site on main and the updaters keep pointing at the real release.
+          gh release delete next --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes || true
+          gh release create next dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+            --title "Nova next ($VERSION)" \
+            --notes "Test build of the next branch at ${GITHUB_SHA::7}. It may be broken, and it doesn't update itself. Get it from https://next.nova.jevido.app."
