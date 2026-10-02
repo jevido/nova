@@ -893,7 +893,7 @@ function renderChangelog(md) {
     .map((it) => `<li><strong>${esc(it.title)}${it.kind ? `<span class="kind">${it.kind}</span>` : ""}</strong>${esc(it.text)}</li>`)
     .join("");
 }
-fetch(`https://raw.githubusercontent.com/${REPO}/main/CHANGELOG.md`)
+fetch(`https://raw.githubusercontent.com/${REPO}/${NEXT ? "next" : "main"}/CHANGELOG.md`)
   .then((r) => (r.ok ? r.text() : Promise.reject()))
   .then(renderChangelog)
   .catch(() => {});

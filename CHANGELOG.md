@@ -8,6 +8,17 @@ Format: `## <version> — <date>`, an optional one-line summary, then
 `- [icon-name] **Title** — what it does`; the icon is optional and is a
 symbolic icon name.
 
+## 0.7.0 — 2026-10-02
+
+### New
+
+- [avatar-default] **Sign in with your browser** — Sign in on nova.storage in your own browser. Nova never sees your password, and signing out removes its access again.
+- [folder] **Give Nova only some folders** — When you sign in with your browser you can pick which folders Nova may use. They take the place of Home in the sidebar.
+
+### Improved
+
+- [user-trash] **Trash that other apps understand** — The trash follows the freedesktop.org standard, so file managers on a mounted copy of your files can list and restore what Nova trashed.
+
 ## 0.6.0 — 2026-09-28
 
 ### New
