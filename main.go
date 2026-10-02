@@ -43,6 +43,7 @@ func init() {
 }
 
 func main() {
+	fixWebKitDMABuf()
 	if !firstMain() {
 		return
 	}
