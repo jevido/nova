@@ -223,6 +223,20 @@ Release assets use version-less names (`nova-linux-amd64.tar.gz`,
 point at the newest release. Tags with a `-` (like `v0.3.0-rc.1`) are
 published as pre-releases.
 
+### Test builds: Nova (dev)
+
+Every push to the `next` branch builds **Nova (dev)** and replaces the `next`
+pre-release with it; [next.nova.jevido.app](https://next.nova.jevido.app)
+offers its downloads. `build/dev-app.sh` gives it its own name, app IDs
+(`storage.nova.app.dev` on Android and iOS), settings
+(`~/.config/nova-desktop-dev`), Linux package and command (`nova-dev`) and
+Windows install folder, so it installs next to Nova. It never updates itself,
+and released builds never update to it. On Linux:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/jevido/nova/next/install.sh | NOVA_CHANNEL=dev sh
+```
+
 The Android APK is signed with the key in the `ANDROID_KEYSTORE_BASE64`,
 `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`
 repository secrets. Keep a backup of that keystore: Android refuses to update

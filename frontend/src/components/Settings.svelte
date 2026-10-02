@@ -189,7 +189,7 @@
           <div class="boxed">
             <div class="row">
               <div class="row-text">
-                <div>Nova {app.update?.currentVersion ?? ""}</div>
+                <div>{app.appName} {app.update?.currentVersion ?? ""}</div>
                 <div class="dim sub">{updateText}</div>
               </div>
               {#if app.update?.state === "ready"}

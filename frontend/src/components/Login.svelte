@@ -48,14 +48,14 @@
 
 <div class="login">
   <header class="bar">
-    <span class="title">Nova</span>
+    <span class="title">{app.appName}</span>
     {#if !app.mobile}
       <button class="btn image round" title="Close" onclick={() => Window.Close()}><Icon name="window-close" /></button>
     {/if}
   </header>
   <form class="card" onsubmit={submit}>
     <img src="/nova.png" alt="" width="88" height="88" />
-    <h1>Sign in to Nova</h1>
+    <h1>Sign in to {app.appName}</h1>
     <p class="dim">Your nova.storage files, right on your desktop.</p>
 
     {#if waiting}

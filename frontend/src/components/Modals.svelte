@@ -501,7 +501,7 @@
         </div>
         <div class="about-body">
           <img src="/nova.png" alt="" width="96" height="96" />
-          <h2>Nova</h2>
+          <h2>{app.appName}</h2>
           <div class="dim">{app.update?.currentVersion === "dev" ? "Development build" : `Version ${app.update?.currentVersion ?? ""}`}</div>
           <p>A desktop file manager for nova.storage.</p>
           <p class="dim small">Built with Wails, Go and Svelte. Icons follow your system theme.</p>

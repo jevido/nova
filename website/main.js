@@ -8,7 +8,7 @@ const REPO = "jevido/nova";
 const NEXT = location.hostname.startsWith("next.");
 const DL = NEXT ? `https://github.com/${REPO}/releases/download/next/` : `https://github.com/${REPO}/releases/latest/download/`;
 const INSTALL_CMD = NEXT
-  ? `curl -fsSL https://raw.githubusercontent.com/jevido/nova/next/install.sh | NOVA_DOWNLOAD_BASE=https://github.com/${REPO}/releases/download/next sh`
+  ? "curl -fsSL https://raw.githubusercontent.com/jevido/nova/next/install.sh | NOVA_CHANNEL=dev sh"
   : "curl -fsSL https://raw.githubusercontent.com/jevido/nova/main/install.sh | sh";
 const ICONS = "assets/icons.svg";
 const $ = (s, el = document) => el.querySelector(s);
@@ -26,7 +26,7 @@ if (NEXT) {
   for (const t of $$(".tag, .files em")) if (/updates itself/.test(t.textContent)) t.remove();
   const banner = document.createElement("div");
   banner.className = "next-banner";
-  banner.innerHTML = `<strong>Test builds.</strong> These downloads are the newest build of the next branch, not a release. They may be broken and don't update themselves. <a href="https://nova.jevido.app">Get the release</a>`;
+  banner.innerHTML = `<strong>Nova (dev).</strong> These downloads are test builds of the next branch. They install next to Nova with their own settings, may be broken and don't update themselves. <a href="https://nova.jevido.app">Get Nova</a>`;
   document.body.prepend(banner);
 }
 

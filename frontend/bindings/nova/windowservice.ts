@@ -15,6 +15,13 @@ import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wails
 import * as $models from "./models.js";
 
 /**
+ * AppName is "Nova", or "Nova (dev)" for the test builds of the next branch.
+ */
+export function AppName(): $CancellablePromise<string> {
+    return $Call.ByID(3228195747);
+}
+
+/**
  * Clipboard returns the items waiting to be pasted, or nil.
  */
 export function Clipboard(): $CancellablePromise<$models.ItemClipboard | null> {

@@ -5,7 +5,8 @@ name: CI
 # version tags (which publish a release), for pushes to the next branch
 # (which replace the "next" pre-release, the test builds that
 # next.nova.jevido.app links to) and for manual runs (Actions > CI > Run
-# workflow), which keep them as artifacts.
+# workflow), which keep them as artifacts. The next branch builds Nova (dev)
+# (see build/dev-app.sh), which installs next to Nova.
 on:
   push:
     branches: [main, next]
@@ -124,6 +125,10 @@ jobs:
         with:
           bun-version: ${{ env.BUN_VERSION }}
 
+      - name: Make it Nova (dev)
+        if: github.ref == 'refs/heads/next'
+        run: sh build/dev-app.sh
+
       - name: Install build dependencies
         run: |
           sudo apt-get update
@@ -190,6 +195,10 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Make it Nova (dev)
+        if: github.ref == 'refs/heads/next'
+        run: sh build/dev-app.sh
+
       - name: Install Wails and Task
         run: |
           # The wails3 CLI links against GTK/WebKit even for Android builds.
@@ -250,6 +259,10 @@ jobs:
         with:
           bun-version: ${{ env.BUN_VERSION }}
 
+      - name: Make it Nova (dev)
+        if: github.ref == 'refs/heads/next'
+        run: sh build/dev-app.sh
+
       - name: Install build dependencies
         run: |
           # The wails3 CLI links against GTK/WebKit even for Windows builds.
@@ -303,6 +316,10 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Make it Nova (dev)
+        if: github.ref == 'refs/heads/next'
+        run: sh build/dev-app.sh
 
       - name: Install Wails and Task
         run: |
@@ -443,4 +460,4 @@ jobs:
           gh release delete next --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes || true
           gh release create next dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
             --title "Nova next ($VERSION)" \
-            --notes "Test build of the next branch at ${GITHUB_SHA::7}. It may be broken, and it doesn't update itself. Get it from https://next.nova.jevido.app."
+            --notes "Nova (dev): a test build of the next branch at ${GITHUB_SHA::7}. It installs next to Nova, with its own settings. It may be broken, and it doesn't update itself. Get it from https://next.nova.jevido.app."

@@ -14,6 +14,7 @@ import (
 	"nova/internal/icons"
 	"nova/internal/nova"
 	"nova/internal/platform"
+	"nova/internal/version"
 	"nova/services"
 )
 
@@ -69,7 +70,7 @@ func main() {
 	cleanDragExports()
 
 	app := application.New(application.Options{
-		Name:        "Nova",
+		Name:        version.AppName(),
 		Description: "Desktop file manager for nova.storage",
 		Services: []application.Service{
 			application.NewService(services.NewSessionService(client, store)),
@@ -87,7 +88,7 @@ func main() {
 		// Launching Nova again opens another window in the running app, like
 		// Nautilus, so windows can share drags and transfers.
 		SingleInstance: &application.SingleInstanceOptions{
-			UniqueID: "storage.nova.desktop",
+			UniqueID: "storage.nova.desktop" + version.Suffix(),
 			OnSecondInstanceLaunch: func(application.SecondInstanceData) {
 				windows.NewWindow("")
 			},
@@ -96,7 +97,7 @@ func main() {
 			Handler: application.AssetFileServerFS(assets),
 		},
 		Linux: application.LinuxOptions{
-			ProgramName: "nova",
+			ProgramName: "nova" + version.Suffix(),
 		},
 		Windows: application.WindowsOptions{
 			// WebView2 would otherwise keep its profile in %APPDATA%\<exe
@@ -130,6 +131,9 @@ func (s *WindowService) background() application.RGBA {
 	return application.NewRGB(r, g, b)
 }
 
+// AppName is "Nova", or "Nova (dev)" for the test builds of the next branch.
+func (s *WindowService) AppName() string { return version.AppName() }
+
 // NewWindow opens a window showing path (the home folder when empty).
 func (s *WindowService) NewWindow(path string) {
 	u := "/"
@@ -137,7 +141,7 @@ func (s *WindowService) NewWindow(path string) {
 		u += "?path=" + url.QueryEscape(path)
 	}
 	win := s.app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title:            "Nova",
+		Title:            version.AppName(),
 		Width:            1100,
 		Height:           700,
 		MinWidth:         360,

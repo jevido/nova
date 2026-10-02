@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Nova (dev)
+Comment=Test build of Nova
+Exec=nova-dev
+Icon=nova-dev
+Categories=System;FileTools;FileManager;Network;
+Terminal=false
+StartupNotify=false
+StartupWMClass=nova-dev

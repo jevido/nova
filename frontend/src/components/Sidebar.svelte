@@ -143,7 +143,7 @@
     {#if onHide && !app.mobile}
       <button class="btn image flat" title="Hide Sidebar" onclick={onHide}><Icon name="sidebar-show" /></button>
     {/if}
-    <span class="side-title">Nova</span>
+    <span class="side-title">{app.appName}</span>
     <MainMenu />
   </header>
   <!-- svelte-ignore a11y_no_static_element_interactions -->

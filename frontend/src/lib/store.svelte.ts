@@ -115,6 +115,8 @@ const defaultPrefs: Prefs = {
 
 class AppState {
   // ---- session ----
+  /** "Nova", or "Nova (dev)" for the test builds, which install next to it. */
+  appName = $state("Nova");
   booting = $state(true);
   session = $state<SessionT | null>(null);
   prefs = $state<Prefs>({ ...defaultPrefs });
@@ -273,6 +275,7 @@ class AppState {
     } catch {
       /* storage may be unavailable */
     }
+    Windows.AppName().then((n) => n && (this.appName = n)).catch(() => {});
     // Android's back gesture asks us first (see MainActivity.java).
     (window as unknown as { __novaBack: () => boolean }).__novaBack = () => this.handleBack();
     try {
