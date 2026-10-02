@@ -1,0 +1,24 @@
+{
+  "hook": {
+    "enabled": true,
+    "limits": {
+      "maxFindings": 5,
+      "maxChars": 8000
+    }
+  },
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "website/index.html"
+        ],
+        "createdAt": "2026-10-02T13:45:27.653Z",
+        "reason": "Agent: both hits are wrappers whose padded children carry the inset — .shots is a full-bleed scroll-snap carousel (slides pad 40px/gutter), .boxed-list.platforms holds <details> whose <summary> pads 10px 16px"
+      }
+    ]
+  }
+}
