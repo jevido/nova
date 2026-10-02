@@ -11,3 +11,9 @@ build/ios/xcode/gen/
 build/android/overlay.json
 build/android/gen/
 .claude/
+# Impeccable: per-machine settings and session scratch
+.impeccable/config.local.json
+.impeccable/hook.cache.json
+.impeccable/review/
+.impeccable/decision/
+.impeccable/questions/

@@ -1,0 +1,560 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-02T13:51:41+00:00",
+  "title": "Design System: Nova",
+  "extensions": {
+    "colorMeta": {
+      "accent-green": {
+        "role": "primary",
+        "displayName": "Logo Green",
+        "canonical": "#2b7f3e",
+        "tonalRamp": [
+          "oklch(15% 0.127 147.9)",
+          "oklch(25% 0.127 147.9)",
+          "oklch(35% 0.127 147.9)",
+          "oklch(48% 0.127 147.9)",
+          "oklch(60% 0.127 147.9)",
+          "oklch(72% 0.127 147.9)",
+          "oklch(84% 0.127 147.9)",
+          "oklch(95% 0.127 147.9)"
+        ]
+      },
+      "accent-green-text": {
+        "role": "primary",
+        "displayName": "Leaf Text Green",
+        "canonical": "#1c7a33",
+        "tonalRamp": [
+          "oklch(15% 0.137 147.3)",
+          "oklch(25% 0.137 147.3)",
+          "oklch(35% 0.137 147.3)",
+          "oklch(48% 0.137 147.3)",
+          "oklch(60% 0.137 147.3)",
+          "oklch(72% 0.137 147.3)",
+          "oklch(84% 0.137 147.3)",
+          "oklch(95% 0.137 147.3)"
+        ]
+      },
+      "accent-green-text-dark": {
+        "role": "primary",
+        "displayName": "Leaf Text Green (dark)",
+        "canonical": "#78d38a",
+        "tonalRamp": [
+          "oklch(15% 0.136 148.9)",
+          "oklch(25% 0.136 148.9)",
+          "oklch(35% 0.136 148.9)",
+          "oklch(48% 0.136 148.9)",
+          "oklch(60% 0.136 148.9)",
+          "oklch(72% 0.136 148.9)",
+          "oklch(84% 0.136 148.9)",
+          "oklch(95% 0.136 148.9)"
+        ]
+      },
+      "accent-blue": {
+        "role": "primary",
+        "displayName": "Adwaita Blue (app)",
+        "canonical": "#3584e4",
+        "tonalRamp": [
+          "oklch(15% 0.164 255.3)",
+          "oklch(25% 0.164 255.3)",
+          "oklch(35% 0.164 255.3)",
+          "oklch(48% 0.164 255.3)",
+          "oklch(60% 0.164 255.3)",
+          "oklch(72% 0.164 255.3)",
+          "oklch(84% 0.164 255.3)",
+          "oklch(95% 0.164 255.3)"
+        ]
+      },
+      "accent-blue-text": {
+        "role": "primary",
+        "displayName": "Adwaita Blue Text (app)",
+        "canonical": "#0461be",
+        "tonalRamp": [
+          "oklch(15% 0.165 255.3)",
+          "oklch(25% 0.165 255.3)",
+          "oklch(35% 0.165 255.3)",
+          "oklch(48% 0.165 255.3)",
+          "oklch(60% 0.165 255.3)",
+          "oklch(72% 0.165 255.3)",
+          "oklch(84% 0.165 255.3)",
+          "oklch(95% 0.165 255.3)"
+        ]
+      },
+      "accent-blue-text-dark": {
+        "role": "primary",
+        "displayName": "Adwaita Blue Text (app, dark)",
+        "canonical": "#78aeed",
+        "tonalRamp": [
+          "oklch(15% 0.108 253.0)",
+          "oklch(25% 0.108 253.0)",
+          "oklch(35% 0.108 253.0)",
+          "oklch(48% 0.108 253.0)",
+          "oklch(60% 0.108 253.0)",
+          "oklch(72% 0.108 253.0)",
+          "oklch(84% 0.108 253.0)",
+          "oklch(95% 0.108 253.0)"
+        ]
+      },
+      "accent-fg": {
+        "role": "neutral",
+        "displayName": "On-Accent White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "oklch(15% 0.000 89.9)",
+          "oklch(25% 0.000 89.9)",
+          "oklch(35% 0.000 89.9)",
+          "oklch(48% 0.000 89.9)",
+          "oklch(60% 0.000 89.9)",
+          "oklch(72% 0.000 89.9)",
+          "oklch(84% 0.000 89.9)",
+          "oklch(95% 0.000 89.9)"
+        ]
+      },
+      "destructive": {
+        "role": "secondary",
+        "displayName": "Destructive Red",
+        "canonical": "#e01b24",
+        "tonalRamp": [
+          "oklch(15% 0.224 26.6)",
+          "oklch(25% 0.224 26.6)",
+          "oklch(35% 0.224 26.6)",
+          "oklch(48% 0.224 26.6)",
+          "oklch(60% 0.224 26.6)",
+          "oklch(72% 0.224 26.6)",
+          "oklch(84% 0.224 26.6)",
+          "oklch(95% 0.224 26.6)"
+        ]
+      },
+      "warning": {
+        "role": "secondary",
+        "displayName": "Warning Amber",
+        "canonical": "#e5a50a",
+        "tonalRamp": [
+          "oklch(15% 0.156 80.3)",
+          "oklch(25% 0.156 80.3)",
+          "oklch(35% 0.156 80.3)",
+          "oklch(48% 0.156 80.3)",
+          "oklch(60% 0.156 80.3)",
+          "oklch(72% 0.156 80.3)",
+          "oklch(84% 0.156 80.3)",
+          "oklch(95% 0.156 80.3)"
+        ]
+      },
+      "fg": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "rgba(0, 0, 6, 0.8)"
+      },
+      "fg-dark": {
+        "role": "neutral",
+        "displayName": "Ink (dark)",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "oklch(15% 0.000 89.9)",
+          "oklch(25% 0.000 89.9)",
+          "oklch(35% 0.000 89.9)",
+          "oklch(48% 0.000 89.9)",
+          "oklch(60% 0.000 89.9)",
+          "oklch(72% 0.000 89.9)",
+          "oklch(84% 0.000 89.9)",
+          "oklch(95% 0.000 89.9)"
+        ]
+      },
+      "window-bg": {
+        "role": "neutral",
+        "displayName": "Window Grey-White",
+        "canonical": "#fafafb",
+        "tonalRamp": [
+          "oklch(15% 0.001 286.4)",
+          "oklch(25% 0.001 286.4)",
+          "oklch(35% 0.001 286.4)",
+          "oklch(48% 0.001 286.4)",
+          "oklch(60% 0.001 286.4)",
+          "oklch(72% 0.001 286.4)",
+          "oklch(84% 0.001 286.4)",
+          "oklch(95% 0.001 286.4)"
+        ]
+      },
+      "window-bg-dark": {
+        "role": "neutral",
+        "displayName": "Window Grey-White (dark)",
+        "canonical": "#222226",
+        "tonalRamp": [
+          "oklch(15% 0.007 285.9)",
+          "oklch(25% 0.007 285.9)",
+          "oklch(35% 0.007 285.9)",
+          "oklch(48% 0.007 285.9)",
+          "oklch(60% 0.007 285.9)",
+          "oklch(72% 0.007 285.9)",
+          "oklch(84% 0.007 285.9)",
+          "oklch(95% 0.007 285.9)"
+        ]
+      },
+      "view-bg": {
+        "role": "neutral",
+        "displayName": "View White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "oklch(15% 0.000 89.9)",
+          "oklch(25% 0.000 89.9)",
+          "oklch(35% 0.000 89.9)",
+          "oklch(48% 0.000 89.9)",
+          "oklch(60% 0.000 89.9)",
+          "oklch(72% 0.000 89.9)",
+          "oklch(84% 0.000 89.9)",
+          "oklch(95% 0.000 89.9)"
+        ]
+      },
+      "view-bg-dark": {
+        "role": "neutral",
+        "displayName": "View (dark)",
+        "canonical": "#1d1d20",
+        "tonalRamp": [
+          "oklch(15% 0.006 285.9)",
+          "oklch(25% 0.006 285.9)",
+          "oklch(35% 0.006 285.9)",
+          "oklch(48% 0.006 285.9)",
+          "oklch(60% 0.006 285.9)",
+          "oklch(72% 0.006 285.9)",
+          "oklch(84% 0.006 285.9)",
+          "oklch(95% 0.006 285.9)"
+        ]
+      },
+      "sidebar-bg": {
+        "role": "neutral",
+        "displayName": "Sidebar Grey",
+        "canonical": "#ebebed",
+        "tonalRamp": [
+          "oklch(15% 0.003 286.3)",
+          "oklch(25% 0.003 286.3)",
+          "oklch(35% 0.003 286.3)",
+          "oklch(48% 0.003 286.3)",
+          "oklch(60% 0.003 286.3)",
+          "oklch(72% 0.003 286.3)",
+          "oklch(84% 0.003 286.3)",
+          "oklch(95% 0.003 286.3)"
+        ]
+      },
+      "sidebar-bg-dark": {
+        "role": "neutral",
+        "displayName": "Sidebar Grey (dark)",
+        "canonical": "#2e2e32",
+        "tonalRamp": [
+          "oklch(15% 0.007 286.0)",
+          "oklch(25% 0.007 286.0)",
+          "oklch(35% 0.007 286.0)",
+          "oklch(48% 0.007 286.0)",
+          "oklch(60% 0.007 286.0)",
+          "oklch(72% 0.007 286.0)",
+          "oklch(84% 0.007 286.0)",
+          "oklch(95% 0.007 286.0)"
+        ]
+      },
+      "popover-bg-dark": {
+        "role": "neutral",
+        "displayName": "Popover Charcoal",
+        "canonical": "#36363a",
+        "tonalRamp": [
+          "oklch(15% 0.007 286.0)",
+          "oklch(25% 0.007 286.0)",
+          "oklch(35% 0.007 286.0)",
+          "oklch(48% 0.007 286.0)",
+          "oklch(60% 0.007 286.0)",
+          "oklch(72% 0.007 286.0)",
+          "oklch(84% 0.007 286.0)",
+          "oklch(95% 0.007 286.0)"
+        ]
+      },
+      "band-bg-dark": {
+        "role": "neutral",
+        "displayName": "Screenshot Band (dark)",
+        "canonical": "#1a1a1d",
+        "tonalRamp": [
+          "oklch(15% 0.006 285.9)",
+          "oklch(25% 0.006 285.9)",
+          "oklch(35% 0.006 285.9)",
+          "oklch(48% 0.006 285.9)",
+          "oklch(60% 0.006 285.9)",
+          "oklch(72% 0.006 285.9)",
+          "oklch(84% 0.006 285.9)",
+          "oklch(95% 0.006 285.9)"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "rgba(0, 0, 6, 0.15)"
+      },
+      "shade": {
+        "role": "neutral",
+        "displayName": "Shade",
+        "canonical": "rgba(0, 0, 6, 0.07)"
+      },
+      "shade-dark": {
+        "role": "neutral",
+        "displayName": "Shade (dark)",
+        "canonical": "rgba(0, 0, 6, 0.36)"
+      },
+      "toast-bg": {
+        "role": "neutral",
+        "displayName": "Toast Smoke",
+        "canonical": "rgba(40, 40, 44, 0.96)"
+      },
+      "toast-bg-dark": {
+        "role": "neutral",
+        "displayName": "Toast Smoke (dark)",
+        "canonical": "rgba(64, 64, 68, 0.97)"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The app name in the site's app header; one per page."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section headings."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Boxed-list group titles, expander row titles, release versions."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Website copy; prose at 1.0625rem, 66ch measure."
+      },
+      "body-app": {
+        "displayName": "App Body",
+        "purpose": "Inside Nova windows: 11pt, GNOME's default."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Buttons, view switcher, toasts."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Row subtitles, metadata, footer, in dim ink."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Install commands, package file names and code spans."
+      }
+    },
+    "shadows": [
+      {
+        "name": "card-shade",
+        "value": "0 0 0 1px rgba(0, 0, 6, 0.03), 0 1px 3px 1px rgba(0, 0, 6, 0.07), 0 2px 6px 2px rgba(0, 0, 6, 0.03)",
+        "purpose": "Boxed lists, cards, tiles, properties list, QR plate."
+      },
+      {
+        "name": "card-shade-dark",
+        "value": "0 0 0 1px rgba(0, 0, 6, 0.09), 0 1px 3px 1px rgba(0, 0, 6, 0.2), 0 2px 6px 2px rgba(0, 0, 6, 0.08)",
+        "purpose": "Card shade in dark mode."
+      },
+      {
+        "name": "menu-shadow",
+        "value": "0 0 0 1px rgba(0, 0, 6, 0.07), 0 1px 5px 1px rgba(0, 0, 6, 0.09), 0 2px 14px 3px rgba(0, 0, 6, 0.05)",
+        "purpose": "Popovers and context menus."
+      },
+      {
+        "name": "menu-shadow-dark",
+        "value": "0 0 0 1px rgba(0, 0, 0, 0.35), 0 1px 5px 1px rgba(0, 0, 0, 0.25), 0 2px 14px 3px rgba(0, 0, 0, 0.2)",
+        "purpose": "Popovers in dark mode."
+      },
+      {
+        "name": "window-shadow",
+        "value": "0 0 0 1px rgba(0, 0, 6, 0.1), 0 2px 8px 2px rgba(0, 0, 6, 0.1), 0 18px 40px -6px rgba(0, 0, 6, 0.22)",
+        "purpose": "Live Nova windows on the site."
+      },
+      {
+        "name": "dialog-shadow",
+        "value": "0 0 0 1px rgba(0, 0, 6, 0.05), 0 4px 16px 4px rgba(0, 0, 6, 0.12)",
+        "purpose": "App dialogs (frontend/src/app.css)."
+      },
+      {
+        "name": "toast-shadow",
+        "value": "0 2px 10px rgba(0, 0, 0, 0.3)",
+        "purpose": "Toasts."
+      },
+      {
+        "name": "separator",
+        "value": "inset 0 1px 0 var(--shade)",
+        "purpose": "Row, release and expander-body separators."
+      },
+      {
+        "name": "headerbar-scrolled",
+        "value": "0 1px 0 var(--shade), 0 2px 6px -2px var(--shade)",
+        "purpose": "Header bar once content scrolls beneath it."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease",
+        "value": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "Default easing for popovers, toasts, chevrons, drawer, dots."
+      },
+      {
+        "name": "popover-in",
+        "value": "0.16s scale(0.94) translateY(-4px) to rest, fade",
+        "purpose": "Popover scale-fade from top-right."
+      },
+      {
+        "name": "toast-in",
+        "value": "0.3s translateY(16px) scale(0.96) to rest, fade",
+        "purpose": "Toast rise."
+      },
+      {
+        "name": "toast-out",
+        "value": "0.2s ease-in, translateY(8px), fade",
+        "purpose": "Toast dismiss."
+      },
+      {
+        "name": "state",
+        "value": "background-color 0.15s",
+        "purpose": "Button, row and tile hover/press."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation and transition durations 0.01ms",
+        "purpose": "Applied under prefers-reduced-motion: reduce."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "narrow",
+        "value": "860px"
+      },
+      {
+        "name": "phone",
+        "value": "560px"
+      },
+      {
+        "name": "small",
+        "value": "480px"
+      },
+      {
+        "name": "tiny",
+        "value": "380px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Suggested Pill Button",
+      "kind": "button",
+      "refersTo": "button-pill-suggested",
+      "description": "The primary action (Install, Download for ...): logo-green pill with white bold label.",
+      "html": "<a class=\"ds-pill\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M7 1h2v7.6l2.3-2.3 1.4 1.4L8 12.4 3.3 7.7l1.4-1.4L7 8.6zM2 13h12v2H2z\"/></svg><span>Install</span></a>",
+      "css": ":host{--accent:#2b7f3e;--accent-fg:#fff;--accent-text:#1c7a33;--fg:rgba(0,0,6,.8);--fg-dim:rgba(0,0,6,.6);--bg:#fafafb;--view-bg:#fff;--card-bg:#fff;--popover-bg:#fff;--border:rgba(0,0,6,.15);--shade:rgba(0,0,6,.07);--toast-bg:rgba(40,40,44,.96);--hover:color-mix(in srgb,var(--fg) 7%,transparent);--active:color-mix(in srgb,var(--fg) 16%,transparent);--btn-bg:color-mix(in srgb,var(--fg) 10%,transparent);--btn-hover:color-mix(in srgb,var(--fg) 15%,transparent);--btn-active:color-mix(in srgb,var(--fg) 30%,transparent);--focus:color-mix(in srgb,var(--accent) 55%,transparent);--card-shade:0 0 0 1px rgba(0,0,6,.03),0 1px 3px 1px rgba(0,0,6,.07),0 2px 6px 2px rgba(0,0,6,.03);--menu-shadow:0 0 0 1px rgba(0,0,6,.07),0 1px 5px 1px rgba(0,0,6,.09),0 2px 14px 3px rgba(0,0,6,.05);font-family:'Adwaita Sans',Cantarell,system-ui,sans-serif;color:var(--fg)} :focus-visible{outline:2px solid var(--focus);outline-offset:2px} .ds-pill{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;min-width:220px;padding:10px 28px;border-radius:999px;background:var(--accent);color:var(--accent-fg);font-weight:700;font-size:1rem;line-height:1.2;text-decoration:none;transition:background-color .15s}.ds-pill:hover{background:color-mix(in srgb,var(--accent),#fff 9%)}.ds-pill:active{background:color-mix(in srgb,var(--accent),#000 12%)}.ds-pill:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:999px}"
+    },
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Default libadwaita button: ink at 10% fill, 6px radius, bold label; flat icon variant for header bars.",
+      "html": "<div class=\"ds-row\"><button class=\"ds-btn\">Copy</button><button class=\"ds-btn ds-flat\" aria-label=\"Main Menu\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M2 3h12v2H2zm0 4h12v2H2zm0 4h12v2H2z\"/></svg></button></div>",
+      "css": ":host{--accent:#2b7f3e;--accent-fg:#fff;--accent-text:#1c7a33;--fg:rgba(0,0,6,.8);--fg-dim:rgba(0,0,6,.6);--bg:#fafafb;--view-bg:#fff;--card-bg:#fff;--popover-bg:#fff;--border:rgba(0,0,6,.15);--shade:rgba(0,0,6,.07);--toast-bg:rgba(40,40,44,.96);--hover:color-mix(in srgb,var(--fg) 7%,transparent);--active:color-mix(in srgb,var(--fg) 16%,transparent);--btn-bg:color-mix(in srgb,var(--fg) 10%,transparent);--btn-hover:color-mix(in srgb,var(--fg) 15%,transparent);--btn-active:color-mix(in srgb,var(--fg) 30%,transparent);--focus:color-mix(in srgb,var(--accent) 55%,transparent);--card-shade:0 0 0 1px rgba(0,0,6,.03),0 1px 3px 1px rgba(0,0,6,.07),0 2px 6px 2px rgba(0,0,6,.03);--menu-shadow:0 0 0 1px rgba(0,0,6,.07),0 1px 5px 1px rgba(0,0,6,.09),0 2px 14px 3px rgba(0,0,6,.05);font-family:'Adwaita Sans',Cantarell,system-ui,sans-serif;color:var(--fg)} .ds-row{display:flex;gap:8px;align-items:center}.ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:34px;padding:6px 14px;border:0;border-radius:6px;font:inherit;font-weight:700;font-size:.9375rem;line-height:1.2;color:var(--fg);background:var(--btn-bg);cursor:pointer;transition:background-color .15s}.ds-btn:hover{background:var(--btn-hover)}.ds-btn:active{background:var(--btn-active)}.ds-btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}.ds-flat{background:transparent;width:34px;padding:0}.ds-flat:hover{background:var(--hover)}.ds-flat:active{background:var(--active)}"
+    },
+    {
+      "name": "Header Bar with View Switcher",
+      "kind": "nav",
+      "refersTo": "headerbar",
+      "description": "Sticky 47px header bar: title at start, centred view switcher, flat icon buttons at end.",
+      "html": "<header class=\"ds-hb\"><span class=\"ds-hb-title\">Nova</span><nav class=\"ds-sw\"><a href=\"#\" aria-current=\"true\">Overview</a><a href=\"#\">Download</a><a href=\"#\">What's New</a></nav><button class=\"ds-hb-b\" aria-label=\"Main Menu\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M2 3h12v2H2zm0 4h12v2H2zm0 4h12v2H2z\"/></svg></button></header>",
+      "css": ":host{--accent:#2b7f3e;--accent-fg:#fff;--accent-text:#1c7a33;--fg:rgba(0,0,6,.8);--fg-dim:rgba(0,0,6,.6);--bg:#fafafb;--view-bg:#fff;--card-bg:#fff;--popover-bg:#fff;--border:rgba(0,0,6,.15);--shade:rgba(0,0,6,.07);--toast-bg:rgba(40,40,44,.96);--hover:color-mix(in srgb,var(--fg) 7%,transparent);--active:color-mix(in srgb,var(--fg) 16%,transparent);--btn-bg:color-mix(in srgb,var(--fg) 10%,transparent);--btn-hover:color-mix(in srgb,var(--fg) 15%,transparent);--btn-active:color-mix(in srgb,var(--fg) 30%,transparent);--focus:color-mix(in srgb,var(--accent) 55%,transparent);--card-shade:0 0 0 1px rgba(0,0,6,.03),0 1px 3px 1px rgba(0,0,6,.07),0 2px 6px 2px rgba(0,0,6,.03);--menu-shadow:0 0 0 1px rgba(0,0,6,.07),0 1px 5px 1px rgba(0,0,6,.09),0 2px 14px 3px rgba(0,0,6,.05);font-family:'Adwaita Sans',Cantarell,system-ui,sans-serif;color:var(--fg)} .ds-hb{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;height:47px;padding:0 6px 0 12px;background:var(--view-bg);box-shadow:0 1px 0 var(--shade),0 2px 6px -2px var(--shade)}.ds-hb-title{font-weight:700}.ds-sw{display:flex;gap:2px}.ds-sw a{display:flex;align-items:center;min-height:34px;padding:0 14px;border-radius:6px;color:var(--fg);text-decoration:none;font-weight:700;font-size:.9375rem}.ds-sw a:hover{background:var(--hover)}.ds-sw a[aria-current=true]{background:var(--active)}.ds-sw a:focus-visible,.ds-hb-b:focus-visible{outline:2px solid var(--focus);outline-offset:2px}.ds-hb-b{justify-self:end;display:grid;place-items:center;width:34px;height:34px;border:0;border-radius:6px;background:transparent;color:var(--fg);cursor:pointer}.ds-hb-b:hover{background:var(--hover)}.ds-hb-b:active{background:var(--active)}"
+    },
+    {
+      "name": "Boxed List",
+      "kind": "card",
+      "refersTo": "boxed-list",
+      "description": "12px card of rows separated by inset shade lines; title over dim caption, optional trailing keycaps.",
+      "html": "<ul class=\"ds-list\"><li class=\"ds-lr\"><span class=\"ds-lt\"><strong>Path bar</strong><span>Type a location, or go back, forward and up.</span></span><span class=\"ds-keys\"><kbd>Ctrl</kbd><kbd>L</kbd></span></li><li class=\"ds-lr\"><span class=\"ds-lt\"><strong>Undo</strong><span>Works for rename, move and trash.</span></span><span class=\"ds-keys\"><kbd>Ctrl</kbd><kbd>Z</kbd></span></li></ul>",
+      "css": ":host{--accent:#2b7f3e;--accent-fg:#fff;--accent-text:#1c7a33;--fg:rgba(0,0,6,.8);--fg-dim:rgba(0,0,6,.6);--bg:#fafafb;--view-bg:#fff;--card-bg:#fff;--popover-bg:#fff;--border:rgba(0,0,6,.15);--shade:rgba(0,0,6,.07);--toast-bg:rgba(40,40,44,.96);--hover:color-mix(in srgb,var(--fg) 7%,transparent);--active:color-mix(in srgb,var(--fg) 16%,transparent);--btn-bg:color-mix(in srgb,var(--fg) 10%,transparent);--btn-hover:color-mix(in srgb,var(--fg) 15%,transparent);--btn-active:color-mix(in srgb,var(--fg) 30%,transparent);--focus:color-mix(in srgb,var(--accent) 55%,transparent);--card-shade:0 0 0 1px rgba(0,0,6,.03),0 1px 3px 1px rgba(0,0,6,.07),0 2px 6px 2px rgba(0,0,6,.03);--menu-shadow:0 0 0 1px rgba(0,0,6,.07),0 1px 5px 1px rgba(0,0,6,.09),0 2px 14px 3px rgba(0,0,6,.05);font-family:'Adwaita Sans',Cantarell,system-ui,sans-serif;color:var(--fg)} .ds-list{list-style:none;margin:0;padding:0;border-radius:12px;overflow:hidden;background:var(--card-bg);box-shadow:var(--card-shade)}.ds-list>*+*{box-shadow:inset 0 1px 0 var(--shade)}.ds-lr{display:flex;align-items:center;gap:14px;min-height:56px;padding:10px 16px}.ds-lr:hover{background:var(--hover)}.ds-lt{display:flex;flex-direction:column;gap:1px;flex:1}.ds-lt strong{font-weight:600}.ds-lt span{color:var(--fg-dim);font-size:.875rem;line-height:1.4}.ds-keys{display:flex;gap:4px}kbd{display:inline-block;min-width:1.9em;padding:1px 7px;text-align:center;border-radius:6px;font-family:inherit;font-size:.8125rem;font-weight:600;line-height:1.5;background:var(--card-bg);box-shadow:inset 0 0 0 1px var(--border),inset 0 -2px 0 var(--shade)}"
+    },
+    {
+      "name": "Expander Row",
+      "kind": "custom",
+      "refersTo": "expander-row",
+      "description": "Boxed-list row on details/summary: platform title, accent badge, rotating chevron, tinted indented body.",
+      "html": "<div class=\"ds-list\"><details class=\"ds-ex\" open><summary><span class=\"ds-lt\"><strong>Linux</strong><span>x86_64 · GTK 4 and WebKitGTK 6.0</span></span><span class=\"ds-badge\">This device</span><span class=\"ds-chev\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M3.3 5.3 8 10l4.7-4.7 1.4 1.4L8 12.8 1.9 6.7z\"/></svg></span></summary><div class=\"ds-exb\">Install with one command, or pick a package.</div></details></div>",
+      "css": ":host{--accent:#2b7f3e;--accent-fg:#fff;--accent-text:#1c7a33;--fg:rgba(0,0,6,.8);--fg-dim:rgba(0,0,6,.6);--bg:#fafafb;--view-bg:#fff;--card-bg:#fff;--popover-bg:#fff;--border:rgba(0,0,6,.15);--shade:rgba(0,0,6,.07);--toast-bg:rgba(40,40,44,.96);--hover:color-mix(in srgb,var(--fg) 7%,transparent);--active:color-mix(in srgb,var(--fg) 16%,transparent);--btn-bg:color-mix(in srgb,var(--fg) 10%,transparent);--btn-hover:color-mix(in srgb,var(--fg) 15%,transparent);--btn-active:color-mix(in srgb,var(--fg) 30%,transparent);--focus:color-mix(in srgb,var(--accent) 55%,transparent);--card-shade:0 0 0 1px rgba(0,0,6,.03),0 1px 3px 1px rgba(0,0,6,.07),0 2px 6px 2px rgba(0,0,6,.03);--menu-shadow:0 0 0 1px rgba(0,0,6,.07),0 1px 5px 1px rgba(0,0,6,.09),0 2px 14px 3px rgba(0,0,6,.05);font-family:'Adwaita Sans',Cantarell,system-ui,sans-serif;color:var(--fg)} .ds-list{border-radius:12px;overflow:hidden;background:var(--card-bg);box-shadow:var(--card-shade)}.ds-ex>summary{display:flex;align-items:center;gap:14px;min-height:64px;padding:10px 16px;cursor:pointer;list-style:none;transition:background-color .15s}.ds-ex>summary::-webkit-details-marker{display:none}.ds-ex>summary:hover{background:var(--hover)}.ds-ex>summary:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}.ds-lt{display:flex;flex-direction:column;flex:1}.ds-lt strong{font-size:1.0625rem;font-weight:700}.ds-lt span{color:var(--fg-dim);font-size:.875rem}.ds-badge{padding:2px 10px;border-radius:999px;font-size:.8125rem;font-weight:700;color:var(--accent-text);background:color-mix(in srgb,var(--accent) 15%,transparent)}.ds-chev{display:grid;opacity:.7;transition:transform .2s cubic-bezier(.22,1,.36,1)}.ds-ex[open] .ds-chev{transform:rotate(180deg)}.ds-exb{padding:16px 16px 22px 16px;box-shadow:inset 0 1px 0 var(--shade);background:color-mix(in srgb,var(--fg) 2%,transparent)}"
+    },
+    {
+      "name": "Popover Menu with Style Switcher",
+      "kind": "custom",
+      "refersTo": "popover",
+      "description": "Main menu: 12px popover, System/Light/Dark swatches with accent ring on the selected one, then menu rows.",
+      "html": "<div class=\"ds-pop\"><div class=\"ds-ss\"><button class=\"ds-s ds-sys\" aria-checked=\"true\" aria-label=\"Follow System Style\"></button><button class=\"ds-s ds-lt\" aria-checked=\"false\" aria-label=\"Light Style\"></button><button class=\"ds-s ds-dk\" aria-checked=\"false\" aria-label=\"Dark Style\"></button></div><hr><a href=\"#\">Releases</a><a href=\"#\">Report a Bug</a></div>",
+      "css": ":host{--accent:#2b7f3e;--accent-fg:#fff;--accent-text:#1c7a33;--fg:rgba(0,0,6,.8);--fg-dim:rgba(0,0,6,.6);--bg:#fafafb;--view-bg:#fff;--card-bg:#fff;--popover-bg:#fff;--border:rgba(0,0,6,.15);--shade:rgba(0,0,6,.07);--toast-bg:rgba(40,40,44,.96);--hover:color-mix(in srgb,var(--fg) 7%,transparent);--active:color-mix(in srgb,var(--fg) 16%,transparent);--btn-bg:color-mix(in srgb,var(--fg) 10%,transparent);--btn-hover:color-mix(in srgb,var(--fg) 15%,transparent);--btn-active:color-mix(in srgb,var(--fg) 30%,transparent);--focus:color-mix(in srgb,var(--accent) 55%,transparent);--card-shade:0 0 0 1px rgba(0,0,6,.03),0 1px 3px 1px rgba(0,0,6,.07),0 2px 6px 2px rgba(0,0,6,.03);--menu-shadow:0 0 0 1px rgba(0,0,6,.07),0 1px 5px 1px rgba(0,0,6,.09),0 2px 14px 3px rgba(0,0,6,.05);font-family:'Adwaita Sans',Cantarell,system-ui,sans-serif;color:var(--fg)} .ds-pop{width:220px;padding:6px;border-radius:12px;background:var(--popover-bg);box-shadow:var(--menu-shadow)}.ds-ss{display:flex;justify-content:space-around;padding:6px 4px}.ds-s{position:relative;width:44px;height:44px;border-radius:50%;border:0;padding:0;cursor:pointer;box-shadow:inset 0 0 0 1px var(--border)}.ds-sys{background:linear-gradient(-45deg,#222226 50%,#fafafb 50%)}.ds-lt{background:#fafafb}.ds-dk{background:#222226}.ds-s[aria-checked=true]{box-shadow:inset 0 0 0 1px var(--border),0 0 0 2px var(--popover-bg),0 0 0 4px var(--accent)}.ds-s:focus-visible{outline:2px solid var(--focus);outline-offset:6px}.ds-pop hr{border:0;height:1px;background:var(--border);margin:6px 0;opacity:.6}.ds-pop a{display:block;padding:7px 12px;border-radius:6px;color:var(--fg);text-decoration:none}.ds-pop a:hover,.ds-pop a:focus-visible{background:var(--hover);outline:none}"
+    },
+    {
+      "name": "Toast",
+      "kind": "custom",
+      "refersTo": "toast",
+      "description": "Dark pill notification with an Undo pill action and close button; rises in.",
+      "html": "<div class=\"ds-toast\"><span>Moved 1 item to Trash</span><button class=\"ds-ta\">Undo</button><button class=\"ds-ta ds-tx\" aria-label=\"Close\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"m4.2 2.8 3.8 3.8 3.8-3.8 1.4 1.4L9.4 8l3.8 3.8-1.4 1.4L8 9.4l-3.8 3.8-1.4-1.4L6.6 8 2.8 4.2z\"/></svg></button></div>",
+      "css": ":host{--accent:#2b7f3e;--accent-fg:#fff;--accent-text:#1c7a33;--fg:rgba(0,0,6,.8);--fg-dim:rgba(0,0,6,.6);--bg:#fafafb;--view-bg:#fff;--card-bg:#fff;--popover-bg:#fff;--border:rgba(0,0,6,.15);--shade:rgba(0,0,6,.07);--toast-bg:rgba(40,40,44,.96);--hover:color-mix(in srgb,var(--fg) 7%,transparent);--active:color-mix(in srgb,var(--fg) 16%,transparent);--btn-bg:color-mix(in srgb,var(--fg) 10%,transparent);--btn-hover:color-mix(in srgb,var(--fg) 15%,transparent);--btn-active:color-mix(in srgb,var(--fg) 30%,transparent);--focus:color-mix(in srgb,var(--accent) 55%,transparent);--card-shade:0 0 0 1px rgba(0,0,6,.03),0 1px 3px 1px rgba(0,0,6,.07),0 2px 6px 2px rgba(0,0,6,.03);--menu-shadow:0 0 0 1px rgba(0,0,6,.07),0 1px 5px 1px rgba(0,0,6,.09),0 2px 14px 3px rgba(0,0,6,.05);font-family:'Adwaita Sans',Cantarell,system-ui,sans-serif;color:var(--fg)} .ds-toast{display:inline-flex;align-items:center;gap:12px;min-height:44px;padding:6px 6px 6px 18px;border-radius:999px;color:#fff;background:var(--toast-bg);box-shadow:0 2px 10px rgba(0,0,0,.3);font-weight:600;font-size:.9375rem;animation:ds-tin .3s cubic-bezier(.22,1,.36,1)}.ds-ta{border:0;font:inherit;font-weight:700;color:#fff;background:rgba(255,255,255,.12);border-radius:999px;padding:6px 14px;cursor:pointer}.ds-ta:hover{background:rgba(255,255,255,.22)}.ds-ta:focus-visible{outline:2px solid var(--focus);outline-offset:2px}.ds-tx{width:32px;height:32px;padding:0;display:grid;place-items:center;background:transparent}@keyframes ds-tin{from{opacity:0;transform:translateY(16px) scale(.96)}}@media (prefers-reduced-motion:reduce){.ds-toast{animation:none}}"
+    },
+    {
+      "name": "Context Tile",
+      "kind": "card",
+      "refersTo": "accent-badge",
+      "description": "Centred 12px card with an accent-tinted pill icon well, bold title and dim caption.",
+      "html": "<a class=\"ds-tile\" href=\"#\"><span class=\"ds-art\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M7 1h2v7.6l2.3-2.3 1.4 1.4L8 12.4 3.3 7.7l1.4-1.4L7 8.6zM2 13h12v2H2z\"/></svg></span><strong>Free to use</strong><span>Every line of source on GitHub</span></a>",
+      "css": ":host{--accent:#2b7f3e;--accent-fg:#fff;--accent-text:#1c7a33;--fg:rgba(0,0,6,.8);--fg-dim:rgba(0,0,6,.6);--bg:#fafafb;--view-bg:#fff;--card-bg:#fff;--popover-bg:#fff;--border:rgba(0,0,6,.15);--shade:rgba(0,0,6,.07);--toast-bg:rgba(40,40,44,.96);--hover:color-mix(in srgb,var(--fg) 7%,transparent);--active:color-mix(in srgb,var(--fg) 16%,transparent);--btn-bg:color-mix(in srgb,var(--fg) 10%,transparent);--btn-hover:color-mix(in srgb,var(--fg) 15%,transparent);--btn-active:color-mix(in srgb,var(--fg) 30%,transparent);--focus:color-mix(in srgb,var(--accent) 55%,transparent);--card-shade:0 0 0 1px rgba(0,0,6,.03),0 1px 3px 1px rgba(0,0,6,.07),0 2px 6px 2px rgba(0,0,6,.03);--menu-shadow:0 0 0 1px rgba(0,0,6,.07),0 1px 5px 1px rgba(0,0,6,.09),0 2px 14px 3px rgba(0,0,6,.05);font-family:'Adwaita Sans',Cantarell,system-ui,sans-serif;color:var(--fg)} .ds-tile{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;width:200px;padding:18px 12px 16px;border-radius:12px;background:var(--card-bg);box-shadow:var(--card-shade);color:var(--fg);text-decoration:none;transition:background-color .15s}.ds-tile:hover{background:color-mix(in srgb,var(--card-bg),var(--fg) 4%)}.ds-tile:focus-visible{outline:2px solid var(--focus);outline-offset:2px}.ds-art{display:flex;align-items:center;justify-content:center;min-width:52px;height:52px;padding:0 14px;margin-bottom:8px;border-radius:999px;color:var(--accent-text);background:color-mix(in srgb,var(--accent) 16%,transparent)}.ds-art svg{width:22px;height:22px}.ds-tile strong{font-size:.9375rem}.ds-tile span:last-child{color:var(--fg-dim);font-size:.8125rem;line-height:1.35}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Nova's Own Window",
+    "overview": "Nova does not have a brand look separate from its software: the visual system is\nlibadwaita, as GNOME Files 50 renders it, re-created in CSS. The desktop and\nmobile app (`frontend/src/app.css`) is the source of truth; the download site\n(`website/`) is laid out as a GNOME Software app details page and borrows the\napp's surfaces, hairlines, radii, buttons, lists, popovers and toasts token for\ntoken. The screenshots on the site are not pictures but working Nova windows\nbuilt from the same rules.\n\nThe mood is calm, familiar and dense in the GNOME way: neutral grey-white\nsurfaces, one accent hue, bold sans labels, symbolic icons, and depth from\nhairline rings and soft layered shadows rather than borders or gradients.\nEverything follows the system light or dark preference, and every surface offers\nthe libadwaita style switcher (System / Light / Dark) in its main menu. The one\ndeliberate difference between the two expressions is the accent: the app keeps\nlibadwaita's default blue, the website uses the logo's green as its libadwaita\naccent.\n\nThe site explicitly refuses the dark-gradient split hero with a tilted product\nmockup; it presents Nova the way a Linux user already judges apps.",
+    "keyCharacteristics": [
+      "libadwaita surfaces: window, view, sidebar, popover, card, with paired light",
+      "A single accent hue per surface (blue in the app, logo green on the site);",
+      "Adwaita Sans (variable, self-hosted) and Adwaita Mono; no other faces.",
+      "Adwaita symbolic icons from one SVG sprite, 16px, `currentColor`.",
+      "Depth by hairline ring plus soft shadow stacks; separators are 1px inset shade",
+      "Rounded but not soft: 6px controls, 12px containers, full pills for primary"
+    ],
+    "rules": [
+      {
+        "name": "The One Hue Rule",
+        "body": "A surface carries one accent hue and nothing else",
+        "section": "colors"
+      },
+      {
+        "name": "The Mixed, Not Picked Rule",
+        "body": "Hover, pressed, selected and tinted-badge states",
+        "section": "colors"
+      },
+      {
+        "name": "The Weight Not Face Rule",
+        "body": "Hierarchy comes from Adwaita Sans weight (400 /",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Numbers Rule",
+        "body": "Sizes, dates and version dates use",
+        "section": "typography"
+      },
+      {
+        "name": "The Ring Not Border Rule",
+        "body": "Containers are edged by the first 1px ring of",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** take surface, ink, hairline and shadow values from the libadwaita token",
+      "**Do** keep a single accent per surface: Adwaita blue (#3584e4) in the app,",
+      "**Do** derive hover, pressed, selected and tinted states by `color-mix` from",
+      "**Do** use Adwaita symbolic icons from the sprite at 16px in `currentColor`.",
+      "**Do** group settings-like and feature content in 12px boxed lists with inset",
+      "**Do** offer the System / Light / Dark style switcher in the main menu and",
+      "**Do** reduce all animation and transition durations under"
+    ],
+    "donts": [
+      "**Don't** build the dark-gradient split hero with a tilted product mockup.",
+      "**Don't** put CSS borders on cards, lists or popovers; use the shadow ring and",
+      "**Don't** add a second accent hue or a second type family.",
+      "**Don't** use emoji or text glyphs as icons; use the Adwaita symbolic sprite."
+    ]
+  }
+}

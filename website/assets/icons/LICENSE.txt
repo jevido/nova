@@ -1,0 +1,4 @@
+Icons in this directory are copied from the Adwaita icon theme
+(https://gitlab.gnome.org/GNOME/adwaita-icon-theme), licensed under
+LGPL-3.0 or CC-BY-SA-3.0. They are used only when the system icon theme
+cannot be found.
