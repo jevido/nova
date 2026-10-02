@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 // OAuth sign-in: the authorization code flow with PKCE and a loopback
@@ -145,7 +146,45 @@ func (c *Client) OAuthLogin(ctx context.Context, clientID, scope string, openBro
 	if a.err != nil {
 		return nil, a.err
 	}
-	return c.oauthToken(ctx, a.code, redirectURI, verifier)
+	return c.oauthTokenRetrying(ctx, a.code, redirectURI, verifier)
+}
+
+// tokenRetryFor is how long the code exchange is retried while the network
+// can't be reached. The code itself is valid for five minutes.
+var tokenRetryFor = 2 * time.Minute
+
+// oauthTokenRetrying is oauthToken, retried while the request can't be
+// sent at all. When the browser hands over the code, Nova is often still in
+// the background (on a phone the browser is in front), and Android can cut
+// background apps off the network, so the name lookup fails. A request that
+// was never sent didn't use up the code, so trying again is safe; anything
+// else is not retried, as a used code can't be used twice.
+func (c *Client) oauthTokenRetrying(ctx context.Context, code, redirectURI, verifier string) (*OAuthToken, error) {
+	deadline := time.Now().Add(tokenRetryFor)
+	wait := 500 * time.Millisecond
+	for {
+		t, err := c.oauthToken(ctx, code, redirectURI, verifier)
+		if err == nil || !notSent(err) || time.Now().After(deadline) {
+			return t, err
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(wait):
+		}
+		wait = min(wait*2, 5*time.Second)
+	}
+}
+
+// notSent reports whether err means the request never reached the server:
+// the name lookup or the connection failed.
+func notSent(err error) bool {
+	var dnsErr *net.DNSError
+	if errors.As(err, &dnsErr) {
+		return true
+	}
+	var opErr *net.OpError
+	return errors.As(err, &opErr) && opErr.Op == "dial"
 }
 
 // oauthToken trades an authorization code for the key.

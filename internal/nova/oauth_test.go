@@ -135,3 +135,26 @@ func TestOAuthLoginCancel(t *testing.T) {
 		t.Fatalf("err = %v, want context.Canceled", err)
 	}
 }
+
+func TestOAuthTokenRetriesUntilReachable(t *testing.T) {
+	f := newFakeOAuth(t)
+	// The server can't be reached at first, like a phone app in the
+	// background, then comes back.
+	real := f.srv.Listener.Addr().String()
+	c := NewClient("http://nova-storage.invalid", "")
+	f.challenge, f.redirect = codeChallenge("v"), "http://127.0.0.1:1/oauth/callback"
+	go func() {
+		time.Sleep(1200 * time.Millisecond)
+		c.SetBaseURL("http://" + real)
+	}()
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	tok, err := c.oauthTokenRetrying(ctx, "the-code", f.redirect, "v")
+	if err != nil || tok.AccessToken != "the-key" {
+		t.Fatalf("tok %+v, err %v", tok, err)
+	}
+	// A refused code is not retried.
+	if _, err := c.oauthTokenRetrying(ctx, "wrong", f.redirect, "v"); err == nil || notSent(err) {
+		t.Fatalf("err = %v, want the server's refusal", err)
+	}
+}
