@@ -17,6 +17,7 @@ symbolic icon name.
 
 ### Improved
 
+- [power-profile-performance] **Smoother on laptops with NVIDIA graphics** — Hovering and scrolling stay smooth in big windows when the screen runs on the built-in graphics.
 - [user-trash] **Trash that other apps understand** — The trash follows the freedesktop.org standard, so file managers on a mounted copy of your files can list and restore what Nova trashed.
 
 ## 0.6.0 — 2026-09-28
