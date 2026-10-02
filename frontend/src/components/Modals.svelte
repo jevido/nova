@@ -3,7 +3,7 @@
   import * as Files from "../../bindings/nova/services/filesservice";
   import * as Updates from "../../bindings/nova/services/updateservice";
   import type { Entry, FolderSize } from "../../bindings/nova/services/models";
-  import { app, parentOf, TRASH, type Modal, isVirtual } from "../lib/store.svelte";
+  import { app, displayPath, parentOf, TRASH, type Modal, isVirtual } from "../lib/store.svelte";
   import { itemMenu } from "../lib/menus";
   import { formatAgo, formatDateLong, formatSize, pluralize, stemLength } from "../lib/format";
   import { fileIconUrl, hasThumbnail, isAudio, isImage, isText, isVideo, rawUrl, thumbUrl } from "../lib/icons";
@@ -250,10 +250,10 @@
           {/if}
         </dd>
         <dt>Parent Folder</dt>
-        <dd class="selectable">{parentOf(e.path).replace(/^\/me/, "") || "/"}</dd>
+        <dd class="selectable">{displayPath(parentOf(e.path))}</dd>
         {#if e.origPath}
           <dt>Original Location</dt>
-          <dd class="selectable">{parentOf(e.origPath).replace(/^\/me/, "") || "/"}</dd>
+          <dd class="selectable">{displayPath(parentOf(e.origPath))}</dd>
         {/if}
         <dt>Modified</dt>
         <dd>{formatDateLong(e.modified)}</dd>
@@ -271,7 +271,7 @@
           <dt>SHA-256</dt>
           <dd class="mono selectable small">{e.sha256}</dd>
         {/if}
-        {#if !e.path.startsWith(TRASH) && e.path !== "/me"}
+        {#if !e.path.startsWith(TRASH) && !app.isRoot(e.path)}
           <dt>Sharing</dt>
           <dd class="sharing">
             <span>{e.public ? "Anyone with the link" : e.shared ? "Specific people" : "Not shared"}</span>
@@ -410,10 +410,10 @@
                 <dt>Size</dt>
                 <dd>{formatSize(e.size)} ({e.size.toLocaleString()} bytes)</dd>
                 <dt>Location</dt>
-                <dd class="selectable">{parentOf(e.path).replace(/^\/me/, "") || "/"}</dd>
+                <dd class="selectable">{displayPath(parentOf(e.path))}</dd>
                 {#if e.origPath}
                   <dt>Original Location</dt>
-                  <dd class="selectable">{parentOf(e.origPath).replace(/^\/me/, "") || "/"}</dd>
+                  <dd class="selectable">{displayPath(parentOf(e.origPath))}</dd>
                 {/if}
                 <dt>Modified</dt>
                 <dd>{formatDateLong(e.modified)}</dd>

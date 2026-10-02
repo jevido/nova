@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Window } from "@wailsio/runtime";
   import { onMount } from "svelte";
-  import { app, HOME, ZOOM_SIZES } from "./lib/store.svelte";
+  import { app, ZOOM_SIZES } from "./lib/store.svelte";
   import FileView from "./components/FileView.svelte";
   import HeaderBar from "./components/HeaderBar.svelte";
   import Login from "./components/Login.svelte";
@@ -108,7 +108,7 @@
     else if (e.altKey && k === "ArrowLeft") app.back();
     else if (e.altKey && k === "ArrowRight") app.forward();
     else if (e.altKey && k === "ArrowUp") app.up();
-    else if (e.altKey && k === "Home") app.navigate(HOME);
+    else if (e.altKey && k === "Home") app.navigate(app.home);
     else if (ctrl && k === "d") app.toggleBookmark();
     else if (typing) handled = false;
     else if (k === "Backspace") app.back();

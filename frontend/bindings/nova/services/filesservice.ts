@@ -75,7 +75,8 @@ export function Rename(p: string, newName: string): $CancellablePromise<string> 
 }
 
 /**
- * Restore moves trashed items back to where they came from.
+ * Restore moves trashed items back to where they came from. An item without
+ * an origin goes to the home folder under its trashed name.
  */
 export function Restore(paths: string[] | null): $CancellablePromise<$models.OpResult | null> {
     return $Call.ByID(679835524, paths);
@@ -145,7 +146,7 @@ export function StopSharing(p: string): $CancellablePromise<void> {
 }
 
 /**
- * Trash moves paths into the trash folder and remembers where they came from.
+ * Trash moves paths into the trash and records where they came from.
  */
 export function Trash(paths: string[] | null): $CancellablePromise<$models.OpResult | null> {
     return $Call.ByID(2905769052, paths);

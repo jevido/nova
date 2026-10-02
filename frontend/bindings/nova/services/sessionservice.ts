@@ -21,6 +21,13 @@ import * as nova$0 from "../internal/nova/models.js";
 // @ts-ignore: Unused imports
 import * as $models from "./models.js";
 
+/**
+ * CancelBrowserSignIn stops waiting for the browser.
+ */
+export function CancelBrowserSignIn(): $CancellablePromise<void> {
+    return $Call.ByID(600835291);
+}
+
 export function Prefs(): $CancellablePromise<config$0.Prefs> {
     return $Call.ByID(1516396029);
 }
@@ -51,6 +58,16 @@ export function SignIn(username: string, password: string): $CancellablePromise<
 }
 
 /**
+ * SignInWithBrowser signs in on the nova.storage website, in the user's own
+ * browser, where they approve Nova and may limit it to some folders. It
+ * waits until they have answered, CancelBrowserSignIn is called, or ten
+ * minutes have passed.
+ */
+export function SignInWithBrowser(): $CancellablePromise<$models.Session> {
+    return $Call.ByID(148636509);
+}
+
+/**
  * SignInWithKey signs in using an existing API key.
  */
 export function SignInWithKey(key: string): $CancellablePromise<$models.Session> {
@@ -58,8 +75,9 @@ export function SignInWithKey(key: string): $CancellablePromise<$models.Session>
 }
 
 /**
- * SignOut forgets the stored key. Keys created by SignIn are revoked;
- * keys the user pasted in are left alone since they may be used elsewhere.
+ * SignOut forgets the stored key. Keys created by SignIn or
+ * SignInWithBrowser are revoked; keys the user pasted in are left alone
+ * since they may be used elsewhere.
  */
 export function SignOut(): $CancellablePromise<void> {
     return $Call.ByID(157681364);

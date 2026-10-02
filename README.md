@@ -137,8 +137,15 @@ the desktop.
 
 ### Signing in
 
-Sign in with your nova.storage username and password, or paste an API key.
-Keys created by a password sign-in are revoked again when you sign out.
+**Sign In with Browser** opens nova.storage in your browser, where you approve
+Nova (OAuth 2.0 with PKCE; Nova never sees your password). There you can also
+limit Nova to some of your folders: they then take the place of Home in the
+sidebar, and the trash and synced bookmarks, which live in Home, are not
+available. To change the folders, sign out and sign in again.
+
+You can also sign in with your nova.storage username and password, or paste an
+API key. Keys created by a browser or password sign-in are revoked again when
+you sign out.
 
 ## Features
 

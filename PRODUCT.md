@@ -57,8 +57,12 @@ desktop-grade client, not a web uploader in a wrapper.
 
 ## Capabilities and Constraints
 
-- Sign-in with nova.storage username + password, or an API key. Password sign-in
-  keys are revoked on sign-out.
+- Sign-in through the browser (OAuth 2.0 authorization code + PKCE, loopback
+  redirect on 127.0.0.1, client ID `jevido-nova`), with nova.storage username +
+  password, or with an API key. Browser and password sign-in keys are revoked on
+  sign-out. A browser sign-in may be limited to some folders (`filesystem_dirs`,
+  stored with the key): each is a top folder at `/{id}`, and Home, Trash and
+  bookmark sync are unavailable.
 - Features: grid/list views, zoom, sort, hidden files, rubber-band selection,
   path bar with editable location, history, search, upload/download (recursive),
   cut/copy/paste across windows, drag-to-move (Ctrl to copy), rename, Trash with

@@ -172,6 +172,19 @@
             </button>
           </div>
 
+          {#if app.limited}
+            <h3>Folders</h3>
+            <div class="boxed">
+              {#each app.roots as r (r.path)}
+                <div class="row">
+                  <Icon name="folder" />
+                  <div class="row-text"><div>{r.name}</div></div>
+                </div>
+              {/each}
+            </div>
+            <p class="dim hint">Nova can only use these folders. To change them, sign out and sign in again.</p>
+          {/if}
+
           <h3>Updates</h3>
           <div class="boxed">
             <div class="row">
@@ -368,6 +381,10 @@
     background: var(--card-bg);
     box-shadow: 0 0 0 1px var(--shade), 0 1px 3px var(--shade);
     overflow: hidden;
+  }
+  .hint {
+    margin: 8px 2px 0;
+    font-size: 13px;
   }
   .boxed + .boxed,
   .signout {

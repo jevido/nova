@@ -2,7 +2,7 @@
   import { untrack } from "svelte";
   import * as Files from "../../bindings/nova/services/filesservice";
   import type { Entry } from "../../bindings/nova/services/models";
-  import { app, HOME, parentOf } from "../lib/store.svelte";
+  import { app, displayPath, parentOf } from "../lib/store.svelte";
   import { formatDate, formatSize } from "../lib/format";
   import FileIcon from "./FileIcon.svelte";
   import Icon from "./Icon.svelte";
@@ -56,7 +56,7 @@
     searching = true;
     error = "";
     try {
-      const r = (await Files.Search(HOME, q)) ?? [];
+      const r = await app.searchAll(q);
       if (my !== seq) return;
       results = r;
       cursor = 0;
@@ -96,7 +96,10 @@
     }
   }
 
-  const where = (e: Entry) => ["Home", ...parentOf(e.path).replace(/^\/me/, "").split("/").filter(Boolean)].join(" / ");
+  const where = (e: Entry) => {
+    const parts = displayPath(parentOf(e.path)).split("/").filter(Boolean);
+    return (app.limited ? parts : ["Home", ...parts]).join(" / ");
+  };
 </script>
 
 {#if app.globalSearchOpen}

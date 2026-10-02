@@ -169,6 +169,10 @@ func (a *AccountService) writeLayout(ctx context.Context, list []config.Bookmark
 // SyncBookmarks returns the bookmarks stored on the server and saves them
 // locally. When the server has none yet, the local bookmarks are uploaded.
 func (a *AccountService) SyncBookmarks() ([]config.Bookmark, error) {
+	if limited() {
+		// The bookmarks file is in the home folder, which the key can't reach.
+		return a.store.Get().Prefs.Bookmarks, nil
+	}
 	ctx, cancel := ctxTimeout()
 	defer cancel()
 	remote, found, err := a.readRemote(ctx)
@@ -215,6 +219,9 @@ func (a *AccountService) SaveBookmarks(list []config.Bookmark) error {
 	}
 	if err := a.store.Update(func(c *config.Config) { c.Prefs.Bookmarks = list }); err != nil {
 		return err
+	}
+	if limited() {
+		return nil
 	}
 	ctx, cancel := ctxTimeout()
 	defer cancel()

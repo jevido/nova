@@ -359,6 +359,9 @@ func (s *FilesService) dropTrashInfo(ctx context.Context, deleted []string) {
 func (s *FilesService) Trash(paths []string) (*OpResult, error) {
 	s.trashMu.Lock()
 	defer s.trashMu.Unlock()
+	if limited() {
+		return nil, errLimited
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	if err := s.migrateLegacyTrash(ctx); err != nil {
@@ -393,6 +396,9 @@ func (s *FilesService) Trash(paths []string) (*OpResult, error) {
 // Restore moves trashed items back to where they came from. An item without
 // an origin goes to the home folder under its trashed name.
 func (s *FilesService) Restore(paths []string) (*OpResult, error) {
+	if limited() {
+		return nil, errLimited
+	}
 	s.trashMu.Lock()
 	defer s.trashMu.Unlock()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -436,6 +442,9 @@ func (s *FilesService) Restore(paths []string) (*OpResult, error) {
 
 // EmptyTrash permanently deletes everything in the trash.
 func (s *FilesService) EmptyTrash() error {
+	if limited() {
+		return errLimited
+	}
 	s.trashMu.Lock()
 	defer s.trashMu.Unlock()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -449,6 +458,9 @@ func (s *FilesService) EmptyTrash() error {
 
 // TrashCount returns the number of items in the trash.
 func (s *FilesService) TrashCount() int {
+	if limited() {
+		return 0
+	}
 	s.trashMu.Lock()
 	defer s.trashMu.Unlock()
 	ctx, cancel := ctxTimeout()
