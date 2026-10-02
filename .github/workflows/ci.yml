@@ -23,7 +23,8 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  # A newer push to next replaces the test build anyway.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/next' }}
 
 env:
   WAILS_VERSION: v3.0.0-beta.18
@@ -33,6 +34,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -47,6 +49,9 @@ jobs:
 
       - name: Install GTK/WebKit headers
         run: |
+          # No man page index (slow), and give up on a stuck mirror.
+          sudo rm -f /var/lib/man-db/auto-update
+          echo 'Acquire::Retries "3"; Acquire::http::Timeout "30";' | sudo tee /etc/apt/apt.conf.d/99ci >/dev/null
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libgtk-4-dev libwebkitgtk-6.0-dev
 
@@ -110,9 +115,10 @@ jobs:
 
   linux:
     name: Linux packages
-    needs: [test, version]
+    needs: [version]
     if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -129,15 +135,27 @@ jobs:
         if: github.ref == 'refs/heads/next'
         run: sh build/dev-app.sh
 
+      - name: Cache Wails and Task
+        id: tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin/wails3
+            ~/go/bin/task
+          key: tools-${{ runner.os }}-${{ runner.arch }}-wails-${{ env.WAILS_VERSION }}
+
       - name: Install build dependencies
         run: |
+          # No man page index (slow), and give up on a stuck mirror.
+          sudo rm -f /var/lib/man-db/auto-update
+          echo 'Acquire::Retries "3"; Acquire::http::Timeout "30";' | sudo tee /etc/apt/apt.conf.d/99ci >/dev/null
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            libgtk-4-dev libwebkitgtk-6.0-dev libfuse2 file \
-            gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
-            gstreamer1.0-plugins-bad gstreamer1.0-gl gstreamer1.0-libav
-          go install github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}
-          go install github.com/go-task/task/v3/cmd/task@latest
+          sudo apt-get install -y --no-install-recommends libgtk-4-dev libwebkitgtk-6.0-dev
+          # Compiling the wails3 CLI takes minutes; it is cached per version.
+          if [ "${{ steps.tools.outputs.cache-hit }}" != true ]; then
+            go install github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}
+            go install github.com/go-task/task/v3/cmd/task@latest
+          fi
 
       - name: Set package version
         env:
@@ -146,11 +164,11 @@ jobs:
           # pacman versions may not contain "-", so 0.1.0-dev.5 becomes 0.1.0.dev.5.
           sed -i "s/^version: .*/version: \"${VERSION//-/.}\"/" build/linux/nfpm/nfpm.yaml
 
+      # The AppImage is built in its own job, at the same time.
       - name: Build and package
         env:
-          APPIMAGE_EXTRACT_AND_RUN: "1"
           STAMP: ${{ needs.version.outputs.stamp }}
-        run: task package VERSION="$STAMP" UPDATE_REPO="$GITHUB_REPOSITORY"
+        run: task linux:create:deb linux:create:rpm linux:create:aur VERSION="$STAMP" UPDATE_REPO="$GITHUB_REPOSITORY"
 
       - name: Collect artifacts
         run: |
@@ -159,7 +177,6 @@ jobs:
           # (install.sh, README) always point at the newest release.
           # The tarball is what install.sh and the in-app updater use.
           tar -C bin -czf dist/nova-linux-amd64.tar.gz nova
-          cp bin/nova-x86_64.AppImage dist/nova-linux-x86_64.AppImage
           cp bin/nova.deb dist/nova-linux-amd64.deb
           cp bin/nova.rpm dist/nova-linux-x86_64.rpm
           cp bin/nova.pkg.tar.zst dist/nova-linux-x86_64.pkg.tar.zst
@@ -171,11 +188,77 @@ jobs:
           path: dist/*
           if-no-files-found: error
 
-  android:
-    name: Android APK
-    needs: [test, version]
+  appimage:
+    name: Linux AppImage
+    needs: [version]
     if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Make it Nova (dev)
+        if: github.ref == 'refs/heads/next'
+        run: sh build/dev-app.sh
+
+      - name: Cache Wails and Task
+        id: tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin/wails3
+            ~/go/bin/task
+          key: tools-${{ runner.os }}-${{ runner.arch }}-wails-${{ env.WAILS_VERSION }}
+
+      - name: Install build dependencies
+        run: |
+          # No man page index (slow), and give up on a stuck mirror.
+          sudo rm -f /var/lib/man-db/auto-update
+          echo 'Acquire::Retries "3"; Acquire::http::Timeout "30";' | sudo tee /etc/apt/apt.conf.d/99ci >/dev/null
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgtk-4-dev libwebkitgtk-6.0-dev libfuse2 file \
+            gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-bad gstreamer1.0-gl gstreamer1.0-libav
+          # Compiling the wails3 CLI takes minutes; it is cached per version.
+          if [ "${{ steps.tools.outputs.cache-hit }}" != true ]; then
+            go install github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}
+            go install github.com/go-task/task/v3/cmd/task@latest
+          fi
+
+      # Bundles WebKitGTK and GStreamer, which takes a few minutes.
+      - name: Build AppImage
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+          STAMP: ${{ needs.version.outputs.stamp }}
+        run: task linux:create:appimage VERSION="$STAMP" UPDATE_REPO="$GITHUB_REPOSITORY"
+
+      - name: Collect artifact
+        run: |
+          mkdir -p dist
+          cp bin/nova-x86_64.AppImage dist/nova-linux-x86_64.AppImage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appimage
+          path: dist/*
+          if-no-files-found: error
+
+  android:
+    name: Android APK
+    needs: [version]
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -199,13 +282,28 @@ jobs:
         if: github.ref == 'refs/heads/next'
         run: sh build/dev-app.sh
 
+      - name: Cache Wails and Task
+        id: tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin/wails3
+            ~/go/bin/task
+          key: tools-${{ runner.os }}-${{ runner.arch }}-wails-${{ env.WAILS_VERSION }}
+
       - name: Install Wails and Task
         run: |
           # The wails3 CLI links against GTK/WebKit even for Android builds.
+          # No man page index (slow), and give up on a stuck mirror.
+          sudo rm -f /var/lib/man-db/auto-update
+          echo 'Acquire::Retries "3"; Acquire::http::Timeout "30";' | sudo tee /etc/apt/apt.conf.d/99ci >/dev/null
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libgtk-4-dev libwebkitgtk-6.0-dev
-          go install github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}
-          go install github.com/go-task/task/v3/cmd/task@latest
+          # Compiling the wails3 CLI takes minutes; it is cached per version.
+          if [ "${{ steps.tools.outputs.cache-hit }}" != true ]; then
+            go install github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}
+            go install github.com/go-task/task/v3/cmd/task@latest
+          fi
 
       - name: Signing key
         env:
@@ -242,11 +340,12 @@ jobs:
 
   windows:
     name: Windows exe and installer
-    needs: [test, version]
+    needs: [version]
     if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.event_name == 'workflow_dispatch'
     # Wails builds Windows without cgo, so this cross-compiles on Linux;
     # makensis runs on Linux too.
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -263,13 +362,28 @@ jobs:
         if: github.ref == 'refs/heads/next'
         run: sh build/dev-app.sh
 
+      - name: Cache Wails and Task
+        id: tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin/wails3
+            ~/go/bin/task
+          key: tools-${{ runner.os }}-${{ runner.arch }}-wails-${{ env.WAILS_VERSION }}
+
       - name: Install build dependencies
         run: |
           # The wails3 CLI links against GTK/WebKit even for Windows builds.
+          # No man page index (slow), and give up on a stuck mirror.
+          sudo rm -f /var/lib/man-db/auto-update
+          echo 'Acquire::Retries "3"; Acquire::http::Timeout "30";' | sudo tee /etc/apt/apt.conf.d/99ci >/dev/null
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libgtk-4-dev libwebkitgtk-6.0-dev nsis
-          go install github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}
-          go install github.com/go-task/task/v3/cmd/task@latest
+          # Compiling the wails3 CLI takes minutes; it is cached per version.
+          if [ "${{ steps.tools.outputs.cache-hit }}" != true ]; then
+            go install github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}
+            go install github.com/go-task/task/v3/cmd/task@latest
+          fi
 
       - name: Set file version
         env:
@@ -300,7 +414,7 @@ jobs:
 
   ios:
     name: iOS IPA
-    needs: [test, version]
+    needs: [version]
     if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.event_name == 'workflow_dispatch'
     # The only macOS job: macOS minutes are expensive, keep it that way.
     runs-on: macos-15
@@ -321,10 +435,22 @@ jobs:
         if: github.ref == 'refs/heads/next'
         run: sh build/dev-app.sh
 
+      - name: Cache Wails and Task
+        id: tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin/wails3
+            ~/go/bin/task
+          key: tools-${{ runner.os }}-${{ runner.arch }}-wails-${{ env.WAILS_VERSION }}
+
       - name: Install Wails and Task
         run: |
-          go install github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}
-          go install github.com/go-task/task/v3/cmd/task@latest
+          # Compiling the wails3 CLI takes minutes; it is cached per version.
+          if [ "${{ steps.tools.outputs.cache-hit }}" != true ]; then
+            go install github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}
+            go install github.com/go-task/task/v3/cmd/task@latest
+          fi
 
       - name: Set bundle version
         env:
@@ -395,7 +521,7 @@ jobs:
   release:
     name: GitHub release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [linux, android, windows, ios, version]
+    needs: [test, linux, appimage, android, windows, ios, version]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -434,7 +560,7 @@ jobs:
   next:
     name: Next pre-release
     if: github.ref == 'refs/heads/next'
-    needs: [linux, android, windows, ios, version]
+    needs: [test, linux, appimage, android, windows, ios, version]
     runs-on: ubuntu-24.04
     # One at a time, so two quick pushes don't race over the tag.
     concurrency: next-release
