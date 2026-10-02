@@ -62,12 +62,16 @@ func codeChallenge(verifier string) string {
 }
 
 // callbackPage is what the browser shows once it has handed Nova the answer.
+// It tries to close its tab. Browsers only allow that for a tab without
+// history (the sign-in page, and often a login page, came before it), so
+// where they refuse, the page says the tab can be closed.
 const callbackPage = `<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><title>Nova</title>
 <style>body{font-family:system-ui,sans-serif;display:grid;place-items:center;height:100vh;margin:0;background:#fafafb;color:#222}
 @media(prefers-color-scheme:dark){body{background:#222226;color:#fff}}
 div{text-align:center}h1{font-size:1.6em;margin:0 0 .4em}p{opacity:.7;margin:0}</style></head>
-<body><div><h1>%s</h1><p>You can close this tab and go back to Nova.</p></div></body></html>`
+<body><div><h1>%s</h1><p>You can close this tab and go back to Nova.</p></div>
+<script>setTimeout(() => window.close(), 400)</script></body></html>`
 
 // OAuthLogin signs the user in through their browser and returns the new
 // key. openBrowser must open the URL in the user's default browser, not in a

@@ -158,3 +158,9 @@ func TestOAuthTokenRetriesUntilReachable(t *testing.T) {
 		t.Fatalf("err = %v, want the server's refusal", err)
 	}
 }
+
+func TestCallbackPageClosesTab(t *testing.T) {
+	if !strings.Contains(callbackPage, "window.close()") {
+		t.Fatal("the callback page doesn't try to close its tab")
+	}
+}
