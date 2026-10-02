@@ -6,7 +6,7 @@ name: CI
 # (which replace the "next" pre-release, the test builds that
 # next.nova.jevido.app links to) and for manual runs (Actions > CI > Run
 # workflow), which keep them as artifacts. The next branch builds Nova (dev)
-# (see build/dev-app.sh), which installs next to Nova, without the AppImage.
+# (see build/dev-app.sh), which installs next to Nova.
 on:
   push:
     branches: [main, next]
@@ -191,8 +191,7 @@ jobs:
   appimage:
     name: Linux AppImage
     needs: [version]
-    # Takes twice as long as anything else, so test builds of next skip it.
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -236,7 +235,17 @@ jobs:
             go install github.com/go-task/task/v3/cmd/task@latest
           fi
 
-      # Bundles WebKitGTK and GStreamer, which takes a few minutes.
+      # wails3 generate appimage finds WebKit's helper programs by walking all
+      # of /usr, where GitHub's runners keep tens of GB of SDKs; that took over
+      # two minutes. Mount empty folders over the ones an AppImage never uses.
+      - name: Hide unrelated SDKs
+        run: |
+          for d in /usr/local /usr/share/dotnet /usr/share/swift /usr/share/miniconda \
+            /usr/share/kotlinc /usr/share/sbt /usr/share/az_* /usr/share/gradle* \
+            /usr/lib/jvm /usr/lib/google-cloud-sdk /usr/lib/mono /usr/lib/firefox; do
+            if [ -d "$d" ]; then sudo mount -t tmpfs none "$d" && echo "hid $d"; fi
+          done
+
       - name: Build AppImage
         env:
           APPIMAGE_EXTRACT_AND_RUN: "1"
@@ -560,8 +569,7 @@ jobs:
 
   next:
     name: Next pre-release
-    # The AppImage job is skipped on next; that mustn't skip this one.
-    if: github.ref == 'refs/heads/next' && !cancelled() && !contains(needs.*.result, 'failure')
+    if: github.ref == 'refs/heads/next'
     needs: [test, linux, appimage, android, windows, ios, version]
     runs-on: ubuntu-24.04
     # One at a time, so two quick pushes don't race over the tag.

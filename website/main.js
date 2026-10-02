@@ -23,8 +23,6 @@ if (NEXT) {
     a.href = a.href.replace("/releases/latest/download/", "/releases/download/next/").replace(/\/releases\/latest$/, "/releases/tag/next");
   }
   $("#cmd-linux").textContent = INSTALL_CMD;
-  // Test builds have no AppImage.
-  $('a[href$=".AppImage"]')?.closest("li")?.remove();
   for (const t of $$(".tag, .files em")) if (/updates itself/.test(t.textContent)) t.remove();
   const banner = document.createElement("div");
   banner.className = "next-banner";
