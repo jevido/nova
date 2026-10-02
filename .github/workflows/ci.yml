@@ -6,7 +6,7 @@ name: CI
 # (which replace the "next" pre-release, the test builds that
 # next.nova.jevido.app links to) and for manual runs (Actions > CI > Run
 # workflow), which keep them as artifacts. The next branch builds Nova (dev)
-# (see build/dev-app.sh), which installs next to Nova.
+# (see build/dev-app.sh), which installs next to Nova, without the AppImage.
 on:
   push:
     branches: [main, next]
@@ -191,7 +191,8 @@ jobs:
   appimage:
     name: Linux AppImage
     needs: [version]
-    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.event_name == 'workflow_dispatch'
+    # Takes twice as long as anything else, so test builds of next skip it.
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -559,7 +560,8 @@ jobs:
 
   next:
     name: Next pre-release
-    if: github.ref == 'refs/heads/next'
+    # The AppImage job is skipped on next; that mustn't skip this one.
+    if: github.ref == 'refs/heads/next' && !cancelled() && !contains(needs.*.result, 'failure')
     needs: [test, linux, appimage, android, windows, ios, version]
     runs-on: ubuntu-24.04
     # One at a time, so two quick pushes don't race over the tag.
