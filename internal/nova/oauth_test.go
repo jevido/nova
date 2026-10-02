@@ -45,6 +45,9 @@ func newFakeOAuth(t *testing.T) *fakeOAuth {
 		if r.Header.Get("Authorization") != "" {
 			t.Error("token request has an Authorization header")
 		}
+		if !strings.HasPrefix(r.UserAgent(), "Nova") {
+			t.Errorf("token request has user agent %q", r.UserAgent())
+		}
 		r.ParseForm()
 		ok := r.Form.Get("grant_type") == "authorization_code" &&
 			r.Form.Get("code") == "the-code" &&

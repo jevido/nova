@@ -14,6 +14,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"nova/internal/version"
 )
 
 // OAuth sign-in: the authorization code flow with PKCE and a loopback
@@ -206,7 +208,7 @@ func (c *Client) oauthToken(ctx context.Context, code, redirectURI, verifier str
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("User-Agent", "nova-desktop/0.1")
+	req.Header.Set("User-Agent", version.UserAgent())
 	res, err := c.http.Do(req)
 	if err != nil {
 		return nil, err

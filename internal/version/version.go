@@ -1,9 +1,10 @@
 // Package version holds build metadata stamped in by the build:
 //
-//	-ldflags "-X nova/internal/version.Version=1.2.3 -X nova/internal/version.Repo=owner/repo"
+//	-ldflags "-X nova/internal/version.Version=1.2.3 -X nova/internal/version.Repo=owner/repo -X nova/internal/version.Build=abc1234"
 package version
 
 import (
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -17,7 +18,28 @@ var (
 	// build/dev-app.sh). They install next to Nova with their own name,
 	// settings and app IDs, so both can be used side by side.
 	Channel = ""
+	// Build is the commit the build was made from, empty for local builds.
+	Build = ""
 )
+
+// UserAgent identifies Nova to nova.storage, so its version and build show
+// up there: "Nova/0.7.0 (linux; amd64; build abc1234)", or "Nova-dev/..."
+// for Nova (dev).
+func UserAgent() string {
+	product := "Nova"
+	if Dev() {
+		product = "Nova-dev"
+	}
+	v := Version
+	if v == "" {
+		v = "dev"
+	}
+	ua := product + "/" + strings.TrimPrefix(v, "v") + " (" + runtime.GOOS + "; " + runtime.GOARCH
+	if Build != "" {
+		ua += "; build " + Build
+	}
+	return ua + ")"
+}
 
 // Dev reports whether this is a Nova (dev) build.
 func Dev() bool { return Channel == "dev" }

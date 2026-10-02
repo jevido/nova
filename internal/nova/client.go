@@ -14,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"nova/internal/version"
 )
 
 const DefaultBaseURL = "https://nova.storage"
@@ -124,7 +126,7 @@ func (c *Client) newRequest(ctx context.Context, method, rawURL string, body io.
 	if k := c.APIKey(); k != "" {
 		req.SetBasicAuth("", k)
 	}
-	req.Header.Set("User-Agent", "nova-desktop/0.1")
+	req.Header.Set("User-Agent", version.UserAgent())
 	// The server rejects some requests (like sign-in) unless Origin names its
 	// own domain, as a CSRF guard for browsers. We are the server's own client,
 	// not a third-party page, so say so.

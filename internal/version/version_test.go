@@ -1,6 +1,9 @@
 package version
 
-import "testing"
+import (
+	"runtime"
+	"testing"
+)
 
 func TestNewer(t *testing.T) {
 	cases := []struct {
@@ -19,5 +22,19 @@ func TestNewer(t *testing.T) {
 		if got := Newer(c.a, c.b); got != c.want {
 			t.Errorf("Newer(%q, %q) = %v, want %v", c.a, c.b, got, c.want)
 		}
+	}
+}
+
+func TestUserAgent(t *testing.T) {
+	defer func(v, b, c string) { Version, Build, Channel = v, b, c }(Version, Build, Channel)
+	Version, Build, Channel = "v0.7.0", "77d8cc5", ""
+	want := "Nova/0.7.0 (" + runtime.GOOS + "; " + runtime.GOARCH + "; build 77d8cc5)"
+	if got := UserAgent(); got != want {
+		t.Errorf("UserAgent() = %q, want %q", got, want)
+	}
+	Version, Build, Channel = "dev", "", "dev"
+	want = "Nova-dev/dev (" + runtime.GOOS + "; " + runtime.GOARCH + ")"
+	if got := UserAgent(); got != want {
+		t.Errorf("UserAgent() = %q, want %q", got, want)
 	}
 }
