@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { app, baseName, HOME, RECENT, SHARED, STARRED, TRASH, isVirtual } from "../lib/store.svelte";
+  import { app, baseName, displayName, displayPath, HOME, RECENT, SHARED, STARRED, TRASH, isVirtual } from "../lib/store.svelte";
   import type { Entry } from "../../bindings/nova/services/models";
   import { formatSize } from "../lib/format";
   import { dropZone, pressBookmark, type DropZone } from "../lib/dnd";
@@ -14,11 +14,14 @@
   const limit = $derived(user?.subscription?.storage_limit ?? -1);
   const tier = $derived(user?.subscription?.name || "Free");
 
-  const bookmarks = $derived(app.prefs.bookmarks ?? []);
+  // The synced bookmarks live in Home, which a limited sign-in can't reach.
+  const bookmarks = $derived(app.limited ? [] : (app.prefs.bookmarks ?? []));
+  /** Home, or the folders the sign-in was limited to. */
+  const tops = $derived(app.limited ? app.roots : [{ path: HOME, name: "Home" }]);
 
   /** A folder in the sidebar, as the menus and dialogs expect it. */
   function folderEntry(path: string): Entry {
-    return { id: "", name: path === HOME ? "Home" : baseName(path), path, isDir: true, size: 0, mime: "", modified: "", created: "", mode: "", owner: "", shared: false } as Entry;
+    return { id: "", name: app.isRoot(path) ? displayName(path) : baseName(path), path, isDir: true, size: 0, mime: "", modified: "", created: "", mode: "", owner: "", shared: false } as Entry;
   }
 
   /** The same menu a folder gets in the file view. */
@@ -31,15 +34,15 @@
     );
   }
 
-  function homeMenu(e: MouseEvent) {
+  function homeMenu(e: MouseEvent, top: string) {
     e.preventDefault();
-    const entry = folderEntry(HOME);
+    const entry = folderEntry(top);
     app.openMenu(e.clientX, e.clientY, [
-      { label: "Open", run: () => app.navigate(HOME) },
-      ...(app.mobile ? [] : [{ label: "Open in New Window", run: () => app.newWindow(HOME) }]),
-      { label: "New Folder Inside…", run: () => app.newFolderIn(HOME) },
+      { label: "Open", run: () => app.navigate(top) },
+      ...(app.mobile ? [] : [{ label: "Open in New Window", run: () => app.newWindow(top) }]),
+      { label: "New Folder Inside…", run: () => app.newFolderIn(top) },
       { sep: true },
-      { label: "Paste Into Folder", disabled: !app.canPaste, run: () => app.paste(HOME) },
+      { label: "Paste Into Folder", disabled: !app.canPaste, run: () => app.paste(top) },
       { sep: true },
       { label: "Copy Location", run: () => app.copyPath(entry) },
       { label: "Properties", run: () => (app.modal = { kind: "properties", entry }) },
@@ -64,6 +67,7 @@
     if ((e.target as HTMLElement).closest(".row, .divider")) return;
     const at = bookmarkIndexAt(e.clientY);
     const here = app.path;
+    if (app.limited) return;
     const canBookmark = here !== HOME && !isVirtual(here) && !app.inTrash && !app.isBookmarked(here);
     app.openMenu(e.clientX, e.clientY, [
       { label: "New Folder…", run: () => app.newFolderIn(HOME, at) },
@@ -83,7 +87,7 @@
   /** Where a dragged folder or bookmark would be inserted, as a list index. */
   let insertAt = $state<number | null>(null);
 
-  const addingFolders = $derived(!!app.dragging?.allDirs);
+  const addingFolders = $derived(!app.limited && !!app.dragging?.allDirs);
   const editing = $derived(addingFolders || app.draggingBookmark !== null);
 
   // The whole sidebar is one drop zone. Over the middle of a folder row
@@ -139,25 +143,28 @@
     {#if onHide && !app.mobile}
       <button class="btn image flat" title="Hide Sidebar" onclick={onHide}><Icon name="sidebar-show" /></button>
     {/if}
-    <span class="side-title">Nova</span>
+    <span class="side-title">{app.appName}</span>
     <MainMenu />
   </header>
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="rows" bind:this={rowsEl} use:dropZone={sidebarZone} oncontextmenu={backgroundMenu}>
-    <button
-      class="row"
-      class:selected={app.path === HOME && !app.results}
-      class:drop={app.dropTarget === HOME}
-      data-path={HOME}
-      data-drop-path={HOME}
-      data-file-drop-target
-      onclick={() => app.navigate(HOME)}
-      onmousedown={(e) => e.button === 1 && e.preventDefault()}
-      onauxclick={(e) => middleClick(e, HOME)}
-      oncontextmenu={homeMenu}
-    >
-      <Icon name="user-home" /><span>Home</span>
-    </button>
+    {#each tops as top (top.path)}
+      <button
+        class="row"
+        class:selected={app.path === top.path && !app.results}
+        class:drop={app.dropTarget === top.path}
+        title={app.limited ? displayPath(top.path) : undefined}
+        data-path={top.path}
+        data-drop-path={top.path}
+        data-file-drop-target
+        onclick={() => app.navigate(top.path)}
+        onmousedown={(e) => e.button === 1 && e.preventDefault()}
+        onauxclick={(e) => middleClick(e, top.path)}
+        oncontextmenu={(e) => homeMenu(e, top.path)}
+      >
+        <Icon name={app.limited ? "folder" : "user-home"} /><span>{top.name}</span>
+      </button>
+    {/each}
     <button class="row" class:selected={app.path === RECENT && !app.results} onclick={() => app.navigate(RECENT)}>
       <Icon name="document-open-recent" /><span>Recent</span>
     </button>
@@ -167,22 +174,24 @@
     <button class="row" class:selected={app.path === SHARED && !app.results} onclick={() => app.navigate(SHARED)}>
       <Icon name="folder-publicshare" /><span>Shared</span>
     </button>
-    <button
-      class="row"
-      class:selected={app.inTrash}
-      class:drop={app.dropTarget === TRASH}
-      data-drop-path={TRASH}
-      onclick={() => app.navigate(TRASH)}
-      oncontextmenu={(e) => {
-        e.preventDefault();
-        app.openMenu(e.clientX, e.clientY, [
-          { label: "Open", run: () => app.navigate(TRASH) },
-          { label: "Empty Trash", disabled: !app.trashCount, run: () => app.emptyTrash() },
-        ]);
-      }}
-    >
-      <Icon name={app.trashCount ? "user-trash-full" : "user-trash"} /><span>Trash</span>
-    </button>
+    {#if !app.limited}
+      <button
+        class="row"
+        class:selected={app.inTrash}
+        class:drop={app.dropTarget === TRASH}
+        data-drop-path={TRASH}
+        onclick={() => app.navigate(TRASH)}
+        oncontextmenu={(e) => {
+          e.preventDefault();
+          app.openMenu(e.clientX, e.clientY, [
+            { label: "Open", run: () => app.navigate(TRASH) },
+            { label: "Empty Trash", disabled: !app.trashCount, run: () => app.emptyTrash() },
+          ]);
+        }}
+      >
+        <Icon name={app.trashCount ? "user-trash-full" : "user-trash"} /><span>Trash</span>
+      </button>
+    {/if}
 
     {#if bookmarks.length || editing}
       <div class="sep"></div>
@@ -207,7 +216,7 @@
               class:selected={app.path === b.path && !app.results}
               class:drop={app.dropTarget === b.path}
               class:moving={app.draggingBookmark === b.path}
-              title={b.path.replace(/^\/me/, "")}
+              title={displayPath(b.path)}
               data-path={b.path}
               data-drop-path={b.path}
               data-file-drop-target

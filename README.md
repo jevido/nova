@@ -137,8 +137,15 @@ the desktop.
 
 ### Signing in
 
-Sign in with your nova.storage username and password, or paste an API key.
-Keys created by a password sign-in are revoked again when you sign out.
+**Sign In with Browser** opens nova.storage in your browser, where you approve
+Nova (OAuth 2.0 with PKCE; Nova never sees your password). There you can also
+limit Nova to some of your folders: they then take the place of Home in the
+sidebar, and the trash and synced bookmarks, which live in Home, are not
+available. To change the folders, sign out and sign in again.
+
+You can also sign in with your nova.storage username and password, or paste an
+API key. Keys created by a browser or password sign-in are revoked again when
+you sign out.
 
 ## Features
 
@@ -215,6 +222,20 @@ Release assets use version-less names (`nova-linux-amd64.tar.gz`,
 `nova-windows-amd64.exe`, `nova-android-arm64.apk`, `nova-ios.ipa`, …) so `releases/latest/download/…` links always
 point at the newest release. Tags with a `-` (like `v0.3.0-rc.1`) are
 published as pre-releases.
+
+### Test builds: Nova (dev)
+
+Every push to the `next` branch builds **Nova (dev)** and replaces the `next`
+pre-release with it; [next.nova.jevido.app](https://next.nova.jevido.app)
+offers its downloads. `build/dev-app.sh` gives it its own name, app IDs
+(`storage.nova.app.dev` on Android and iOS), settings
+(`~/.config/nova-desktop-dev`), Linux package and command (`nova-dev`) and
+Windows install folder, so it installs next to Nova. It never updates itself,
+and released builds never update to it. On Linux:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/jevido/nova/next/install.sh | NOVA_CHANNEL=dev sh
+```
 
 The Android APK is signed with the key in the `ANDROID_KEYSTORE_BASE64`,
 `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`

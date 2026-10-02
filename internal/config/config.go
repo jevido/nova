@@ -38,8 +38,11 @@ type Config struct {
 	APIKey string `json:"apiKey"`
 	// KeyFromLogin is true when the key was created by a password sign-in,
 	// so it is revoked again on sign-out.
-	KeyFromLogin bool  `json:"keyFromLogin"`
-	Prefs        Prefs `json:"prefs"`
+	KeyFromLogin bool `json:"keyFromLogin"`
+	// Roots are the IDs of the folders an OAuth key is limited to. Empty
+	// means the whole account. The key itself can't tell, so it is kept here.
+	Roots []string `json:"roots,omitempty"`
+	Prefs Prefs    `json:"prefs"`
 }
 
 func DefaultPrefs() Prefs {

@@ -2,14 +2,33 @@
 // install button, the style switcher, the live demo windows and the latest
 // release notes.
 const REPO = "jevido/nova";
-const DL = `https://github.com/${REPO}/releases/latest/download/`;
-const INSTALL_CMD = "curl -fsSL https://raw.githubusercontent.com/jevido/nova/main/install.sh | sh";
+// next.nova.jevido.app is the same site from the next branch. It offers the
+// "next" pre-release, the test builds CI makes of that branch, instead of
+// the latest release.
+const NEXT = location.hostname.startsWith("next.");
+const DL = NEXT ? `https://github.com/${REPO}/releases/download/next/` : `https://github.com/${REPO}/releases/latest/download/`;
+const INSTALL_CMD = NEXT
+  ? "curl -fsSL https://raw.githubusercontent.com/jevido/nova/next/install.sh | NOVA_CHANNEL=dev sh"
+  : "curl -fsSL https://raw.githubusercontent.com/jevido/nova/main/install.sh | sh";
 const ICONS = "assets/icons.svg";
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const icon = (name, cls = "ic") => `<svg class="${cls}" aria-hidden="true"><use href="${ICONS}#i-${name}"/></svg>`;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+/* ---------------------------------------------------------------- next */
+if (NEXT) {
+  for (const a of $$('a[href*="/releases/latest"]')) {
+    a.href = a.href.replace("/releases/latest/download/", "/releases/download/next/").replace(/\/releases\/latest$/, "/releases/tag/next");
+  }
+  $("#cmd-linux").textContent = INSTALL_CMD;
+  for (const t of $$(".tag, .files em")) if (/updates itself/.test(t.textContent)) t.remove();
+  const banner = document.createElement("div");
+  banner.className = "next-banner";
+  banner.innerHTML = `<strong>Nova (dev).</strong> These downloads are test builds of the next branch. They install next to Nova with their own settings, may be broken and don't update themselves. <a href="https://nova.jevido.app">Get Nova</a>`;
+  document.body.prepend(banner);
+}
 
 /* ---------------------------------------------------------------- toasts */
 function toast(host, text, { action, onAction, timeout = 5000 } = {}) {
@@ -874,13 +893,13 @@ function renderChangelog(md) {
     .map((it) => `<li><strong>${esc(it.title)}${it.kind ? `<span class="kind">${it.kind}</span>` : ""}</strong>${esc(it.text)}</li>`)
     .join("");
 }
-fetch(`https://raw.githubusercontent.com/${REPO}/main/CHANGELOG.md`)
+fetch(`https://raw.githubusercontent.com/${REPO}/${NEXT ? "next" : "main"}/CHANGELOG.md`)
   .then((r) => (r.ok ? r.text() : Promise.reject()))
   .then(renderChangelog)
   .catch(() => {});
 
 // Say so when nothing is released yet.
-fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { Accept: "application/vnd.github+json" } })
+fetch(`https://api.github.com/repos/${REPO}/releases/${NEXT ? "tags/next" : "latest"}`, { headers: { Accept: "application/vnd.github+json" } })
   .then((r) => (r.ok ? r.json() : r.status === 404 ? null : Promise.reject()))
   .then((rel) => {
     if (!rel?.tag_name) {

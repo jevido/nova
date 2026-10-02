@@ -48,7 +48,10 @@ export function itemMenu(
         starred
           ? { label: "Unstar", icon: "starred", run: () => app.toggleStar(sel) }
           : { label: "Star", icon: "non-starred", run: () => app.toggleStar(sel) },
-        { label: "Move to Trash", icon: "user-trash", accel: "Delete", run: () => app.trash(sel).then(() => opts.afterTrash?.()) },
+        // A sign-in limited to some folders has no trash; app.trash deletes.
+        app.limited
+          ? { label: "Delete Permanently…", icon: "edit-delete", accel: "Delete", run: () => app.trash(sel) }
+          : { label: "Move to Trash", icon: "user-trash", accel: "Delete", run: () => app.trash(sel).then(() => opts.afterTrash?.()) },
       ],
     },
     { sep: true },
@@ -61,7 +64,7 @@ export function itemMenu(
         ]
       : []),
     { sep: true },
-    ...(one?.isDir
+    ...(one?.isDir && !app.limited
       ? [{ label: app.isBookmarked(one.path) ? "Remove from Bookmarks" : "Add to Bookmarks", run: () => app.toggleBookmark(one.path) }]
       : []),
     { label: "Copy Location", disabled: !one, run: () => one && app.copyPath(one) },

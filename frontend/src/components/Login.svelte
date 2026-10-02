@@ -9,6 +9,27 @@
   let key = $state("");
   let busy = $state(false);
   let error = $state("");
+  /** Waiting for the user to approve Nova on nova.storage in their browser. */
+  let waiting = $state(false);
+  let cancelled = false;
+
+  async function signInWithBrowser() {
+    waiting = true;
+    cancelled = false;
+    error = "";
+    try {
+      await app.signInWithBrowser();
+    } catch (err) {
+      if (!cancelled) error = err instanceof Error ? err.message : String(err);
+    } finally {
+      waiting = false;
+    }
+  }
+
+  function cancelBrowser() {
+    cancelled = true;
+    app.cancelBrowserSignIn();
+  }
 
   async function submit(e: SubmitEvent) {
     e.preventDefault();
@@ -27,33 +48,49 @@
 
 <div class="login">
   <header class="bar">
-    <span class="title">Nova</span>
+    <span class="title">{app.appName}</span>
     {#if !app.mobile}
       <button class="btn image round" title="Close" onclick={() => Window.Close()}><Icon name="window-close" /></button>
     {/if}
   </header>
   <form class="card" onsubmit={submit}>
     <img src="/nova.png" alt="" width="88" height="88" />
-    <h1>Sign in to Nova</h1>
+    <h1>Sign in to {app.appName}</h1>
     <p class="dim">Your nova.storage files, right on your desktop.</p>
 
-    <div class="modes">
-      <button type="button" class="btn" class:checked={mode === "password"} onclick={() => (mode = "password")}>Password</button>
-      <button type="button" class="btn" class:checked={mode === "key"} onclick={() => (mode = "key")}>API Key</button>
-    </div>
-
-    {#if mode === "password"}
-      <input class="entry" placeholder="Username or e-mail" autocomplete="username" bind:value={username} disabled={busy} />
-      <input class="entry" type="password" placeholder="Password" autocomplete="current-password" bind:value={password} disabled={busy} />
+    {#if waiting}
+      <div class="waiting">
+        <span class="spinner"></span>
+        <p>Approve Nova in your browser to continue.</p>
+        <p class="dim small">You can choose there which folders Nova may use.</p>
+      </div>
+      <button type="button" class="btn submit" onclick={cancelBrowser}>Cancel</button>
     {:else}
-      <input class="entry mono" placeholder="API key" bind:value={key} disabled={busy} spellcheck="false" />
+      <button type="button" class="btn suggested submit browser" disabled={busy} onclick={signInWithBrowser}>
+        <Icon name="adw-external-link" />Sign In with Browser
+      </button>
+      <p class="dim small">Sign in on nova.storage. Nova never sees your password.</p>
+
+      <div class="or"><span class="dim">or</span></div>
+
+      <div class="modes">
+        <button type="button" class="btn" class:checked={mode === "password"} onclick={() => (mode = "password")}>Password</button>
+        <button type="button" class="btn" class:checked={mode === "key"} onclick={() => (mode = "key")}>API Key</button>
+      </div>
+
+      {#if mode === "password"}
+        <input class="entry" placeholder="Username or e-mail" autocomplete="username" bind:value={username} disabled={busy} />
+        <input class="entry" type="password" placeholder="Password" autocomplete="current-password" bind:value={password} disabled={busy} />
+      {:else}
+        <input class="entry mono" placeholder="API key" bind:value={key} disabled={busy} spellcheck="false" />
+      {/if}
+
+      <button class="btn submit" type="submit" disabled={busy}>
+        {#if busy}<span class="spinner"></span>{/if}Sign In
+      </button>
     {/if}
 
     {#if error}<div class="error">{error}</div>{/if}
-
-    <button class="btn suggested submit" type="submit" disabled={busy}>
-      {#if busy}<span class="spinner"></span>{/if}Sign In
-    </button>
   </form>
 </div>
 
@@ -131,6 +168,40 @@
     border-radius: 9999px;
     padding: 10px 32px;
     min-width: 200px;
+  }
+  .browser {
+    margin-top: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .small {
+    font-size: 13px;
+  }
+  /* A line with "or" in the middle. */
+  .or {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0 4px;
+    font-size: 13px;
+  }
+  .or::before,
+  .or::after {
+    content: "";
+    flex: 1;
+    border-top: 1px solid var(--border);
+  }
+  .waiting {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .waiting p {
+    margin: 0;
   }
   .error {
     color: var(--destructive);

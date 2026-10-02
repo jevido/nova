@@ -94,12 +94,29 @@ export interface Person {
 }
 
 /**
+ * Root is one of the folders a limited key can reach.
+ */
+export interface Root {
+    /**
+     * "/{id}"
+     */
+    "path": string;
+    "name": string;
+}
+
+/**
  * Session is the signed-in state shown to the UI.
  */
 export interface Session {
     "signedIn": boolean;
     "server": string;
     "user": nova$0.User | null;
+
+    /**
+     * Roots are the folders the key is limited to, shown in place of Home.
+     * Empty when Nova can reach the whole account.
+     */
+    "roots": Root[] | null;
 }
 
 /**

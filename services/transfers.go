@@ -706,7 +706,7 @@ func (s *TransferService) Copy(paths []string, destDir string) (Transfer, error)
 	}
 	for i, p := range paths {
 		c, err := checkPath(p)
-		if err != nil || c == HomeDir {
+		if err != nil || isRoot(c) {
 			return Transfer{}, fmt.Errorf("%s cannot be copied", p)
 		}
 		if destDir == c || strings.HasPrefix(destDir, c+"/") {

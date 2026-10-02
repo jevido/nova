@@ -6,6 +6,8 @@ package platform
 import (
 	"os"
 	"path/filepath"
+
+	"nova/internal/version"
 )
 
 // Mobile reports whether the build targets a phone.
@@ -17,7 +19,7 @@ func ConfigDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(d, "nova-desktop"), nil
+	return filepath.Join(d, "nova-desktop"+version.Suffix()), nil
 }
 
 // CacheDir holds thumbnails and files opened in other applications.
@@ -26,7 +28,7 @@ func CacheDir() string {
 	if err != nil {
 		d = os.TempDir()
 	}
-	return filepath.Join(d, "nova-desktop")
+	return filepath.Join(d, "nova-desktop"+version.Suffix())
 }
 
 // DownloadDir is the default download location.

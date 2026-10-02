@@ -2,7 +2,7 @@
   import { Browser, Clipboard } from "@wailsio/runtime";
   import * as Files from "../../bindings/nova/services/filesservice";
   import type { Access, Entry, Person, Sharing } from "../../bindings/nova/services/models";
-  import { app } from "../lib/store.svelte";
+  import { app, displayName } from "../lib/store.svelte";
   import Icon from "./Icon.svelte";
 
   /** The body of the Share dialog; Modals.svelte draws the dialog around it. */
@@ -16,7 +16,7 @@
 
   const people = $derived(sh?.people ?? []);
   const locked = $derived(!sh || !sh.canShare || busy);
-  const viaName = $derived(!sh?.via ? "" : sh.via === "/me" ? "Home" : sh.via.split("/").pop());
+  const viaName = $derived(!sh?.via ? "" : app.isRoot(sh.via) ? displayName(sh.via) : sh.via.split("/").pop());
 
   $effect(() => {
     const path = entry.path;

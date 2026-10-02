@@ -2,11 +2,14 @@ name: CI
 
 # Pushes to main and pull requests only run the tests. The Linux packages,
 # the Android APK, the Windows exe/installer and the iOS IPA are built for
-# version tags (which publish a release) and for manual runs (Actions > CI >
-# Run workflow), which keep them as artifacts.
+# version tags (which publish a release), for pushes to the next branch
+# (which replace the "next" pre-release, the test builds that
+# next.nova.jevido.app links to) and for manual runs (Actions > CI > Run
+# workflow), which keep them as artifacts. The next branch builds Nova (dev)
+# (see build/dev-app.sh), which installs next to Nova.
 on:
   push:
-    branches: [main]
+    branches: [main, next]
     tags: ["v*"]
     # The website deploys itself from Coolify. Path filters don't apply to
     # tag pushes, so releases always build.
@@ -20,7 +23,8 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  # A newer push to next replaces the test build anyway.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/next' }}
 
 env:
   WAILS_VERSION: v3.0.0-beta.18
@@ -30,13 +34,28 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-          cache-dependency-path: go.sum
+          cache: false
+
+      # Each job builds with its own tags and flags, so each keeps its own Go
+      # build cache; one shared cache only ever held the first job's builds.
+      - name: Go build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/Library/Caches/go-build
+            ~/go/pkg/mod
+          key: go-${{ github.job }}-${{ runner.os }}-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-${{ github.job }}-${{ runner.os }}-${{ hashFiles('go.sum') }}-
+            go-${{ github.job }}-${{ runner.os }}-
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -44,6 +63,9 @@ jobs:
 
       - name: Install GTK/WebKit headers
         run: |
+          # No man page index (slow), and give up on a stuck mirror.
+          sudo rm -f /var/lib/man-db/auto-update
+          echo 'Acquire::Retries "3"; Acquire::http::Timeout "30";' | sudo tee /etc/apt/apt.conf.d/99ci >/dev/null
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libgtk-4-dev libwebkitgtk-6.0-dev
 
@@ -74,7 +96,7 @@ jobs:
 
   version:
     name: Version
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.v.outputs.version }}
@@ -87,6 +109,10 @@ jobs:
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             version="${GITHUB_REF#refs/tags/v}"
             stamp="$version"
+          elif [[ "$GITHUB_REF" == refs/heads/next ]]; then
+            version="0.1.0-next.${GITHUB_RUN_NUMBER}"
+            # Test builds never update themselves, to a release or otherwise.
+            stamp="dev"
           else
             version="0.1.0-dev.${GITHUB_RUN_NUMBER}"
             # Manual builds are stamped "dev" so they never replace
@@ -103,30 +129,61 @@ jobs:
 
   linux:
     name: Linux packages
-    needs: [test, version]
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    needs: [version]
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-          cache-dependency-path: go.sum
+          cache: false
+
+      # Each job builds with its own tags and flags, so each keeps its own Go
+      # build cache; one shared cache only ever held the first job's builds.
+      - name: Go build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/Library/Caches/go-build
+            ~/go/pkg/mod
+          key: go-${{ github.job }}-${{ runner.os }}-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-${{ github.job }}-${{ runner.os }}-${{ hashFiles('go.sum') }}-
+            go-${{ github.job }}-${{ runner.os }}-
 
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ env.BUN_VERSION }}
 
+      - name: Make it Nova (dev)
+        if: github.ref == 'refs/heads/next'
+        run: sh build/dev-app.sh
+
+      - name: Cache Wails and Task
+        id: tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin/wails3
+            ~/go/bin/task
+          key: tools-${{ runner.os }}-${{ runner.arch }}-wails-${{ env.WAILS_VERSION }}
+
       - name: Install build dependencies
         run: |
+          # No man page index (slow), and give up on a stuck mirror.
+          sudo rm -f /var/lib/man-db/auto-update
+          echo 'Acquire::Retries "3"; Acquire::http::Timeout "30";' | sudo tee /etc/apt/apt.conf.d/99ci >/dev/null
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            libgtk-4-dev libwebkitgtk-6.0-dev libfuse2 file \
-            gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
-            gstreamer1.0-plugins-bad gstreamer1.0-gl gstreamer1.0-libav
-          go install github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}
-          go install github.com/go-task/task/v3/cmd/task@latest
+          sudo apt-get install -y --no-install-recommends libgtk-4-dev libwebkitgtk-6.0-dev
+          # Compiling the wails3 CLI takes minutes; it is cached per version.
+          if [ "${{ steps.tools.outputs.cache-hit }}" != true ]; then
+            go install github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}
+            go install github.com/go-task/task/v3/cmd/task@latest
+          fi
 
       - name: Set package version
         env:
@@ -135,11 +192,11 @@ jobs:
           # pacman versions may not contain "-", so 0.1.0-dev.5 becomes 0.1.0.dev.5.
           sed -i "s/^version: .*/version: \"${VERSION//-/.}\"/" build/linux/nfpm/nfpm.yaml
 
+      # The AppImage is built in its own job, at the same time.
       - name: Build and package
         env:
-          APPIMAGE_EXTRACT_AND_RUN: "1"
           STAMP: ${{ needs.version.outputs.stamp }}
-        run: task package VERSION="$STAMP" UPDATE_REPO="$GITHUB_REPOSITORY"
+        run: task linux:create:deb linux:create:rpm linux:create:aur VERSION="$STAMP" UPDATE_REPO="$GITHUB_REPOSITORY"
 
       - name: Collect artifacts
         run: |
@@ -148,7 +205,6 @@ jobs:
           # (install.sh, README) always point at the newest release.
           # The tarball is what install.sh and the in-app updater use.
           tar -C bin -czf dist/nova-linux-amd64.tar.gz nova
-          cp bin/nova-x86_64.AppImage dist/nova-linux-x86_64.AppImage
           cp bin/nova.deb dist/nova-linux-amd64.deb
           cp bin/nova.rpm dist/nova-linux-x86_64.rpm
           cp bin/nova.pkg.tar.zst dist/nova-linux-x86_64.pkg.tar.zst
@@ -160,18 +216,128 @@ jobs:
           path: dist/*
           if-no-files-found: error
 
-  android:
-    name: Android APK
-    needs: [test, version]
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+  appimage:
+    name: Linux AppImage
+    needs: [version]
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-          cache-dependency-path: go.sum
+          cache: false
+
+      # Each job builds with its own tags and flags, so each keeps its own Go
+      # build cache; one shared cache only ever held the first job's builds.
+      - name: Go build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/Library/Caches/go-build
+            ~/go/pkg/mod
+          key: go-${{ github.job }}-${{ runner.os }}-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-${{ github.job }}-${{ runner.os }}-${{ hashFiles('go.sum') }}-
+            go-${{ github.job }}-${{ runner.os }}-
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Make it Nova (dev)
+        if: github.ref == 'refs/heads/next'
+        run: sh build/dev-app.sh
+
+      - name: Cache Wails and Task
+        id: tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin/wails3
+            ~/go/bin/task
+          key: tools-${{ runner.os }}-${{ runner.arch }}-wails-${{ env.WAILS_VERSION }}
+
+      - name: Install build dependencies
+        run: |
+          # No man page index (slow), and give up on a stuck mirror.
+          sudo rm -f /var/lib/man-db/auto-update
+          echo 'Acquire::Retries "3"; Acquire::http::Timeout "30";' | sudo tee /etc/apt/apt.conf.d/99ci >/dev/null
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgtk-4-dev libwebkitgtk-6.0-dev libfuse2 file \
+            gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-bad gstreamer1.0-gl gstreamer1.0-libav
+          # Compiling the wails3 CLI takes minutes; it is cached per version.
+          if [ "${{ steps.tools.outputs.cache-hit }}" != true ]; then
+            go install github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}
+            go install github.com/go-task/task/v3/cmd/task@latest
+          fi
+
+      # wails3 generate appimage finds WebKit's helper programs by walking all
+      # of /usr, where GitHub's runners keep tens of GB of SDKs; that took over
+      # two minutes. Mount empty folders over the ones an AppImage never uses.
+      - name: Hide unrelated SDKs
+        run: |
+          for d in /usr/local /usr/share/dotnet /usr/share/swift /usr/share/miniconda \
+            /usr/share/kotlinc /usr/share/sbt /usr/share/az_* /usr/share/gradle* \
+            /usr/lib/jvm /usr/lib/google-cloud-sdk /usr/lib/mono /usr/lib/firefox; do
+            if [ -d "$d" ]; then sudo mount -t tmpfs none "$d" && echo "hid $d"; fi
+          done
+
+      - name: Build AppImage
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+          STAMP: ${{ needs.version.outputs.stamp }}
+        run: |
+          # linuxdeploy looks up the copyright file of each of the ~400 bundled
+          # libraries with its own dpkg-query, which takes over a minute.
+          # Releases keep them (the libraries' licences ask for it); test builds
+          # of next do without.
+          if [ "$GITHUB_REF" = refs/heads/next ]; then export DISABLE_COPYRIGHT_FILES_DEPLOYMENT=1; fi
+          task linux:create:appimage VERSION="$STAMP" UPDATE_REPO="$GITHUB_REPOSITORY"
+
+      - name: Collect artifact
+        run: |
+          mkdir -p dist
+          cp bin/nova-x86_64.AppImage dist/nova-linux-x86_64.AppImage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appimage
+          path: dist/*
+          if-no-files-found: error
+
+  android:
+    name: Android APK
+    needs: [version]
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      # Each job builds with its own tags and flags, so each keeps its own Go
+      # build cache; one shared cache only ever held the first job's builds.
+      - name: Go build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/Library/Caches/go-build
+            ~/go/pkg/mod
+          key: go-${{ github.job }}-${{ runner.os }}-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-${{ github.job }}-${{ runner.os }}-${{ hashFiles('go.sum') }}-
+            go-${{ github.job }}-${{ runner.os }}-
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -184,13 +350,32 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Make it Nova (dev)
+        if: github.ref == 'refs/heads/next'
+        run: sh build/dev-app.sh
+
+      - name: Cache Wails and Task
+        id: tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin/wails3
+            ~/go/bin/task
+          key: tools-${{ runner.os }}-${{ runner.arch }}-wails-${{ env.WAILS_VERSION }}
+
       - name: Install Wails and Task
         run: |
           # The wails3 CLI links against GTK/WebKit even for Android builds.
+          # No man page index (slow), and give up on a stuck mirror.
+          sudo rm -f /var/lib/man-db/auto-update
+          echo 'Acquire::Retries "3"; Acquire::http::Timeout "30";' | sudo tee /etc/apt/apt.conf.d/99ci >/dev/null
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libgtk-4-dev libwebkitgtk-6.0-dev
-          go install github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}
-          go install github.com/go-task/task/v3/cmd/task@latest
+          # Compiling the wails3 CLI takes minutes; it is cached per version.
+          if [ "${{ steps.tools.outputs.cache-hit }}" != true ]; then
+            go install github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}
+            go install github.com/go-task/task/v3/cmd/task@latest
+          fi
 
       - name: Signing key
         env:
@@ -227,30 +412,64 @@ jobs:
 
   windows:
     name: Windows exe and installer
-    needs: [test, version]
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    needs: [version]
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.event_name == 'workflow_dispatch'
     # Wails builds Windows without cgo, so this cross-compiles on Linux;
     # makensis runs on Linux too.
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-          cache-dependency-path: go.sum
+          cache: false
+
+      # Each job builds with its own tags and flags, so each keeps its own Go
+      # build cache; one shared cache only ever held the first job's builds.
+      - name: Go build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/Library/Caches/go-build
+            ~/go/pkg/mod
+          key: go-${{ github.job }}-${{ runner.os }}-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-${{ github.job }}-${{ runner.os }}-${{ hashFiles('go.sum') }}-
+            go-${{ github.job }}-${{ runner.os }}-
 
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ env.BUN_VERSION }}
 
+      - name: Make it Nova (dev)
+        if: github.ref == 'refs/heads/next'
+        run: sh build/dev-app.sh
+
+      - name: Cache Wails and Task
+        id: tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin/wails3
+            ~/go/bin/task
+          key: tools-${{ runner.os }}-${{ runner.arch }}-wails-${{ env.WAILS_VERSION }}
+
       - name: Install build dependencies
         run: |
           # The wails3 CLI links against GTK/WebKit even for Windows builds.
+          # No man page index (slow), and give up on a stuck mirror.
+          sudo rm -f /var/lib/man-db/auto-update
+          echo 'Acquire::Retries "3"; Acquire::http::Timeout "30";' | sudo tee /etc/apt/apt.conf.d/99ci >/dev/null
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libgtk-4-dev libwebkitgtk-6.0-dev nsis
-          go install github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}
-          go install github.com/go-task/task/v3/cmd/task@latest
+          # Compiling the wails3 CLI takes minutes; it is cached per version.
+          if [ "${{ steps.tools.outputs.cache-hit }}" != true ]; then
+            go install github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}
+            go install github.com/go-task/task/v3/cmd/task@latest
+          fi
 
       - name: Set file version
         env:
@@ -281,8 +500,8 @@ jobs:
 
   ios:
     name: iOS IPA
-    needs: [test, version]
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    needs: [version]
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/next' || github.event_name == 'workflow_dispatch'
     # The only macOS job: macOS minutes are expensive, keep it that way.
     runs-on: macos-15
     timeout-minutes: 30
@@ -292,16 +511,46 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-          cache-dependency-path: go.sum
+          cache: false
+
+      # Each job builds with its own tags and flags, so each keeps its own Go
+      # build cache; one shared cache only ever held the first job's builds.
+      - name: Go build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/Library/Caches/go-build
+            ~/go/pkg/mod
+          key: go-${{ github.job }}-${{ runner.os }}-${{ hashFiles('go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-${{ github.job }}-${{ runner.os }}-${{ hashFiles('go.sum') }}-
+            go-${{ github.job }}-${{ runner.os }}-
 
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ env.BUN_VERSION }}
 
+      - name: Make it Nova (dev)
+        if: github.ref == 'refs/heads/next'
+        run: sh build/dev-app.sh
+
+      - name: Cache Wails and Task
+        id: tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin/wails3
+            ~/go/bin/task
+          key: tools-${{ runner.os }}-${{ runner.arch }}-wails-${{ env.WAILS_VERSION }}
+
       - name: Install Wails and Task
         run: |
-          go install github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}
-          go install github.com/go-task/task/v3/cmd/task@latest
+          # Compiling the wails3 CLI takes minutes; it is cached per version.
+          if [ "${{ steps.tools.outputs.cache-hit }}" != true ]; then
+            go install github.com/wailsapp/wails/v3/cmd/wails3@${WAILS_VERSION}
+            go install github.com/go-task/task/v3/cmd/task@latest
+          fi
 
       - name: Set bundle version
         env:
@@ -372,7 +621,7 @@ jobs:
   release:
     name: GitHub release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [linux, android, windows, ios, version]
+    needs: [test, linux, appimage, android, windows, ios, version]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -407,3 +656,34 @@ jobs:
           # v1.2.0-rc.1 style tags become pre-releases, which the updaters skip.
           case "$TAG" in *-*) flags+=(--prerelease) ;; esac
           gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" "${flags[@]}"
+
+  next:
+    name: Next pre-release
+    if: github.ref == 'refs/heads/next'
+    needs: [test, linux, appimage, android, windows, ios, version]
+    runs-on: ubuntu-24.04
+    # One at a time, so two quick pushes don't race over the tag.
+    concurrency: next-release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum * > checksums.txt && cat checksums.txt
+
+      - name: Replace the next pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          # A pre-release is never "latest", so releases/latest links, the
+          # site on main and the updaters keep pointing at the real release.
+          gh release delete next --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes || true
+          gh release create next dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+            --title "Nova next ($VERSION)" \
+            --notes "Nova (dev): a test build of the next branch at ${GITHUB_SHA::7}. It installs next to Nova, with its own settings. It may be broken, and it doesn't update itself. Get it from https://next.nova.jevido.app."

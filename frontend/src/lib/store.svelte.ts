@@ -13,6 +13,7 @@ import type {
   Entry,
   Folder,
   OpResult,
+  Root,
   Session as SessionT,
   SystemTheme,
   Transfer,
@@ -81,11 +82,21 @@ export function parentOf(p: string): string {
 }
 export function displayName(p: string, username?: string): string {
   if (p === HOME) return "Home";
+  const root = app.rootAt(p);
+  if (root) return root.name;
   if (p === TRASH) return "Trash";
   if (p === STARRED) return "Starred";
   if (p === RECENT) return "Recent";
   if (p === SHARED) return "Shared";
   return baseName(p) || username || "Home";
+}
+
+/** A location as the user reads it: "/" is Home, and a folder Nova was limited
+ *  to (see AppState.roots) shows by its name, "/Backups/…". */
+export function displayPath(p: string): string {
+  const root = app.rootOf(p);
+  if (root) return "/" + root.name + p.slice(root.path.length);
+  return p.replace(/^\/me(?=\/|$)/, "") || "/";
 }
 
 const defaultPrefs: Prefs = {
@@ -104,6 +115,8 @@ const defaultPrefs: Prefs = {
 
 class AppState {
   // ---- session ----
+  /** "Nova", or "Nova (dev)" for the test builds, which install next to it. */
+  appName = $state("Nova");
   booting = $state(true);
   session = $state<SessionT | null>(null);
   prefs = $state<Prefs>({ ...defaultPrefs });
@@ -189,6 +202,58 @@ class AppState {
     return this.path === TRASH || this.path.startsWith(TRASH + "/");
   }
 
+  /**
+   * The folders the sign-in was limited to on nova.storage. Each is a top
+   * folder of its own and Home, the trash and the synced bookmarks (all in
+   * Home) can't be reached. Empty when Nova may use the whole account.
+   */
+  get roots(): Root[] {
+    return this.session?.roots ?? [];
+  }
+
+  get limited(): boolean {
+    return this.roots.length > 0;
+  }
+
+  /** Where Nova starts: Home, or the first folder it was limited to. */
+  get home(): string {
+    return this.roots[0]?.path ?? HOME;
+  }
+
+  rootAt(p: string): Root | undefined {
+    return this.roots.find((r) => r.path === p);
+  }
+
+  /** The limited-to folder p is in, if any. */
+  rootOf(p: string): Root | undefined {
+    return this.roots.find((r) => p === r.path || p.startsWith(r.path + "/"));
+  }
+
+  /** A top folder: Home, or a folder Nova was limited to. */
+  isRoot(p: string): boolean {
+    return this.limited ? !!this.rootAt(p) : p === HOME;
+  }
+
+  /** Whether p can be reached with this sign-in. */
+  reachable(p: string): boolean {
+    if (this.limited) return !!this.rootOf(p);
+    return p === HOME || p.startsWith(HOME + "/");
+  }
+
+  /** The path a typed location (as displayPath shows them) stands for. */
+  parseLocation(v: string): string {
+    v = v.trim();
+    if (v.startsWith("~")) v = v.slice(1);
+    const parts = v.split("/").filter(Boolean);
+    if (!this.limited) {
+      if (parts[0] === "me") parts.shift();
+      return parts.length ? HOME + "/" + parts.join("/") : HOME;
+    }
+    const root = this.roots.find((r) => r.name === parts[0] || r.path === "/" + parts[0]);
+    if (!root) return this.home;
+    return [root.path, ...parts.slice(1)].join("/");
+  }
+
   get canPaste(): boolean {
     return !!this.clipboard || this.osClipboardFiles;
   }
@@ -210,6 +275,7 @@ class AppState {
     } catch {
       /* storage may be unavailable */
     }
+    Windows.AppName().then((n) => n && (this.appName = n)).catch(() => {});
     // Android's back gesture asks us first (see MainActivity.java).
     (window as unknown as { __novaBack: () => boolean }).__novaBack = () => this.handleBack();
     try {
@@ -234,7 +300,7 @@ class AppState {
       this.session = s;
       if (s.signedIn) await this.afterSignIn();
     } catch (e) {
-      this.session = { signedIn: false, server: "", user: null };
+      this.session = { signedIn: false, server: "", user: null, roots: [] };
       this.toast(`Could not reach the server: ${errText(e)}`, { error: true });
     } finally {
       this.booting = false;
@@ -283,7 +349,7 @@ class AppState {
     if (list.length) this.modal = { kind: "whatsnew", versions: list.map((r) => r.version) };
   }
 
-  /** Forget everything tied to one account; every account's home is /me. */
+  /** Forget everything tied to one account or sign-in. */
   private resetAccountState() {
     this.history = [];
     this.future = [];
@@ -297,7 +363,7 @@ class AppState {
     this.resetAccountState();
     // Extra windows are opened on a folder via ?path=.
     const start = new URLSearchParams(location.search).get("path");
-    await this.navigate(start && (start === HOME || start.startsWith(HOME + "/")) ? start : HOME, false);
+    await this.navigate(start && this.reachable(start) ? start : this.home, false);
     this.refreshTrashCount();
     this.syncBookmarks();
     this.showWhatsNew();
@@ -327,6 +393,16 @@ class AppState {
     await this.afterSignIn();
   }
 
+  /** Sign in on nova.storage in the browser; waits until the user answers there. */
+  async signInWithBrowser() {
+    this.session = await Session.SignInWithBrowser();
+    await this.afterSignIn();
+  }
+
+  cancelBrowserSignIn() {
+    Session.CancelBrowserSignIn().catch(() => {});
+  }
+
   async signOut() {
     const ok = await this.confirm({
       title: "Sign out?",
@@ -335,7 +411,7 @@ class AppState {
     });
     if (!ok) return;
     await Session.SignOut();
-    this.session = { signedIn: false, server: this.session?.server ?? "", user: null };
+    this.session = { signedIn: false, server: this.session?.server ?? "", user: null, roots: [] };
     this.folder = null;
     this.resetAccountState();
     // Other windows' items belong to the old account too.
@@ -473,7 +549,7 @@ class AppState {
   }
 
   up() {
-    if (this.path === HOME || isVirtual(this.path)) return;
+    if (this.isRoot(this.path) || isVirtual(this.path)) return;
     const came = this.path;
     const parent = parentOf(this.path);
     this.navigate(parent === TRASH_FILES ? TRASH : parent, true, this.mobile ? undefined : [came]);
@@ -499,6 +575,10 @@ class AppState {
   }
 
   refreshTrashCount() {
+    if (this.limited) {
+      this.trashCount = 0;
+      return;
+    }
     Files.TrashCount().then((n) => (this.trashCount = n));
   }
 
@@ -542,7 +622,7 @@ class AppState {
     if (!q) return;
     this.searching = true;
     try {
-      const r = await Files.Search(isVirtual(this.path) ? HOME : this.path, q);
+      const r = isVirtual(this.path) ? await this.searchAll(q) : await Files.Search(this.path, q);
       if (seq !== this.searchSeq) return;
       this.results = r ?? [];
       this.clearSelection();
@@ -551,6 +631,18 @@ class AppState {
     } finally {
       if (seq === this.searchSeq) this.searching = false;
     }
+  }
+
+  /** Whether a search only looked in part of the files, so Search Everywhere would find more. */
+  get searchedPart(): boolean {
+    return this.path !== this.home || this.roots.length > 1;
+  }
+
+  /** Search every top folder. */
+  async searchAll(q: string): Promise<Entry[]> {
+    const tops = this.limited ? this.roots.map((r) => r.path) : [HOME];
+    const lists = await Promise.all(tops.map((p) => Files.Search(p, q)));
+    return lists.flatMap((l) => l ?? []);
   }
 
   // =============== selection ===============
@@ -767,7 +859,8 @@ class AppState {
 
   async trash(entries = this.selection) {
     if (!entries.length) return;
-    if (this.inTrash) return this.deleteForever(entries);
+    // Without the whole account there is no trash to move things to.
+    if (this.inTrash || this.limited) return this.deleteForever(entries);
     const paths = entries.map((e) => e.path);
     const res = await this.guard(() => Files.Trash(paths));
     if (!res) return;
@@ -989,12 +1082,12 @@ class AppState {
   }
 
   async copyPath(e: Entry) {
-    await Clipboard.SetText(e.path.replace(/^\/me/, "") || "/");
+    await Clipboard.SetText(displayPath(e.path));
     this.toast("Location copied to clipboard");
   }
 
   toggleBookmark(path = this.path) {
-    if (path === HOME || path === TRASH || isVirtual(path)) return;
+    if (this.limited || this.isRoot(path) || path === TRASH || isVirtual(path)) return;
     if (this.isBookmarked(path)) this.removeBookmark(path);
     else this.addBookmarks([path]);
   }
@@ -1002,6 +1095,7 @@ class AppState {
   /** Add folders to the sidebar, at index `at` (default: the end). */
   addBookmarks(paths: string[], at?: number) {
     const bm = [...(this.prefs.bookmarks ?? [])];
+    if (this.limited) return;
     const fresh = paths.filter((p) => p !== HOME && !p.startsWith(TRASH) && !bm.some((b) => b.path === p));
     if (!fresh.length) return;
     bm.splice(at ?? bm.length, 0, ...fresh.map((p) => ({ name: baseName(p), path: p })));

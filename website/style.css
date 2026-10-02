@@ -601,3 +601,18 @@ h2.group-title { font-size: clamp(1.375rem, 2.2vw, 1.625rem); font-weight: 800; 
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 .nw.phone .nw-toasts { bottom: 84px; }
+
+/* next.nova.jevido.app: these are test builds, not a release. */
+.next-banner {
+  position: relative;
+  z-index: 100;
+  padding: 10px 16px;
+  text-align: center;
+  font-size: 0.9em;
+  background: var(--warning);
+  color: rgba(0, 0, 0, 0.85);
+}
+.next-banner a {
+  color: inherit;
+  font-weight: bold;
+}

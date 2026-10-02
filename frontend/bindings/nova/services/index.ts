@@ -29,6 +29,7 @@ export type {
     NativeDownload,
     OpResult,
     Person,
+    Root,
     Session,
     Sharing,
     SystemTheme,

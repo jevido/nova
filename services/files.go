@@ -66,9 +66,10 @@ type FilesService struct {
 
 	// The last full walk of the home folder, reused briefly by Recent and
 	// Shared so switching between them doesn't walk everything twice.
-	walkMu   sync.Mutex
-	walked   []Entry
-	walkedAt time.Time
+	walkMu    sync.Mutex
+	walked    []Entry
+	walkedAt  time.Time
+	walkedFor string // the top folders walked; another sign-in walks again
 }
 
 func NewFilesService(client *nova.Client) *FilesService { return &FilesService{client: client} }
@@ -78,10 +79,11 @@ func isNotFound(err error) bool {
 	return errors.As(err, &apiErr) && apiErr.Status == http.StatusNotFound
 }
 
-// checkPath rejects paths outside the user's home.
+// checkPath rejects paths outside the user's home, or outside the folders a
+// limited key reaches.
 func checkPath(p string) (string, error) {
 	c := nova.CleanPath(p)
-	if c != HomeDir && !strings.HasPrefix(c, HomeDir+"/") {
+	if rootOf(c) == "" {
 		return "", fmt.Errorf("path %q is outside your files", p)
 	}
 	return c, nil
@@ -107,7 +109,7 @@ func (s *FilesService) List(p string) (*Folder, error) {
 	}
 	ctx, cancel := ctxTimeout()
 	defer cancel()
-	if p == TrashDir || p == trashFilesDir {
+	if !limited() && (p == TrashDir || p == trashFilesDir) {
 		return s.listTrash(ctx)
 	}
 	l, err := s.client.Stat(ctx, p)
@@ -229,12 +231,14 @@ const (
 	recentLimit    = 50
 )
 
-// walkAll returns every entry below home except the trash, reusing a walk
-// from the last walkTTL.
+// walkAll returns every entry below the top folders except the trash,
+// reusing a walk from the last walkTTL.
 func (s *FilesService) walkAll(fresh bool) ([]Entry, error) {
 	s.walkMu.Lock()
 	defer s.walkMu.Unlock()
-	if !fresh && s.walked != nil && time.Since(s.walkedAt) < walkTTL {
+	tops := topFolders()
+	key := strings.Join(tops, "\x00")
+	if !fresh && s.walked != nil && s.walkedFor == key && time.Since(s.walkedAt) < walkTTL {
 		return s.walked, nil
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -275,13 +279,15 @@ func (s *FilesService) walkAll(fresh bool) ([]Entry, error) {
 			}
 		}
 	}
-	wg.Add(1)
-	go visit(HomeDir)
+	for _, root := range tops {
+		wg.Add(1)
+		go visit(root)
+	}
 	wg.Wait()
 	if out == nil && first != nil {
 		return nil, first
 	}
-	s.walked, s.walkedAt = out, time.Now()
+	s.walked, s.walkedAt, s.walkedFor = out, time.Now(), key
 	return out, nil
 }
 
@@ -325,7 +331,8 @@ func (s *FilesService) Shared(fresh bool) ([]Entry, error) {
 			continue
 		}
 		inside := false
-		for d := nova.Parent(e.Path); d != HomeDir && d != "/" && d != "."; d = nova.Parent(d) {
+		root := rootOf(e.Path)
+		for d := nova.Parent(e.Path); d != root && d != "/" && d != "."; d = nova.Parent(d) {
 			if sharedDirs[d] {
 				inside = true
 				break
@@ -431,8 +438,8 @@ func (s *FilesService) Rename(p, newName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if p == HomeDir {
-		return "", errors.New("the home folder cannot be renamed")
+	if isRoot(p) {
+		return "", errors.New("this folder cannot be renamed")
 	}
 	if newName, err = checkName(newName); err != nil {
 		return "", err
@@ -508,8 +515,12 @@ func (s *FilesService) Move(paths []string, destDir string) (*OpResult, error) {
 	res := &OpResult{Done: []string{}, Errors: []string{}}
 	for _, raw := range paths {
 		p, err := checkPath(raw)
-		if err != nil || p == HomeDir {
+		if err != nil || isRoot(p) {
 			res.fail(raw, errors.New("cannot be moved"))
+			continue
+		}
+		if !sameRoot(p, destDir) {
+			res.fail(p, errors.New("cannot be moved to another of the folders Nova can reach; copy it instead"))
 			continue
 		}
 		if destDir == p || strings.HasPrefix(destDir, p+"/") {
@@ -558,7 +569,7 @@ func (s *FilesService) Delete(paths []string) (*OpResult, error) {
 	res := &OpResult{Done: []string{}, Errors: []string{}}
 	for _, raw := range paths {
 		p, err := checkPath(raw)
-		if err != nil || p == HomeDir || p == TrashDir || p == trashFilesDir || p == trashInfoDir {
+		if err != nil || isRoot(p) || p == TrashDir || p == trashFilesDir || p == trashInfoDir {
 			res.fail(raw, errors.New("cannot be deleted"))
 			continue
 		}
@@ -568,7 +579,7 @@ func (s *FilesService) Delete(paths []string) (*OpResult, error) {
 		}
 		res.Done = append(res.Done, p)
 	}
-	if len(res.Done) > 0 {
+	if len(res.Done) > 0 && !limited() {
 		s.dropTrashInfo(ctx, res.Done)
 	}
 	return res, nil

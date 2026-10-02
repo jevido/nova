@@ -1,7 +1,7 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import type { Entry } from "../../bindings/nova/services/models";
-  import { app, displayName, HOME, STARRED, TRASH, ZOOM_SIZES, LIST_ZOOM_SIZES, parentOf, type MenuItem, isVirtual, RECENT, SHARED } from "../lib/store.svelte";
+  import { app, displayName, displayPath, STARRED, TRASH, ZOOM_SIZES, LIST_ZOOM_SIZES, parentOf, type MenuItem, isVirtual, RECENT, SHARED } from "../lib/store.svelte";
   import { formatAgo, formatDate, formatSize, pluralize, stemLength } from "../lib/format";
   import { pressItems } from "../lib/dnd";
   import { itemMenu } from "../lib/menus";
@@ -234,7 +234,7 @@
 
   function subtitle(e: Entry): string {
     const when = app.inTrash && e.deletedAt ? `Deleted ${formatAgo(e.deletedAt)}` : `Modified ${formatAgo(e.modified)}`;
-    const where = isSearch ? (parentOf(e.path).replace(/^\/me/, "") || "/") + " • " : "";
+    const where = isSearch ? displayPath(parentOf(e.path)) + " • " : "";
     return where + (e.isDir ? when : `${formatSize(e.size)} • ${when}`);
   }
 
@@ -403,7 +403,7 @@
         {#if app.results !== null}
           <Icon name="system-search" size={96} />
           <h2>No Results Found</h2>
-          {#if app.results !== null && app.path !== HOME}
+          {#if app.results !== null && app.searchedPart}
             <p class="dim">Only this folder and the folders in it were searched.</p>
             <button class="btn suggested pill" onclick={() => app.searchEverywhere()}>Search Everywhere</button>
           {:else}
@@ -446,7 +446,7 @@
             tabindex="-1"
             data-path={e.path}
             data-file-drop-target={e.isDir && !app.inTrash ? "" : undefined}
-            title={isSearch ? e.path.replace(/^\/me/, "") : undefined}
+            title={isSearch ? displayPath(e.path) : undefined}
             data-drop-path={e.isDir && !app.inTrash ? e.path : undefined}
             onmousedown={(ev) => itemDown(ev, e)}
             onauxclick={(ev) => itemAux(ev, e)}
@@ -520,7 +520,7 @@
             <div class="col col-name"><FileIcon entry={e} size={rowIcon} /><span class="name">{e.name}</span></div>
             <div class="col col-size">{e.isDir ? "" : formatSize(e.size)}</div>
             {#if isSearch}
-              <div class="col col-location">{parentOf(e.path).replace(/^\/me/, "") || "/"}</div>
+              <div class="col col-location">{displayPath(parentOf(e.path))}</div>
             {:else}
               <div class="col col-type">{typeLabel(e)}</div>
             {/if}
@@ -542,7 +542,7 @@
     <div class="floating">{status}</div>
   {/if}
 
-  {#if app.results !== null && app.path !== HOME && entries.length}
+  {#if app.results !== null && app.searchedPart && entries.length}
     <div class="trashbar">
       <span class="dim">Searching in “{displayName(app.path)}” and the folders in it.</span>
       <button class="btn" onclick={() => app.searchEverywhere()}>Search Everywhere</button>

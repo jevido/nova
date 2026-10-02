@@ -13,7 +13,31 @@ var (
 	Version = "dev"
 	// Repo is the GitHub repository releases are fetched from.
 	Repo = "jevido/nova"
+	// Channel is "dev" in the Nova (dev) builds of the next branch (see
+	// build/dev-app.sh). They install next to Nova with their own name,
+	// settings and app IDs, so both can be used side by side.
+	Channel = ""
 )
+
+// Dev reports whether this is a Nova (dev) build.
+func Dev() bool { return Channel == "dev" }
+
+// AppName is the name people see: "Nova", or "Nova (dev)".
+func AppName() string {
+	if Dev() {
+		return "Nova (dev)"
+	}
+	return "Nova"
+}
+
+// Suffix is appended to file names and IDs that must differ between Nova
+// and Nova (dev): "" or "-dev".
+func Suffix() string {
+	if Dev() {
+		return "-dev"
+	}
+	return ""
+}
 
 // IsRelease reports whether this is a stamped release build.
 func IsRelease() bool { return Version != "dev" && Version != "" }

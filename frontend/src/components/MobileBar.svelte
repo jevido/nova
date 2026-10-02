@@ -9,14 +9,16 @@
   const sel = $derived(app.selection);
   const selecting = $derived(app.selected.size > 0);
   const mixed = $derived(app.results !== null || isVirtual(app.path));
-  const tab = $derived(app.inTrash ? TRASH : isVirtual(app.path) ? app.path : HOME);
-  const tabs: [string, string, string][] = [
-    [HOME, "Home", "user-home"],
+  const tab = $derived(app.inTrash ? TRASH : isVirtual(app.path) ? app.path : app.home);
+  // A sign-in limited to some folders has no Home and no trash; the sidebar
+  // drawer lists those folders.
+  const tabs: [string, string, string][] = $derived([
+    app.limited ? [app.home, "Files", "folder"] : [HOME, "Home", "user-home"],
     [RECENT, "Recent", "document-open-recent"],
     [STARRED, "Starred", "starred"],
     [SHARED, "Shared", "send-to"],
-    [TRASH, "Trash", "user-trash"],
-  ];
+    ...(app.limited ? [] : [[TRASH, "Trash", "user-trash"] as [string, string, string]]),
+  ]);
 
   function go(path: string) {
     app.drawerOpen = false;
@@ -59,7 +61,11 @@
         <button class="tab" onclick={() => app.download(sel)}><span class="pill"><Icon name="folder-download" size={24} /></span><span>Download</span></button>
         <button class="tab" onclick={() => (app.copy(true), app.clearSelection())}><span class="pill"><Icon name="edit-cut" size={24} /></span><span>Move</span></button>
         <button class="tab" onclick={() => (app.copy(false), app.clearSelection())}><span class="pill"><Icon name="edit-copy" size={24} /></span><span>Copy</span></button>
-        <button class="tab" onclick={() => app.trash(sel)}><span class="pill"><Icon name="user-trash" size={24} /></span><span>Trash</span></button>
+        {#if app.limited}
+          <button class="tab" onclick={() => app.trash(sel)}><span class="pill"><Icon name="edit-delete" size={24} /></span><span>Delete</span></button>
+        {:else}
+          <button class="tab" onclick={() => app.trash(sel)}><span class="pill"><Icon name="user-trash" size={24} /></span><span>Trash</span></button>
+        {/if}
       {/if}
       <button class="tab" onclick={moreMenu}><span class="pill"><Icon name="view-more" size={24} /></span><span>More</span></button>
     </nav>

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Window } from "@wailsio/runtime";
-  import { app, HOME, STARRED, RECENT, SHARED, TRASH, TRASH_FILES, displayName, isVirtual } from "../lib/store.svelte";
+  import { app, HOME, STARRED, RECENT, SHARED, TRASH, TRASH_FILES, displayName, displayPath, isVirtual } from "../lib/store.svelte";
   import { formatDuration, formatRate, formatSize } from "../lib/format";
   import Icon from "./Icon.svelte";
   import MainMenu from "./MainMenu.svelte";
@@ -26,13 +26,18 @@
     return list;
   });
 
-  function relPath(p: string) {
-    return p.replace(/^\/me/, "") || "/";
+  /** The icon of the first crumb. */
+  function crumbIcon(c: string, phone = false) {
+    if (c === TRASH) return "user-trash";
+    if (c === STARRED) return "starred";
+    if (c === RECENT) return "document-open-recent";
+    if (c === SHARED) return phone ? "send-to" : "folder-publicshare";
+    return c === HOME ? "user-home" : "folder";
   }
 
   $effect(() => {
     if (app.editingLocation) {
-      locValue = isVirtual(app.path) ? "/" : relPath(app.path) + (app.path === HOME ? "" : "/");
+      locValue = isVirtual(app.path) ? "/" : displayPath(app.path) + (app.path === HOME ? "" : "/");
       queueMicrotask(() => {
         locInput?.focus();
         locInput?.select();
@@ -45,10 +50,7 @@
   });
 
   function submitLocation() {
-    let v = locValue.trim();
-    if (v.startsWith("~")) v = v.slice(1);
-    if (v.startsWith("/me/") || v === "/me") v = v.slice(3);
-    const target = ("/me/" + v).replace(/\/+/g, "/").replace(/\/$/, "") || HOME;
+    const target = app.parseLocation(locValue);
     app.editingLocation = false;
     app.navigate(target);
   }
@@ -62,7 +64,7 @@
   }: { compact?: boolean; sidebarShown?: boolean; onToggleSidebar: () => void } = $props();
 
   // Phones show the folder's name with an up arrow instead of a path bar.
-  const canUp = $derived(app.path !== HOME && !isVirtual(app.path) && app.path !== TRASH);
+  const canUp = $derived(!app.isRoot(app.path) && !isVirtual(app.path) && app.path !== TRASH);
 
   const windowsHost = /Windows/i.test(navigator.userAgent);
   const active = $derived(app.activeTransfers);
@@ -94,7 +96,7 @@
       {
         label: app.isBookmarked() ? "Remove from Bookmarks" : "Add to Bookmarks",
         accel: "Ctrl+D",
-        disabled: app.path === HOME || isVirtual(app.path) || app.inTrash,
+        disabled: app.limited || app.isRoot(app.path) || isVirtual(app.path) || app.inTrash,
         run: () => app.toggleBookmark(),
       },
       { label: "Copy Location", run: () => app.copyPath({ path: app.path } as never) },
@@ -155,8 +157,8 @@
         {#each crumbs as c, i (c)}
           {#if i > 0}<Icon name="pan-end" size={16} />{/if}
           <button class="mcrumb" class:current={c === app.path} onclick={() => (c === app.path ? (app.editingLocation = true) : app.navigate(c))}>
-            {#if i === 0}<Icon name={c === TRASH ? "user-trash" : c === STARRED ? "starred" : c === RECENT ? "document-open-recent" : c === SHARED ? "send-to" : "user-home"} size={22} />{/if}
-            {#if i === 0 && c === HOME}<span>Home</span>{:else if i > 0 || isVirtual(c)}<span>{displayName(c)}</span>{/if}
+            {#if i === 0}<Icon name={crumbIcon(c, true)} size={22} />{/if}
+            {#if i === 0 && c === HOME}<span>Home</span>{:else if i > 0 || isVirtual(c) || app.isRoot(c)}<span>{displayName(c)}</span>{/if}
           </button>
         {/each}
         <span class="mcrumbs-rest"></span>
@@ -233,7 +235,7 @@
               class="crumb"
               class:current={c === app.path}
               data-path={c}
-              title={relPath(c)}
+              title={displayPath(c)}
               data-drop-path={isVirtual(c) ? undefined : c}
               onclick={() => (c === app.path ? (app.editingLocation = true) : app.navigate(c))}
               onmousedown={(e) => e.button === 1 && e.preventDefault()}
@@ -242,13 +244,13 @@
                 e.preventDefault();
                 app.openMenu(e.clientX, e.clientY, [
                   { label: "Open", run: () => app.navigate(c) },
-                  { label: app.isBookmarked(c) ? "Remove from Bookmarks" : "Add to Bookmarks", disabled: c === HOME || c === TRASH || isVirtual(c), run: () => app.toggleBookmark(c) },
+                  { label: app.isBookmarked(c) ? "Remove from Bookmarks" : "Add to Bookmarks", disabled: app.limited || app.isRoot(c) || c === TRASH || isVirtual(c), run: () => app.toggleBookmark(c) },
                   { label: "Copy Location", run: () => app.copyPath({ path: c } as never) },
                 ]);
               }}
               class:drop={app.dropTarget === c}
             >
-              {#if i === 0}<Icon name={c === TRASH ? "user-trash" : c === STARRED ? "starred" : c === RECENT ? "document-open-recent" : c === SHARED ? "folder-publicshare" : "user-home"} />{/if}
+              {#if i === 0}<Icon name={crumbIcon(c)} />{/if}
               {#if i === 0 && c === HOME}<span>Home</span>{:else if i > 0 || c !== HOME}<span>{displayName(c)}</span>{/if}
             </button>
           {/each}
